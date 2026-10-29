@@ -367,7 +367,7 @@ CheckGesture:
             }
             
             ; Debug: Hiển thị hướng
-            ToolTip, Hướng: %Direction% (Góc: %Angle%°), %X%, %Y%
+            ; ToolTip, Hướng: %Direction% (Góc: %Angle%°), %X%, %Y%
 
         }
         ; --- XỬ LÝ CỬ CHỈ NGANG ---
