@@ -4,6 +4,12 @@ CoordMode, Mouse, Screen
 #NoEnv
 SendMode, Input
 SetWorkingDir, %A_ScriptDir%
+
+; Xử lý tham số /install khi được gọi với quyền Admin
+if (A_Args.Length() && A_Args[1] = "/install") {
+    PerformInstallation()
+    ExitApp
+}
 #InstallMouseHook
 #InstallKeybdHook
 

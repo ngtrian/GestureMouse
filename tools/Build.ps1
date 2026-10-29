@@ -81,16 +81,51 @@ try {
     Write-Host "LUU Y: De UIAccess co tac dung (cuon Task Manager khong UAC), file exe phai nam trong Program Files." -ForegroundColor Yellow
     Write-Host ""
 
-    $choice = Read-Host "Ban co muon tu dong cai dat file vao C:\Program Files\GestureMouse\ ngay khong? (Y/N)"
+    $choice = Read-Host "Ban co muon cai dat/cap nhat file vao C:\Program Files\GestureMouse\ ngay khong? (Y/N)"
     if ($choice -match "^[yY]") {
         $destDir = "C:\Program Files\GestureMouse"
         if (-not (Test-Path $destDir)) {
             New-Item -ItemType Directory -Path $destDir -Force | Out-Null
         }
-        Copy-Item $outputExe (Join-Path $destDir "GestureMouse.exe") -Force
+        $installedExe = Join-Path $destDir "GestureMouse.exe"
+        Copy-Item $outputExe $installedExe -Force
         Write-Host ""
-        Write-Host "[+] Da cai dat thanh cong vao: $destDir\GestureMouse.exe" -ForegroundColor Green
-        Write-Host "[+] Ung dung da san sang chay voi quyen UIAccess (Khong UAC, cuon duoc Task Manager)!" -ForegroundColor Green
+        Write-Host "[+] Da cai dat thanh cong vao: $installedExe" -ForegroundColor Green
+
+        # 1. Tao Shortcut trong Start Menu (de tim kiem trong Windows Start de dang)
+        try {
+            $wshShell = New-Object -ComObject WScript.Shell
+            $startMenuDir = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\GestureMouse"
+            if (-not (Test-Path $startMenuDir)) {
+                New-Item -ItemType Directory -Path $startMenuDir -Force | Out-Null
+            }
+            $shortcut = $wshShell.CreateShortcut("$startMenuDir\GestureMouse.lnk")
+            $shortcut.TargetPath = $installedExe
+            $shortcut.WorkingDirectory = $destDir
+            $shortcut.Description = "GestureMouse - Ung dung ho tro cu chi chuot"
+            $shortcut.Save()
+            Write-Host "[+] Da them GestureMouse vao Start Menu!" -ForegroundColor Green
+        } catch {
+            Write-Host "[!] Khong the tao shortcut Start Menu: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+
+        # 2. Tùy chọn them vao Startup (Khoi dong cung Windows)
+        $startChoice = Read-Host "Ban co muon GestureMouse tu dong khoi dong cung Windows khong? (Y/N)"
+        if ($startChoice -match "^[yY]") {
+            try {
+                $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+                Set-ItemProperty -Path $runKey -Name "GestureMouse" -Value "`"$installedExe`"" -Force
+                Write-Host "[+] Da them vao danh sach khoi dong cung Windows (Startup)!" -ForegroundColor Green
+            } catch {
+                Write-Host "[!] Khong the ghi vao Startup: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+        }
+
+        # 3. Tu dong chay file exe len ngay lap tuc
+        Write-Host ""
+        Write-Host "[*] Dang khoi chay GestureMouse..." -ForegroundColor Cyan
+        Start-Process -FilePath $installedExe
+        Write-Host "[+] GestureMouse da duoc khoi chay thanh cong voi dac quyen UIAccess!" -ForegroundColor Green
     }
 
     Write-Host ""

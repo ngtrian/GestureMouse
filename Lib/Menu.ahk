@@ -85,6 +85,12 @@ RebuildTrayMenu() {
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_Settings"), Settings
     Menu, Tray, Add, % L("Tray_RunAsAdmin"), RunAsAdmin
+
+    ; Mục Cài đặt vào hệ thống (chỉ hiển thị khi file .exe chưa nằm trong Program Files)
+    isInstalledDir := (InStr(A_ScriptDir, "Program Files") > 0)
+    if (!isInstalledDir && A_IsCompiled) {
+        Menu, Tray, Add, % L("Tray_Install"), InstallToSystem
+    }
     Menu, Tray, Add, % L("Tray_Shortcuts"), :PhimTat
 
     ; Menu chọn ngôn ngữ (gắn cờ của ngôn ngữ hiện tại)
@@ -455,6 +461,93 @@ return
 SetLangEN:
     SetLanguage("en")
 return
+
+InstallToSystem:
+    InstallAppToSystem()
+return
+
+InstallAppToSystem() {
+    if (!A_IsCompiled) {
+        MsgBox, 64, GestureMouse, % "Tính năng này chỉ dành cho file .exe đã biên dịch!"
+        return
+    }
+
+    ; Xác nhận từ người dùng
+    MsgBox, 36, GestureMouse, % L("Install_Confirm")
+    IfMsgBox, No
+        return
+
+    ; Nếu chưa có quyền Admin, yêu cầu chạy lại với tham số /install
+    if (!A_IsAdmin) {
+        try {
+            Run *RunAs "%A_ScriptFullPath%" /install
+        }
+        return
+    }
+
+    PerformInstallation()
+}
+
+PerformInstallation() {
+    destDir := "C:\Program Files\GestureMouse"
+    destExe := destDir . "\GestureMouse.exe"
+
+    ; 1. Nạp chứng chỉ từ chính file exe vào Local Machine Root của máy mới
+    TrustEmbeddedCertificate(A_ScriptFullPath)
+
+    ; 2. Tạo thư mục đích
+    FileCreateDir, %destDir%
+
+    ; 3. Copy file vào Program Files
+    FileCopy, %A_ScriptFullPath%, %destExe%, 1
+    if (ErrorLevel) {
+        MsgBox, 16, GestureMouse, % L("Install_Error") . "Không thể sao chép file vào " . destDir
+        return
+    }
+
+    ; 4. Tạo Shortcut trong Start Menu
+    startMenuDir := A_AppDataCommon . "\Microsoft\Windows\Start Menu\Programs\GestureMouse"
+    FileCreateDir, %startMenuDir%
+    FileCreateShortcut, %destExe%, %startMenuDir%\GestureMouse.lnk, %destDir%,, GestureMouse
+
+    ; 5. Khởi chạy bản đã cài đặt trong Program Files
+    Run, "%destExe%"
+
+    ; 6. Thoát bản hiện tại
+    ExitApp
+}
+
+TrustEmbeddedCertificate(exePath) {
+    hCertStore := 0, hMsg := 0
+    if DllCall("Crypt32\CryptQueryObject"
+        , "UInt", 1 ; CERT_QUERY_OBJECT_FILE
+        , "WStr", exePath
+        , "UInt", 0x3FFF ; CERT_QUERY_CONTENT_FLAG_ALL
+        , "UInt", 0x0E ; CERT_QUERY_FORMAT_FLAG_ALL
+        , "UInt", 0
+        , "Ptr*", 0, "Ptr*", 0, "Ptr*", 0
+        , "Ptr*", hCertStore, "Ptr*", hMsg, "Ptr*", 0) {
+
+        hRootStore := DllCall("Crypt32\CertOpenStore"
+            , "Ptr", 10 ; STORE_PROV_SYSTEM_W
+            , "UInt", 0, "Ptr", 0
+            , "UInt", 0x20000 ; SYSTEM_STORE_LOCAL_MACHINE
+            , "WStr", "Root", "Ptr")
+
+        if (hRootStore) {
+            pCert := DllCall("Crypt32\CertEnumCertificatesInStore", "Ptr", hCertStore, "Ptr", 0, "Ptr")
+            if (pCert) {
+                DllCall("Crypt32\CertAddCertificateContextToStore", "Ptr", hRootStore, "Ptr", pCert, "UInt", 3, "Ptr", 0)
+                DllCall("Crypt32\CertFreeCertificateContext", "Ptr", pCert)
+            }
+            DllCall("Crypt32\CertCloseStore", "Ptr", hRootStore, "UInt", 0)
+        }
+        if (hCertStore)
+            DllCall("Crypt32\CertCloseStore", "Ptr", hCertStore, "UInt", 0)
+        if (hMsg)
+            DllCall("Crypt32\CryptMsgClose", "Ptr", hMsg)
+    }
+}
 
 ExitMenu:
     ExitApp
