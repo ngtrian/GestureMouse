@@ -1,117 +1,113 @@
-﻿Phím tắt:
-- Mute (Ctrl+Shift+M)
-- Page Up (scroll+Up)
-- Page Down (scroll+down)
-- Khóa màn hình tự động (Ctrl+Shift+L)
+﻿# GestureMouse
 
+> **Tiện ích Cử chỉ Chuột, Cuộn Siêu Tốc & Phím Tắt Đa Năng Cho Windows**
 
-Cuộn tự đông, thủ công (cuộn kéo) bằng chuột phải
-- auto scroll (up/down) 
-- manual scroll (up/down)
+**GestureMouse** là một ứng dụng mã nguồn mở nhỏ gọn, mượt mà được phát triển trên nền tảng **AutoHotkey (AHK)**. Ứng dụng giúp tối ưu hóa thao tác làm việc hàng ngày của bạn trên máy tính thông qua các cử chỉ chuột phải thông minh, cơ chế cuộn trang linh hoạt (cuộn trực tiếp, cuộn tự động quán tính, cuộn trang), cùng hệ thống phím tắt điều khiển âm lượng, độ sáng và bảo mật mạnh mẽ.
 
-Cuộn trang bằng nút wheel
-- wheel+PnUp/PnDn
+---
 
-Cử chỉ (bật tắt được):
-- Quay lại ⇽
-- Tiến tới⇾
-- đóng tab (RU)
-- refesh
-- chuyển tab trước
-- chuyển tab sau
+## 🌟 Tính Năng Nổi Bật
 
+### 1. 🖱️ Cử chỉ Chuột Phải Thông Minh (Mouse Gestures)
+Giữ phím chuột phải và di chuyển chuột theo các hướng để thao tác nhanh trên các **Trình duyệt web** (Chrome, Microsoft Edge, Firefox, Cốc Cốc, Brave, Opera, Vivaldi...) và **File Explorer**:
 
+| Ký hiệu | Hướng vẽ | Chức năng | Phím tắt tương đương |
+| :---: | :--- | :--- | :--- |
+| **←** | Sang trái (L) | Quay lại trang trước (Back) | `Alt + Left` |
+| **→** | Sang phải (R) | Tiến tới trang tiếp theo (Forward) | `Alt + Right` |
+| **↑__** | Lên rồi sang trái (LU) | Chuyển sang tab trước đó | `Ctrl + Shift + Tab` |
+| **↓¯¯** | Xuống rồi sang trái (LD) | Chuyển sang tab tiếp theo | `Ctrl + Tab` |
+| **__↑** | Phải rồi hướng lên (RU) | Đóng tab hiện tại | `Ctrl + W` |
+| **¯¯↓** | Phải rồi hướng xuống (RD) | Tải lại / Làm mới trang | `F5` / `Ctrl + R` |
 
----------------------------
-Khác:
+- **Giao diện HUD trực quan**: Hiển thị biểu tượng và tên cử chỉ mờ nổi bật ở giữa màn hình ngay khi vẽ.
+- **Tự động bảo vệ ngữ cảnh**: Không kích hoạt cử chỉ khi con trỏ chuột nằm ngoài cửa sổ đang chọn, hoặc khi đang chọn file trong File Explorer.
 
-- [x] Bật tắt tính năng cuộn, cử chỉ bằng phím tắt (Ctrl+Alt) hoặc khi nhấn vào icon trên system tray (icon chuyển sang màu xám trắng khi tắt)
+---
 
-- [x] đa ngôn ngữ
+### 2. 📜 Hệ Thống Cuộn Chuột Toàn Diện (Smart Scrolling)
+Áp dụng cho mọi phần mềm có hỗ trợ thanh cuộn (Trình duyệt, VS Code, Word, Excel, Zalo, File Explorer...):
 
-- [x] - khi giữ chuột và kéo lên xuống sẽ kích hoạt trạng thái đang cuộn và nếu không thả tay ra thì vẫn giữ trạng thái chờ cuộn, nên có thể bỏ qua điều kiện khoảng cách để kích hoạt trạng thái cuộn dọc
+- **Cuộn thủ công mượt mà (Manual Scroll)**: Giữ chuột phải và rê chuột lên / xuống. Tốc độ cuộn thích ứng theo gia tốc di chuyển chuột. Hỗ trợ 2 chế độ trong Cài đặt:
+  1. *Kéo nội dung lên xuống* (tương tự lướt màn hình cảm ứng).
+  2. *Kéo thanh cuộn lên xuống*.
+- **Cuộn tự động theo quán tính (Inertial Auto-Scroll)**: Giữ chuột phải vuốt nhanh lên hoặc xuống rồi thả tay. Trang sẽ tự động trượt đi và giảm tốc dần theo lực ma sát mô phỏng vật lý.
+  - *Cách dừng cuộn*: Nhấp chuột trái, chuột giữa hoặc rê chuột nhẹ.
+- **Cuộn nhanh từng trang (Page Scroll)**: Giữ chuột phải kết hợp lăn bánh xe chuột để lật trang nhanh chóng (`Page Up` / `Page Down`).
 
-- [x] Lỗi khi  để lâu hoặc sau khi sleep, các thao tác cử chỉ liên quan đến chuột không hoạt động nữa, các phím tắt khác như mute, autolock screen, lockkeyboard, tăng giảm độ sáng... vẫn hoạt động bình thường
+---
 
-- [x] - dừng cuộn tự động khi click chuột
+### 3. 🔊 Điều Chỉnh Âm Lượng & Độ Sáng Tức Thì
+- **Thao tác chuột siêu tốc**:
+  - `Giữ chuột trái + Lăn bánh xe`: Tăng / Giảm âm lượng nhanh chóng ở bất kỳ đâu mà không cần click vào thanh Taskbar.
+- **Phím tắt âm lượng**:
+  - `Win + Lăn chuột` hoặc `Win + PgUp / PgDn`: Tăng / Giảm âm lượng hệ thống.
+  - `Ctrl + Shift + M`: Bật / Tắt âm thanh hệ thống (Mute / Unmute).
+- **Điều chỉnh độ sáng màn hình**:
+  - `F9`: Giảm độ sáng màn hình (làm dịu mắt với lớp phủ màn hình mờ).
+  - `F10`: Tăng độ sáng màn hình (trở về trạng thái trong suốt tự nhiên).
 
-- [x] - khi vẽ cử chỉ LU, RU,... thì khi ban đầu vẽ cử chỉ ngang, sau đó vẽ đứng nhưng thay vì vẽ đứng mà vẽ hơi xéo thì nó nhận cử chỉ không đúng, (cần loại bỏ kiểm trang ngang trong trường hợp này, dể dễ vẽ các cử chỉ LU, LD, RU, RD hơn)
+---
 
-- [x] Vấn đề nữa là khi đang vẽ cử chỉ bên ngoài cửa số taskmanager, và vẽ sâu vào phạm vi cửa sổ taskmanager thì cử chỉ đó bị đứng lại (tức không ẩn cử chỉ đó)
+### 4. ⌨️ Phím Tắt Tiện Ích Đa Năng
+- **Bật / Tắt nhanh ứng dụng**:
+  - Nhấn `Ctrl + Alt` hoặc **nhấp chuột trái vào biểu tượng ở khay hệ thống (System Tray)** để bật/tắt toàn bộ tính năng cử chỉ chuột và cuộn (Icon màu: *Đang bật*; Icon xám trắng: *Đang tắt*).
+- **Khóa bàn phím an toàn (`Ctrl + Alt + L`)**:
+  - Vô hiệu hóa toàn bộ bàn phím (và tùy chọn khóa cả nhấp chuột trong cài đặt) để tiện lau chùi bàn phím hoặc tránh trẻ em nghịch bấm.
+  - Để mở khóa: Gõ từ khóa `unlock` trên bàn phím.
+- **Hẹn giờ tự động khóa màn hình (`Ctrl + Shift + L`)**:
+  - Hộp thoại nhập số phút đếm ngược linh hoạt kèm giao diện hiển thị thời gian còn lại bán trong suốt ở góc dưới màn hình.
+- **Dán văn bản thuần túy (`Ctrl + Shift + V`)**:
+  - Tự động xóa định dạng font chữ, màu sắc, đồng thời cắt tỉa khoảng trắng thừa, tab và dòng trống ở đầu/cuối đoạn văn bản trước khi dán.
 
-- [x] khóa chỉ cho phép tương tác với cửa sổ đang active 
+---
 
-- Cân nhắc cử chỉ đóng tab thành đóng cửa sổ (khi không phải trình duyệt, explorer)
+### 5. 🛡️ Tính Ổn Định & Tương Thích Nâng Cao
+- **Khắc phục lỗi mất Hook sau khi Sleep**: Tích hợp module theo dõi sự kiện nguồn điện (`WM_POWERBROADCAST`) và phiên đăng nhập Windows (`WM_WTSSESSION_CHANGE`) giúp tự động khôi phục kết nối hook chuột ngay khi máy thức dậy hoặc mở khóa màn hình.
+- **Hỗ trợ Task Manager & Elevated Apps**: Tích hợp sẵn tính năng *Chạy quyền Administrator* và *Cài đặt vào hệ thống (UIAccess)* trực tiếp từ menu khay hệ thống để điều khiển mượt mà ngay cả trên các cửa sổ được nâng quyền của Windows.
+- **Đa ngôn ngữ**: Hỗ trợ chuyển đổi nhanh giữa **Tiếng Việt** và **Tiếng Anh** (English) tức thì qua menu khay.
 
-Cử chỉ chuột gồm 2 loại:
-    - cử chỉ vẽ cho trình duyệt và explorer: edge, chrome, coccoc, firefox, brave, vivaldi, opera, ..
-    - cử chỉ cuộn cho nhiều app (áp dụng với app có scrollbar)
-    ví dụ: code, excel, word, photo, zalo, note,....
+---
 
+## 📂 Cấu Trúc Thư Mục
 
-~~- nếu desktop hoặc không cửa sổ nào active => tắt gesture, vẫn giữ scroll
-- nếu đang kéo file => tắt gesture, scroll~~
+```text
+GestureMouse/
+├── Main.ahk                  # File chạy chính của ứng dụng
+├── Lib/                      # Các thư viện và module chức năng
+│   ├── AutoScroll.ahk        # Xử lý thuật toán cuộn quán tính
+│   ├── Brightness.ahk        # Xử lý điều chỉnh độ sáng màn hình
+│   ├── Hotkey.ahk            # Hẹn giờ khóa màn hình, Mute, Dán plain text
+│   ├── Language.ahk          # Quản lý bảng ngôn ngữ đa ngữ (VI / EN)
+│   ├── LockKeyboard.ahk      # Tính năng khóa bàn phím và chuột
+│   ├── Menu.ahk              # Quản lý giao diện Cài đặt, Giới thiệu & Khay hệ thống
+│   ├── ToggleGesture.ahk     # Quản lý bật/tắt cử chỉ và đổi icon khay
+│   └── Volume.ahk            # Điều khiển âm lượng qua chuột và phím tắt
+├── image/                    # Hình ảnh biểu tượng, icon cử chỉ, cờ quốc gia
+├── tools/                    # Công cụ tạo chứng chỉ số và ký UIAccess
+└── Readme.md                 # Tài liệu giới thiệu và hướng dẫn sử dụng
+```
 
-- [] Tạo video minh họa sử dụng GestureMouse
-- [] hỗ trợ taskmanager
+---
 
+## 🚀 Hướng Dẫn Sử Dụng
 
-------------------------------
-Tạm dừng nghiên cứu
+### 1. Chạy trực tiếp từ mã nguồn AutoHotkey:
+1. Cài đặt [AutoHotkey v1.1.34+](https://www.autohotkey.com/) (khuyến nghị phiên bản v1.1 Unicode 32/64-bit).
+2. Tải mã nguồn `GestureMouse` về máy.
+3. Nhấp đúp vào file `Main.ahk` để khởi chạy.
 
-- scroll page chưa cuộn được trang nằm sau, đôi khi trở lại cuộn wheel thường vẫn bị page up/down, như kiểu chuột phải chưa được thả ra vậy
+### 2. Tùy chỉnh trong ứng dụng:
+- Nhấp đúp vào biểu tượng GestureMouse ở khay hệ thống (hoặc nhấp chuột phải chọn **Cài đặt...**) để tùy chỉnh:
+  - Khởi động cùng Windows.
+  - Phong cách cuộn chuột (Kéo nội dung hoặc Kéo thanh cuộn).
+  - Tùy chọn khóa bàn phím / chuột.
+  - Xem danh sách và hình ảnh minh họa cử chỉ.
 
-- nếu không có cửa sổ nào active, tự nhận diện cửa số trên cùng xem như active, một số cửa sổ không có nút minizebbox 
-thì thu nhỏ nó trờ thành thanh nhỏ gọn và nằm cuối màn hình trái (bên trên thanh taskbar)
+---
 
-Nếu cửa sổ đã phục hồi rồi thì đừng phục hồi nữa
+## 👨‍💻 Tác Giả & Bản Quyền
 
-Đối với task manager, khi cửa sổ đang active, không thể vẽ cử chỉ trên phạm vi khung cửa sổ taskmanager được, 
-phải dời chuột ra ngoài mới vẽ cử chỉ và thu nhỏ nó được, nhưng sau đó cũng không thể phục hồi cửa sổ taskmanager được.
-
-Thu nhỏ ok rồi, nhưng khi phục hồi cửa sổ, gặp 1 cửa sổ không thể phục hồi (như taskmanager) lần thứ nhất nó không phục hồi, 
-phải lần 2 nó mới bỏ qua và phục hồi cửa sổ tiếp theo.
-
--------------------------------
-
-
-
-STAGS MANAGER: Dự án mới
-- Hiển thị các cửa số đang hoạt động (app có cửa sổ đang chạy) giống như stags manager macos nhưng nằm bên phải desktop
-- Ảnh preview ứng dụng lấy từ ảnh preview khi rê chuột vào các ứng dụng đang mở trên taskbar của windows
-- khi nhấn vào 1 stag sẽ thu nhỏ các cửa sổ (minimize) khác lại, đặt cửa sổ chính ở full màn hình (trừ ra khu vực chứa stags manager)
-
-
-
-
-*TẠO CHỨNG CHỈ FILE BIÊN DỊCH EXE
-Yêu cầu:
-- Win64 OpenSSL
-- signtool.exe
- 
-1.Chạy 3 lệnh sau để tạo 3 file: 
--private.key: Khóa bí mật.
--certificate.crt: Chứng chỉ công khai.
--certificate.pfx: File tổng hợp để ký (dùng với signtool).
-
-
-openssl genrsa -out private.key 2048
-
-openssl req -new -x509 -key private.key -out certificate.crt -days 3650 -subj "/CN=NGUYENTRIAN" -config "openssl.cnf"
-
-openssl pkcs12 -export -out certificate.pfx -inkey private.key -in certificate.crt -password pass:mypassword
-
-**Giải thích:**
-genrsa: Tạo khóa bí mật RSA 2048-bit, lưu thành private.key.
-
-req -new -x509: Tạo chứng chỉ tự ký (certificate.crt), hết hạn sau 3650 ngày (10 năm), tên là "MySelfSignedCert".
-
-pkcs12: Kết hợp khóa và chứng chỉ thành file .pfx (định dạng dùng để ký), mật khẩu là mypassword.
-
-2.ký file bằng chứng chỉ tự tạo: pass la nguyentrian
-signtool.exe sign /f "certificate.pfx" /p "nguyentrian" "GestureMouse.exe"
-
-3.Thêm Countersignature (Time Stamping) miễn phí từ Sectigo
-signtool.exe sign /f "certificate.pfx" /p "nguyentrian" /tr "http://timestamp.sectigo.com?td=sha256" /td sha256 "GestureMouse.exe"
-
-
+- **Tác giả**: Nguyễn Tri Ân
+- **Email liên hệ**: [nguyentrian87@gmail.com](mailto:nguyentrian87@gmail.com)
+- **Bản quyền**: © 2026 NGUYENTRIAN. All rights reserved.

@@ -47,7 +47,6 @@ RebuildTrayMenu() {
     try Menu, LangMenu, DeleteAll
 
     ; Sub-menu Phím tắt
-    Menu, PhimTat, Add, % L("Sub_Toggle"), ToggleGestureScrollLabel
     Menu, PhimTat, Add, % L("Sub_LockKB"), LockKeyboard
     Menu, PhimTat, Add, % L("Sub_AutoLock"), ShowLockScreenGUI
     Menu, PhimTat, Add, % L("Sub_PlainText"), PastePlainText
@@ -381,53 +380,70 @@ ShowAbout:
     if (CurrentLang = "en") {
         UsageGuideText =
         ( LTrim Join`n
-        Right Mouse Gestures:
-        - Hold Right Mouse Button and draw gestures (L, R, U, D, LU, LD, RU, RD) to perform actions (back, forward, close tab, reload, switch tab).
-        - See details and custom settings in Settings.
+        1. Right Mouse Gestures (Browsers & File Explorer):
+        - Hold Right Mouse Button and move in direction:
+          • Left (←): Go back to previous page
+          • Right (→): Go forward to next page
+          • Up then Left (↑__): Switch to previous tab
+          • Down then Left (↓¯¯): Switch to next tab
+          • Right then Up (__↑): Close current tab
+          • Right then Down (¯¯↓): Reload / Refresh current page
+        * Drawing gestures work in Chrome, Edge, Firefox, CocCoc, Brave... and File Explorer (when no file is selected).
 
-        Scrolling:
-        - Hold Right Click + drag up/down: Direct content scroll (or scrollbar, per settings).
-        - Hold Right Click + flick up/down then release: Trigger Auto-Scroll.
-        - Hold Right Click + scroll mouse wheel: Page scroll (PgUp/PgDn).
+        2. Mouse Scrolling (All Windows):
+        - Hold Right Click + drag up/down: Direct scroll (scroll content or scrollbar, configurable in Settings).
+        - Hold Right Click + flick up/down then release: Trigger inertial Auto-Scroll. Click left/middle button or move mouse to stop.
+        - Hold Right Click + scroll mouse wheel: Fast page scroll (Page Up / Page Down).
 
-        Hotkeys:
-        - Ctrl+Alt (or click tray icon): Toggle mouse gestures & scroll (gray icon when disabled).
-        - Ctrl+Alt+L: Lock/Unlock keyboard (+optional mouse lock). Type 'unlock' to unlock.
-        - Ctrl+Shift+L: Open Auto Screen Lock countdown timer.
-        - Ctrl+Shift+M: Mute/Unmute system audio.
-        - Win + Scroll / Win + PgUp/PgDn: Increase/Decrease system volume.
-        - F9 / F10: Decrease/Increase screen brightness.
+        3. Volume & Brightness:
+        - Hold Left Click + scroll wheel: Quickly adjust volume up / down.
+        - Win + Scroll (or Win + PgUp/PgDn): Increase / Decrease system volume.
+        - Ctrl + Shift + M: Mute / Unmute system audio.
+        - F9 / F10: Decrease / Increase screen brightness.
 
-        Other:
-        - Some system apps (e.g. Task Manager) or elevated admin apps require Gesture Mouse to run as Administrator.
-        - Press Ctrl + Shift + V to paste plain text (trims whitespace, tabs, newlines).
-        - Minimize active window and restore recent windows with Ctrl + F1 and Ctrl + F2.
+        4. Useful Hotkeys:
+        - Ctrl + Alt (or click tray icon): Toggle gestures & mouse scrolling (colored icon: On, gray icon: Off).
+        - Ctrl + Alt + L: Lock keyboard (and optional mouse clicks). Type 'unlock' to unlock.
+        - Ctrl + Shift + L: Schedule auto screen lock countdown timer.
+        - Ctrl + Shift + V: Paste plain text (automatically trims whitespace and empty newlines at start/end).
+
+        5. System Permissions & Elevated Apps:
+        - To use in Task Manager or elevated Administrator windows (UIPI):
+          => Right-click tray icon > select "Run as Administrator" or "Install to System (UIAccess)".
         )
     } else {
         UsageGuideText =
         ( LTrim Join`n
-        Cử chỉ chuột phải:
-        - Giữ chuột phải và vẽ các hình dạng (L, R, U, D, LU, LD, RU, RD) để thực hiện hành động (quay lại, tới, đóng tab, làm mới, chuyển tab).
-        - Xem chi tiết và tùy chỉnh (nếu có) trong Cài đặt.
+        1. Cử chỉ chuột phải (Trình duyệt & File Explorer):
+        Giữ chuột phải và rê theo các hướng để thao tác nhanh:
+          - Sang trái (←): Quay lại trang trước (Back)
+          - Sang phải (→): Tiến tới trang tiếp theo (Forward)
+          - Lên rồi Trái (↑__): Chuyển sang tab trước đó
+          - Xuống rồi Trái (↓¯¯): Chuyển sang tab tiếp theo
+          - Phải rồi Lên (__↑): Đóng tab hiện tại
+          - Phải rồi Xuống (¯¯↓): Tải lại / Làm mới trang
+        * Cử chỉ vẽ hỗ trợ trên Chrome, Edge, Firefox, Cốc Cốc, Brave... và File Explorer (khi không chọn file).
 
-        Cuộn:
-        - Giữ chuột phải + rê lên/xuống: Cuộn nội dung trực tiếp (hoặc thanh cuộn, tùy cài đặt).
-        - Giữ chuột phải + vuốt nhanh lên/xuống rồi thả: Kích hoạt cuộn tự động (AutoScroll).
-        - Giữ chuột phải + lăn bánh xe: Cuộn trang (PgUp/PgDn).
+        2. Thao tác cuộn chuột (Tất cả cửa sổ):
+        - Giữ chuột phải + rê lên/xuống: Cuộn trang trực tiếp (cuộn nội dung hoặc kéo thanh cuộn tùy Cài đặt).
+        - Giữ chuột phải + vuốt nhanh lên/xuống rồi thả: Cuộn tự động theo quán tính (Auto-Scroll). Nhấp chuột trái/giữa hoặc rê chuột để dừng cuộn.
+        - Giữ chuột phải + lăn bánh xe: Cuộn nhanh từng trang (Page Up / Page Down).
 
-        Phím tắt (Hotkeys):
-        - Ctrl+Alt (hoặc nhấp chuột trái vào icon khay hệ thống): Bật/Tắt cử chỉ chuột và cuộn (icon xám trắng khi tắt).
-        - Ctrl+Alt+L: Khóa/Mở khóa bàn phím (+chuột tùy chọn). Gõ 'unlock' để mở khóa.
-        - Ctrl+Shift+L: Mở cửa sổ hẹn giờ khóa màn hình.
-        - Ctrl+Shift+M: Tắt/Bật âm thanh hệ thống (Mute).
-        - Win + Lăn chuột / Win + PgUp/PgDn: Tăng/Giảm âm lượng hệ thống.
-        - F9 / F10: Giảm/Tăng độ sáng màn hình.
+        3. Âm lượng & Độ sáng:
+        - Giữ chuột trái + lăn bánh xe: Tăng / Giảm âm lượng nhanh chóng.
+        - Win + Lăn chuột (hoặc Win + PgUp/PgDn): Tăng / Giảm âm lượng hệ thống.
+        - Ctrl + Shift + M: Bật / Tắt âm thanh hệ thống (Mute).
+        - F9 / F10: Giảm / Tăng độ sáng màn hình.
 
-        Khác:
-        - Một số ứng dụng hệ thống (như Task Manager) hoặc ứng dụng chạy quyền Administrator (UIPI) có thể không hoạt động với cử chỉ chuột phải
-        => Cách khắc phục là chạy Gesture Mouse với quyền Administrator.
-        - Nhấn Ctrl + Shift + V để dán văn bản không định dạng (bỏ qua khoảng trắng, tab, xuống dòng trước và sau).
-        - Thu nhỏ window đang active và phục hồi window mới thu nhỏ nhất bằng Ctrl + F1 và Ctrl + F2. 
+        4. Phím tắt tiện ích:
+        - Ctrl + Alt (hoặc click chuột trái icon khay): Bật / Tắt cử chỉ và cuộn chuột (icon màu: Bật, icon xám: Tắt).
+        - Ctrl + Alt + L: Khóa bàn phím (và chuột tùy chọn). Gõ chữ 'unlock' để mở khóa.
+        - Ctrl + Shift + L: Hẹn giờ tự động khóa màn hình.
+        - Ctrl + Shift + V: Dán văn bản thuần túy (tự động xóa khoảng trắng và dòng trống ở đầu/cuối).
+
+        5. Quyền hệ thống & Ứng dụng Quản trị:
+        - Để hoạt động trên Task Manager hoặc ứng dụng chạy quyền Administrator (UIPI):
+          => Nhấp chuột phải icon khay > chọn "Chạy với quyền Administrator" hoặc "Cài đặt vào hệ thống (UIAccess)".
         )
     }
     
