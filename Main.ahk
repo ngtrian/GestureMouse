@@ -347,7 +347,7 @@ CheckGesture:
     DY := Y - StartY             ; Khoảng cách di chuyển dọc
     MinMove := 10                ; Ngưỡng di chuyển tối thiểu (pixel)
     DiagonalAngleMin := 30       ; Góc tối thiểu cho cử chỉ chéo (độ)
-    DiagonalAngleMax := 70       ; Góc tối đa cho cử chỉ chéo (độ)
+    DiagonalAngleMax := 65       ; Góc tối đa cho cử chỉ chéo (độ)
 
     ; Tính tổng khoảng cách di chuyển
     Distance := Sqrt(DX*DX + DY*DY)
