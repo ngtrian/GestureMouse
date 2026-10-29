@@ -1,4 +1,4 @@
-﻿﻿Menu:
+﻿Menu:
     ; Tạo sub-menu Phím tắt (PhimTat)
     Menu, PhimTat, Add, Bật/Tắt cử chỉ & cuộn (Ctrl + Alt), ToggleGestureScrollLabel
     Menu, PhimTat, Add, Lock Keyboard (Ctrl + Alt + L), LockKeyboard

@@ -1,4 +1,4 @@
-; ToggleGesture.ahk - Quản lý bật/tắt tính năng cử chỉ chuột và cuộn
+﻿; ToggleGesture.ahk - Quản lý bật/tắt tính năng cử chỉ chuột và cuộn
 #NoEnv
 
 ; Hàm khởi tạo trạng thái từ Registry
@@ -72,4 +72,3 @@ UpdateTrayIcon() {
         ToggleGestureScroll()
     }
 return
-
