@@ -28,6 +28,8 @@ SetWorkingDir, %A_ScriptDir%
 ;@Ahk2Exe-AddResource image\4h.ico, 308
 ;@Ahk2Exe-AddResource image\8h.ico, 309
 ;@Ahk2Exe-AddResource image\10h.ico, 310
+;@Ahk2Exe-AddResource image\flag_vn.ico, 312
+;@Ahk2Exe-AddResource image\flag_en.ico, 313
 
 ; Khai báo biến toàn cục
 global MousePath := ""            ; Chuỗi lưu các hướng cử chỉ (L, R, U, D)
@@ -77,6 +79,7 @@ hModule := DllCall("GetModuleHandle", "Ptr", 0)
 global IconHandles := {}  ; Mảng lưu HICON
 LoadIcons()  ; Gọi hàm tải biểu tượng
 
+#Include Language.ahk ; Quản lý đa ngôn ngữ (Tiếng Việt & English)
 #Include Menu.ahk ; Menu, UpdateTrayTip, Settings, ShowAbout, ExitMenu
 #Include ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
 #Include Hotkey.ahk ;AutoScreenLock, Mute

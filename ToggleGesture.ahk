@@ -39,7 +39,7 @@ ToggleGestureScroll() {
     UpdateTrayMenu()
 
     ; Thông báo trực quan nhanh
-    ToolTip, % "Cử chỉ chuột & cuộn: " . (GestureScrollEnabled ? "ĐÃ BẬT" : "ĐÃ TẮT")
+    ToolTip, % (GestureScrollEnabled ? L("Toggle_On") : L("Toggle_Off"))
     SetTimer, RemoveToggleToolTip, -1200
 }
 

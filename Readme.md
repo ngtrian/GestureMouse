@@ -27,22 +27,32 @@ MyTooltip
 Khác:
 
 - [x] Bật tắt tính năng cuộn, cử chỉ bằng phím tắt (Ctrl+Alt) hoặc khi nhấn vào icon trên system tray (icon chuyển sang màu xám trắng khi tắt)
+
 - đa ngôn ngữ
 
 - khi giữ chuột và kéo lên xuống sẽ kích hoạt trạng thái đang cuộn và nếu không thả tay ra thì vẫn giữ trạng thái chờ cuộn, nên có thể bỏ qua điều kiện khoảng cách để kích hoạt trạng thái cuộn dọc
+
 - Lỗi khi  để lâu hoặc sau khi sleep, các thao tác cử chỉ liên quan đến chuột không hoạt động nữa, các phím tắt khác như mute, autolock screen, lockkeyboard, tăng giảm độ sáng... vẫn hoạt động bình thường
+
 - dừng cuộn tự động khi click chuột
+
 - khi vẽ cử chỉ LU, RU,... thì khi ban đầu vẽ cử chỉ ngang, sau đó vẽ đứng nhưng thay vì vẽ đứng mà vẽ hơi xéo thì nó nhận cử chỉ không đúng, (cần loại bỏ kiểm trang ngang trong trường hợp này, dể dễ vẽ các cử chỉ LU, LD, RU, RD hơn)
+
 - scroll page chưa cuộn được trang nằm sau, đôi khi trở lại cuộn wheel thường vẫn bị page up/down, như kiểu chuột phải chưa được thả ra vậy
 
 - nếu không có cửa sổ nào active, tự nhận diện cửa số trên cùng xem như active, một số cửa sổ không có nút minizebbox 
 thì thu nhỏ nó trờ thành thanh nhỏ gọn và nằm cuối màn hình trái (bên trên thanh taskbar)
+
 Nếu cửa sổ đã phục hồi rồi thì đừng phục hồi nữa
+
 Đối với task manager, khi cửa sổ đang active, không thể vẽ cử chỉ trên phạm vi khung cửa sổ taskmanager được, 
 phải dời chuột ra ngoài mới vẽ cử chỉ và thu nhỏ nó được, nhưng sau đó cũng không thể phục hồi cửa sổ taskmanager được.
+
 Thu nhỏ ok rồi, nhưng khi phục hồi cửa sổ, gặp 1 cửa sổ không thể phục hồi (như taskmanager) lần thứ nhất nó không phục hồi, 
 phải lần 2 nó mới bỏ qua và phục hồi cửa sổ tiếp theo.
+
 Vấn đề nữa là khi đang vẽ cử chỉ bên ngoài cửa số taskmanager, và vẽ sâu vào phạm vi cửa sổ taskmanager thì cử chỉ đó bị đứng lại (tức không ẩn cử chỉ đó)
+
 - Cân nhắc cử chỉ đóng tab thành đóng cửa sổ (khi không phải trình duyệt, explorer)
 - thêm cuộn ngang
 - khóa chỉ cho phép tương tác với cửa sổ đang active 
