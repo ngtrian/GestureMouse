@@ -39,11 +39,12 @@ Khác:
 
 - [x] Vấn đề nữa là khi đang vẽ cử chỉ bên ngoài cửa số taskmanager, và vẽ sâu vào phạm vi cửa sổ taskmanager thì cử chỉ đó bị đứng lại (tức không ẩn cử chỉ đó)
 
-- Cân nhắc cử chỉ đóng tab thành đóng cửa sổ (khi không phải trình duyệt, explorer)
 - [x] khóa chỉ cho phép tương tác với cửa sổ đang active 
 
+- Cân nhắc cử chỉ đóng tab thành đóng cửa sổ (khi không phải trình duyệt, explorer)
+
 Cử chỉ chuột gồm 2 loại:
-    - cử chỉ vẽ cho trình duyệt: edge, chrome, coccoc, firefox, brave, vivaldi, opera, 
+    - cử chỉ vẽ cho trình duyệt và explorer: edge, chrome, coccoc, firefox, brave, vivaldi, opera, ..
     - cử chỉ cuộn cho nhiều app (áp dụng với app có scrollbar)
     ví dụ: code, excel, word, photo, zalo, note,....
 

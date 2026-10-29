@@ -158,6 +158,26 @@ IsMouseInActiveWindow() {
     return false    
 }
 
+; Hàm kiểm tra cửa sổ có hỗ trợ vẽ cử chỉ không (chỉ Trình duyệt web và File Explorer)
+IsDrawGestureSupportedWindow() {
+    WinGet, pName, ProcessName, A
+    WinGetClass, cls, A
+
+    ; Loại trừ desktop và taskbar
+    if (cls ~= "^(Progman|WorkerW|Shell_TrayWnd|DV2ControlHost)$")
+        return false
+
+    ; File Explorer
+    if (cls ~= "^(CabinetWClass|ExploreWClass)$" || (pName = "explorer.exe" && cls != "Progman" && cls != "WorkerW"))
+        return true
+
+    ; Các trình duyệt web phổ biến
+    if (pName ~= "i)^(chrome|msedge|firefox|coccoc|brave|opera|vivaldi|arc|zen|waterfox)\.exe$")
+        return true
+
+    return false
+}
+
 ; Hàm kiểm tra cửa sổ có phải là Task Manager hoặc cửa sổ elevated không (tránh đơ hook do UIPI khi chưa chạy Admin)
 IsElevatedOrTaskManager(hwnd) {
     if (!hwnd)
@@ -268,7 +288,7 @@ RButton Up::
         PerformGesture(MousePath) ; Thực thi phím tắt tương ứng
         MousePath := "" 
         GestureActive := 0
-    } else if (!ScrollTriggered && !GestureActive && Direction != "Vertical") {  ; Nếu không có cử chỉ
+    } else if (!ScrollTriggered && !GestureActive && (Direction != "Vertical" || totalDeltaY == 0)) {  ; Nếu không có cử chỉ hoặc chưa cuộn
         Click, Right             ; Thực hiện click phải bình thường
     }
     ScrollTriggered := 0         ; Reset trạng thái cuộn bánh xe
@@ -354,16 +374,21 @@ CheckGesture:
 
     if (Distance > MinMove) {  ; Nếu chuột di chuyển đủ lớn (10 pixel)
         if (Direction = "") {    ; Xác định hướng lần đầu tiên, nếu chưa xác định
-            ; Tính góc di chuyển (độ)
-            Angle := Abs(ATan(DY / (DX ? DX : 0.0001))) * 180 / 3.14159  ; Tránh chia cho 0
-            
-            ; Xác định hướng dựa trên góc
-            if (Angle >= DiagonalAngleMin && Angle <= DiagonalAngleMax) {
-                Direction := "Diagonal"
-            } else if (Angle < DiagonalAngleMin) {
-                Direction := "Horizontal"
-            } else {
+            ; Nếu ứng dụng KHÔNG hỗ trợ vẽ cử chỉ (không phải Trình duyệt/Explorer), chỉ cho phép cuộn dọc:
+            if (!IsDrawGestureSupportedWindow()) {
                 Direction := "Vertical"
+            } else {
+                ; Tính góc di chuyển (độ) cho Trình duyệt / Explorer
+                Angle := Abs(ATan(DY / (DX ? DX : 0.0001))) * 180 / 3.14159  ; Tránh chia cho 0
+                
+                ; Xác định hướng dựa trên góc
+                if (Angle >= DiagonalAngleMin && Angle <= DiagonalAngleMax) {
+                    Direction := "Diagonal"
+                } else if (Angle < DiagonalAngleMin) {
+                    Direction := "Horizontal"
+                } else {
+                    Direction := "Vertical"
+                }
             }
             
             ; Debug: Hiển thị hướng
@@ -486,6 +511,10 @@ CleanGesture(Gesture) {
 
 ; Hàm thực thi phím tắt dựa trên cử chỉ
 PerformGesture(Gesture) {
+    if (!IsDrawGestureSupportedWindow()) {
+        HideGestureHint()
+        return
+    }
     Gesture := CleanGesture(Gesture)
     if (Gesture = "RU")
         Send ^w           ; Đóng tab (Ctrl+W)
