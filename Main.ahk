@@ -78,8 +78,9 @@ hModule := DllCall("GetModuleHandle", "Ptr", 0)
 ; Tải và lưu tất cả biểu tượng vào bộ nhớ khi khởi động
 global IconHandles := {}  ; Mảng lưu HICON
 LoadIcons()  ; Gọi hàm tải biểu tượng
+OnExit("CleanupIcons")  ; Đăng ký hàm giải phóng tài nguyên khi thoát
 
-#Include Language.ahk ; Quản lý đa ngôn ngữ (Tiếng Việt & English)
+#Include Language.ahk ; Quản lý đa ngôn ngữ (chỉ gồm các hàm)
 #Include Menu.ahk ; Menu, UpdateTrayTip, Settings, ShowAbout, ExitMenu
 #Include ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
 #Include Hotkey.ahk ;AutoScreenLock, Mute
@@ -89,9 +90,6 @@ LoadIcons()  ; Gọi hàm tải biểu tượng
 #Include Volume.ahk
 ; #Include MinimizeRestore.ahk
 ; #Include MyToolTip.ahk
-
-; Đăng ký hàm thoát để giải phóng HICON
-OnExit("CleanupIcons")
 
 ; Hàm tải tất cả biểu tượng vào bộ nhớ
 LoadIcons() {
@@ -129,7 +127,6 @@ CleanupIcons() {
             DllCall("DestroyIcon", "Ptr", hIcon)
         }
     }
-    ExitApp
 }
 
 ; Hàm kiểm tra chuột có nằm trong vùng cửa sổ đang active không

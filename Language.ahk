@@ -1,4 +1,4 @@
-; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
+﻿; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
 #NoEnv
 
 global CurrentLang := "vi"
@@ -212,14 +212,3 @@ SetLanguage(newLang) {
     RebuildTrayMenu()
     UpdateTrayTip()
 }
-
-; Callback khi chọn Tiếng Việt từ Menu
-SetLangVI:
-    SetLanguage("vi")
-return
-
-; Callback khi chọn English từ Menu
-SetLangEN:
-    SetLanguage("en")
-return
-

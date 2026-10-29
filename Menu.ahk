@@ -430,6 +430,14 @@ LockOptionsGuiEscape:
     Gui, Destroy
 return
 
+SetLangVI:
+    SetLanguage("vi")
+return
+
+SetLangEN:
+    SetLanguage("en")
+return
+
 ExitMenu:
     ExitApp
 return
