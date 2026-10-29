@@ -1,0 +1,6 @@
+# Local History extensions
+.history/
+.lh/
+
+# Editor
+.vscode/
