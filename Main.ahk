@@ -26,10 +26,6 @@ SetWorkingDir, %A_ScriptDir%
 ;@Ahk2Exe-AddResource image\R.ico, 304
 ;@Ahk2Exe-AddResource image\RD.ico, 305
 ;@Ahk2Exe-AddResource image\RU.ico, 306
-;@Ahk2Exe-AddResource image\2h.ico, 307
-;@Ahk2Exe-AddResource image\4h.ico, 308
-;@Ahk2Exe-AddResource image\8h.ico, 309
-;@Ahk2Exe-AddResource image\10h.ico, 310
 ;@Ahk2Exe-AddResource image\flag_vn.ico, 312
 ;@Ahk2Exe-AddResource image\flag_en.ico, 313
 
@@ -201,6 +197,30 @@ IsElevatedOrTaskManager(hwnd) {
     return false
 }
 
+; Hàm kiểm tra tiến trình có quyền Administrator hoặc UIAccess không
+HasUIAccessOrAdmin() {
+    if (A_IsAdmin)
+        return true
+    static hasUIA := -1
+    if (hasUIA != -1)
+        return hasUIA
+    hToken := 0
+    hProcess := DllCall("GetCurrentProcess", "Ptr")
+    if DllCall("Advapi32\OpenProcessToken", "Ptr", hProcess, "UInt", 0x0008, "Ptr*", hToken) { ; TOKEN_QUERY = 8
+        VarSetCapacity(uiAccess, 4, 0)
+        VarSetCapacity(retLen, 4, 0)
+        if DllCall("Advapi32\GetTokenInformation", "Ptr", hToken, "Int", 26, "Ptr", &uiAccess, "UInt", 4, "Ptr", &retLen) { ; TokenUIAccess = 26
+            hasUIA := NumGet(uiAccess, 0, "UInt") ? 1 : 0
+        } else {
+            hasUIA := 0
+        }
+        DllCall("CloseHandle", "Ptr", hToken)
+    } else {
+        hasUIA := 0
+    }
+    return hasUIA
+}
+
 ; Timer định kỳ cập nhật trạng thái chọn file trong Explorer ngoài hook thread (chạy độc lập, không làm trễ hook)
 UpdateExplorerSelectionState:
     ; Chỉ kiểm tra khi cửa sổ active là Explorer để tiết kiệm CPU tối đa
@@ -351,7 +371,7 @@ CheckGesture:
 
     ; Nếu không chạy quyền Admin và con trỏ chuột lấn sang Task Manager hoặc cửa sổ elevated
     ; (Nơi Windows UIPI sẽ chặn toàn bộ low-level hook khiến chuột bị đơ/kẹt cử chỉ):
-    if (!A_IsAdmin && IsElevatedOrTaskManager(HoverWindow)) {
+    if (!HasUIAccessOrAdmin() && IsElevatedOrTaskManager(HoverWindow)) {
         if (GestureActive && (Direction = "Horizontal" || Direction = "Diagonal")) {
             PerformGesture(MousePath)
         }

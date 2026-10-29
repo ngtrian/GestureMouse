@@ -3,16 +3,19 @@
 # ============================================================================
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+$OutputEncoding           = [System.Text.Encoding]::UTF8
+try { & chcp 65001 | Out-Null } catch {}
 
-# 1. Tự động kiểm tra và nâng quyền Administrator nếu chưa có
+# 1. Tu dong kiem tra va nang quyen Administrator neu chua co
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "[*] Đang yêu cầu quyền Administrator để cài đặt chứng chỉ..." -ForegroundColor Yellow
+    Write-Host "[*] Dang yeu cau quyen Administrator de cai dat chung chi..." -ForegroundColor Yellow
     try {
-        Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+        Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '$PSCommandPath'`"" -Verb RunAs
     } catch {
-        Write-Host "[X] Yêu cầu quyền Administrator bị từ chối hoặc bị hủy." -ForegroundColor Red
-        Read-Host "Nhấn Enter để đóng..."
+        Write-Host "[X] Yeu cau quyen Administrator bi tu choi hoac bi huy." -ForegroundColor Red
+        Read-Host "Nhan Enter de dong..."
     }
     exit
 }
@@ -22,7 +25,7 @@ try {
     Set-Location $ScriptDir
 
     Write-Host "============================================================================" -ForegroundColor Cyan
-    Write-Host "       GESTURE MOUSE - QUY TRÌNH BIÊN DỊCH & KÝ SỐ TỰ ĐỘNG (UIAccess)       " -ForegroundColor Cyan
+    Write-Host "       GESTURE MOUSE - QUY TRINH BIEN DICH VA KY SO TU DONG (UIAccess)      " -ForegroundColor Cyan
     Write-Host "============================================================================" -ForegroundColor Cyan
     Write-Host ""
 
@@ -33,52 +36,52 @@ try {
     $outputExe = Join-Path $ScriptDir "bin\GestureMouse.exe"
     $signScript = Join-Path $ScriptDir "tools\SignUIAccess.ahk"
 
-    # 2. Kiểm tra các công cụ
+    # 2. Kiem tra cac cong cu
     if (-not (Test-Path $ahk2Exe)) {
-        throw "Không tìm thấy trình biên dịch Ahk2Exe tại: $ahk2Exe. Vui lòng cài đặt AutoHotkey Compiler."
+        throw "Khong tim thay trinh bien dich Ahk2Exe tai: $ahk2Exe. Vui long cai dat AutoHotkey Compiler."
     }
     if (-not (Test-Path $ahkV2)) {
-        throw "Không tìm thấy AutoHotkey v2 tại: $ahkV2. Cần có AutoHotkey v2 để chạy bộ công cụ ký số."
+        throw "Khong tim thay AutoHotkey v2 tai: $ahkV2. Can co AutoHotkey v2 de chay bo cong cu ky so."
     }
     if (-not (Test-Path $customBase)) {
-        throw "Không tìm thấy Base binary tùy biến tại: $customBase."
+        throw "Khong tim thay Base binary tuy bien tai: $customBase."
     }
     if (-not (Test-Path $signScript)) {
-        throw "Không tìm thấy công cụ ký số tại: $signScript."
+        throw "Khong tim thay cong cu ky so tai: $signScript."
     }
 
-    # 3. Tắt tiến trình cũ nếu đang chạy
-    Write-Host "[*] Đang kiểm tra và tắt tiến trình GestureMouse cũ nếu đang chạy..." -ForegroundColor Gray
+    # 3. Tat tien trinh cu neu dang chay de tranh khoa file
+    Write-Host "[*] Dang kiem tra va tat tien trinh GestureMouse cu neu dang chay..." -ForegroundColor Gray
     Get-Process "GestureMouse", "GestureMouse2" -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Milliseconds 500
 
-    # 4. Biên dịch bằng Ahk2Exe
+    # 4. Bien dich bang Ahk2Exe
     Write-Host ""
-    Write-Host "[1/2] Đang biên dịch Main.ahk thành $outputExe..." -ForegroundColor Yellow
+    Write-Host "[1/2] Dang bien dich Main.ahk thanh $outputExe..." -ForegroundColor Yellow
     $proc = Start-Process -FilePath $ahk2Exe -ArgumentList "/in `"$mainScript`" /base `"$customBase`" /out `"$outputExe`"" -Wait -PassThru -NoNewWindow
     if ($proc.ExitCode -ne 0) {
-        throw "Biên dịch Ahk2Exe thất bại với mã lỗi $($proc.ExitCode)"
+        throw "Bien dich Ahk2Exe that bai voi ma loi $($proc.ExitCode)"
     }
-    Write-Host "[+] Biên dịch thành công!" -ForegroundColor Green
+    Write-Host "[+] Bien dich thanh cong: $outputExe" -ForegroundColor Green
 
-    # 5. Kích hoạt UIAccess & Ký số
+    # 5. Kich hoat UIAccess & Ky so
     Write-Host ""
-    Write-Host "[2/2] Đang kích hoạt UIAccess và ký số tự động..." -ForegroundColor Yellow
+    Write-Host "[2/2] Dang kich hoat UIAccess va ky so tu dong..." -ForegroundColor Yellow
     $procSign = Start-Process -FilePath $ahkV2 -ArgumentList "`"$signScript`" `"$outputExe`"" -Wait -PassThru -NoNewWindow
     if ($procSign.ExitCode -ne 0) {
-        throw "Kích hoạt UIAccess hoặc ký số thất bại!"
+        throw "Kich hoat UIAccess hoac ky so that bai!"
     }
 
     Write-Host ""
     Write-Host "============================================================================" -ForegroundColor Green
-    Write-Host "[V] THÀNH CÔNG: Đã tạo file thực thi hoàn chỉnh nhất tại:" -ForegroundColor Green
+    Write-Host "[V] THANH CONG: Da tao file thuc thi hoan chinh nhat tai:" -ForegroundColor Green
     Write-Host "    $outputExe" -ForegroundColor White
     Write-Host "============================================================================" -ForegroundColor Green
     Write-Host ""
-    Write-Host "LƯU Ý: Để UIAccess có tác dụng (cuộn Task Manager không UAC), file exe phải nằm trong Program Files." -ForegroundColor Yellow
+    Write-Host "LUU Y: De UIAccess co tac dung (cuon Task Manager khong UAC), file exe phai nam trong Program Files." -ForegroundColor Yellow
     Write-Host ""
 
-    $choice = Read-Host "Bạn có muốn tự động cài đặt/cập nhật file vào C:\Program Files\GestureMouse\ ngay không? (Y/N)"
+    $choice = Read-Host "Ban co muon tu dong cai dat file vao C:\Program Files\GestureMouse\ ngay khong? (Y/N)"
     if ($choice -match "^[yY]") {
         $destDir = "C:\Program Files\GestureMouse"
         if (-not (Test-Path $destDir)) {
@@ -86,18 +89,18 @@ try {
         }
         Copy-Item $outputExe (Join-Path $destDir "GestureMouse.exe") -Force
         Write-Host ""
-        Write-Host "[+] Đã cài đặt thành công vào: $destDir\GestureMouse.exe" -ForegroundColor Green
-        Write-Host "[+] Ứng dụng đã sẵn sàng chạy với quyền UIAccess!" -ForegroundColor Green
+        Write-Host "[+] Da cai dat thanh cong vao: $destDir\GestureMouse.exe" -ForegroundColor Green
+        Write-Host "[+] Ung dung da san sang chay voi quyen UIAccess (Khong UAC, cuon duoc Task Manager)!" -ForegroundColor Green
     }
 
     Write-Host ""
-    Write-Host "Nhấn phím Enter để đóng cửa sổ..." -ForegroundColor Gray
+    Write-Host "Nhan phim Enter de dong cua so..." -ForegroundColor Gray
     Read-Host
 } catch {
     Write-Host ""
-    Write-Host "[X] ĐÃ CÓ LỖI XẢY RA:" -ForegroundColor Red
+    Write-Host "[X] DA CO LOI XAY RA:" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host ""
-    Read-Host "Nhấn phím Enter để đóng cửa sổ..."
+    Read-Host "Nhan phim Enter de dong cua so..."
     exit 1
 }
