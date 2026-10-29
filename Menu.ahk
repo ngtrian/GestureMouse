@@ -24,6 +24,7 @@
     Menu, Tray, Click, 1 ; Nhấp 1 lần chuột trái vào icon khay để kích hoạt mặc định
     
     ; Cập nhật biểu tượng và menu khay lần đầu
+    InitGestureScroll()
     UpdateTrayIcon()
     UpdateTrayMenu()
     UpdateTrayTip()  
