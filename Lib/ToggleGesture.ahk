@@ -1,4 +1,4 @@
-; ToggleGesture.ahk - Quản lý bật/tắt tính năng cử chỉ chuột và cuộn
+﻿; ToggleGesture.ahk - Quản lý bật/tắt tính năng cử chỉ chuột và cuộn
 #NoEnv
 
 ; Hàm khởi tạo trạng thái từ Registry
@@ -25,8 +25,7 @@ ToggleGestureScroll() {
 
     ; Nếu tắt, dừng ngay các timer đang cuộn hay hint
     if (!GestureScrollEnabled) {
-        AutoScrollActive := 0
-        SetTimer, AutoScroll, Off
+        StopAutoScroll()
         SetTimer, CheckGesture, Off
         HideGestureHint()
     }

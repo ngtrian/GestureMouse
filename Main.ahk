@@ -1,4 +1,4 @@
-#Persistent 
+﻿#Persistent 
 #SingleInstance Force
 CoordMode, Mouse, Screen
 #NoEnv
@@ -90,7 +90,7 @@ SetTimer, UpdateExplorerSelectionState, 300 ; Timer kiểm tra nền selection c
 #Include %A_ScriptDir%\Lib\ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
 #Include %A_ScriptDir%\Lib\Hotkey.ahk ;AutoScreenLock, Mute
 #Include %A_ScriptDir%\Lib\Brightness.ahk
-#Include %A_ScriptDir%\Lib\Scroll.ahk ; AutoScroll
+#Include %A_ScriptDir%\Lib\AutoScroll.ahk ; AutoScroll
 #Include %A_ScriptDir%\Lib\LockKeyboard.ahk ; Khóa bàn phím
 #Include %A_ScriptDir%\Lib\Volume.ahk
 
@@ -285,6 +285,8 @@ return
 
 #If (!GestureScrollEnabled || !IsMouseInActiveWindow()) 
 ~RButton:: ; Khi TẮT hoặc ngoài active window: chuột phải hoạt động mặc định
+    if (AutoScrollActive)
+        StopAutoScroll()
     return
 
 #If ; Kết thúc điều kiện
