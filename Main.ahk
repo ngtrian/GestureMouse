@@ -9,12 +9,14 @@ SetWorkingDir, %A_ScriptDir%
 
 ; #Warn
 
-;@Ahk2Exe-ExeName bin\GestureMouse2.exe
-;@Ahk2Exe-SetName GestureMouse2
+;@Ahk2Exe-ExeName bin\GestureMouse.exe
+;@Ahk2Exe-SetName GestureMouse
+;@Ahk2Exe-SetInternalName GestureMouse
+;@Ahk2Exe-SetOrigFilename GestureMouse.exe
 ;@Ahk2Exe-SetDescription Ứng dụng hỗ trợ cử chỉ chuột
 ;@Ahk2Exe-SetCompanyName NGUYENTRIAN
 ;@Ahk2Exe-SetVersion 1.0.0
-;@Ahk2Exe-SetCopyright © 2025 NGUYENTRIAN. All rights reserved.
+;@Ahk2Exe-SetCopyright © 2026 NGUYENTRIAN. All rights reserved.
 ;@Ahk2Exe-Base %A_ScriptDir%\bin\CustomClass.bin
 
 ;@Ahk2Exe-SetMainIcon image\unnamed.ico

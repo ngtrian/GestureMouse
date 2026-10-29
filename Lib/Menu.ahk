@@ -54,16 +54,21 @@ RebuildTrayMenu() {
     Menu, PhimTat, Add, % L("Sub_Mute"), MuteFunc
 
     ; Sub-menu Ngôn ngữ / Language kèm icon lá cờ
-    flagVn := A_ScriptDir . "\image\flag_vn.ico"
-    flagEn := A_ScriptDir . "\image\flag_en.ico"
+    if (A_IsCompiled) {
+        flagVnFile := A_ScriptFullPath, flagVnIcon := -312
+        flagEnFile := A_ScriptFullPath, flagEnIcon := -313
+    } else {
+        flagVnFile := A_ScriptDir . "\image\flag_vn.ico", flagVnIcon := 1
+        flagEnFile := A_ScriptDir . "\image\flag_en.ico", flagEnIcon := 1
+    }
 
     Menu, LangMenu, Add, Tiếng Việt, SetLangVI
-    if FileExist(flagVn)
-        Menu, LangMenu, Icon, Tiếng Việt, %flagVn%
+    if (A_IsCompiled || FileExist(flagVnFile))
+        Menu, LangMenu, Icon, Tiếng Việt, %flagVnFile%, %flagVnIcon%
 
     Menu, LangMenu, Add, English, SetLangEN
-    if FileExist(flagEn)
-        Menu, LangMenu, Icon, English, %flagEn%
+    if (A_IsCompiled || FileExist(flagEnFile))
+        Menu, LangMenu, Icon, English, %flagEnFile%, %flagEnIcon%
 
     ; Checkmark cho ngôn ngữ đang dùng
     if (CurrentLang = "en") {
@@ -85,9 +90,10 @@ RebuildTrayMenu() {
     ; Menu chọn ngôn ngữ (gắn cờ của ngôn ngữ hiện tại)
     langMenuLabel := L("Tray_Language")
     Menu, Tray, Add, %langMenuLabel%, :LangMenu
-    currentFlag := (CurrentLang = "en") ? flagEn : flagVn
-    if FileExist(currentFlag)
-        Menu, Tray, Icon, %langMenuLabel%, %currentFlag%
+    currentFlagFile := (CurrentLang = "en") ? flagEnFile : flagVnFile
+    currentFlagIcon := (CurrentLang = "en") ? flagEnIcon : flagVnIcon
+    if (A_IsCompiled || FileExist(currentFlagFile))
+        Menu, Tray, Icon, %langMenuLabel%, %currentFlagFile%, %currentFlagIcon%
 
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_Reload"), ReloadApp
