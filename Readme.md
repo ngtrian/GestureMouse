@@ -1,4 +1,4 @@
-Phím tắt:
+﻿Phím tắt:
 - Mute (Ctrl+Shift+M)
 - Page Up (scroll+Up)
 - Page Down (scroll+down)
@@ -37,17 +37,29 @@ Khác:
 
 - [ ] - khi vẽ cử chỉ LU, RU,... thì khi ban đầu vẽ cử chỉ ngang, sau đó vẽ đứng nhưng thay vì vẽ đứng mà vẽ hơi xéo thì nó nhận cử chỉ không đúng, (cần loại bỏ kiểm trang ngang trong trường hợp này, dể dễ vẽ các cử chỉ LU, LD, RU, RD hơn)
 
-- [ ] Vấn đề nữa là khi đang vẽ cử chỉ bên ngoài cửa số taskmanager, và vẽ sâu vào phạm vi cửa sổ taskmanager thì cử chỉ đó bị đứng lại (tức không ẩn cử chỉ đó)
+- [x] Vấn đề nữa là khi đang vẽ cử chỉ bên ngoài cửa số taskmanager, và vẽ sâu vào phạm vi cửa sổ taskmanager thì cử chỉ đó bị đứng lại (tức không ẩn cử chỉ đó)
 
 - Cân nhắc cử chỉ đóng tab thành đóng cửa sổ (khi không phải trình duyệt, explorer)
-- thêm cuộn ngang
-- khóa chỉ cho phép tương tác với cửa sổ đang active 
-- Ngăn cử chỉ khi đang nhấn nút phải
+- [x] khóa chỉ cho phép tương tác với cửa sổ đang active 
+- [] Ngăn cử chỉ khi đang nhấn nút phải
 
+Cử chỉ chuột gồm 2 loại:
+    - cử chỉ vẽ cho trình duyệt: edge, chrome, coccoc, firefox, brave, vivaldi, opera, 
+    - cử chỉ cuộn cho nhiều app (áp dụng với app có scrollbar)
+    ví dụ: code, excel, word, photo, zalo, note,....
+
+
+~~- nếu desktop hoặc không cửa sổ nào active => tắt gesture, vẫn giữ scroll
+- nếu đang kéo file => tắt gesture, scroll~~
+
+- chặn click chuột trái khi dùng RClick+Scroll
+- Tạo video minh họa sử dụng GestureMouse
+- hỗ trợ taskmanager
+- nút restart app trên menu system tray làm gì
 
 
 ------------------------------
-Tạm dừng
+Tạm dừng nghiên cứu
 
 - scroll page chưa cuộn được trang nằm sau, đôi khi trở lại cuộn wheel thường vẫn bị page up/down, như kiểu chuột phải chưa được thả ra vậy
 
@@ -66,7 +78,7 @@ phải lần 2 nó mới bỏ qua và phục hồi cửa sổ tiếp theo.
 
 
 
-STAGS MANAGER:
+STAGS MANAGER: Dự án mới
 - Hiển thị các cửa số đang hoạt động (app có cửa sổ đang chạy) giống như stags manager macos nhưng nằm bên phải desktop
 - Ảnh preview ứng dụng lấy từ ảnh preview khi rê chuột vào các ứng dụng đang mở trên taskbar của windows
 - khi nhấn vào 1 stag sẽ thu nhỏ các cửa sổ (minimize) khác lại, đặt cửa sổ chính ở full màn hình (trừ ra khu vực chứa stags manager)
@@ -74,7 +86,7 @@ STAGS MANAGER:
 
 
 
-*TẠO CHỨNG CHỈ
+*TẠO CHỨNG CHỈ FILE BIÊN DỊCH EXE
 Yêu cầu:
 - Win64 OpenSSL
 - signtool.exe

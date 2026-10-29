@@ -25,6 +25,7 @@ ToggleGestureScroll() {
 
     ; Nếu tắt, dừng ngay các timer đang cuộn hay hint
     if (!GestureScrollEnabled) {
+        isGestureTracking := 0
         StopAutoScroll()
         SetTimer, CheckGesture, Off
         HideGestureHint()

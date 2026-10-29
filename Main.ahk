@@ -55,6 +55,7 @@ global Brightness := 0            ; Mặc định trong suốt hoàn toàn (đ�
 global GuiOn := false             ; Trạng thái GUI (hiện/ẩn)
 global MainHwnd := 0              ; HWND của GUI GestureHint
 global isReleasingRButton := 0
+global isGestureTracking := 0     ; Trạng thái đang theo dõi cử chỉ chuột phải
 global ScrollStyle := 1           ; Phương pháp cuộn: 1 - kéo nội dung lên xuống, 2 - kéo thanh cuộn lên xuống
 global ExplorerHasSelection := false ; Trạng thái cache kiểm tra File Explorer có file đang chọn
 
@@ -161,6 +162,29 @@ IsMouseInActiveWindow() {
     return false    
 }
 
+; Hàm kiểm tra cửa sổ có phải là Task Manager hoặc cửa sổ elevated không (tránh đơ hook do UIPI khi chưa chạy Admin)
+IsElevatedOrTaskManager(hwnd) {
+    if (!hwnd)
+        return false
+    WinGetClass, cls, ahk_id %hwnd%
+    if (cls = "TaskManagerWindow")
+        return true
+    WinGet, pName, ProcessName, ahk_id %hwnd%
+    if (pName = "Taskmgr.exe")
+        return true
+    WinGet, pid, PID, ahk_id %hwnd%
+    if (!pid)
+        return false
+    hProc := DllCall("OpenProcess", "UInt", 0x0400, "Int", 0, "UInt", pid, "Ptr")
+    if (!hProc) {
+        if (DllCall("GetLastError", "UInt") == 5) ; ERROR_ACCESS_DENIED = 5
+            return true
+        return false
+    }
+    DllCall("CloseHandle", "Ptr", hProc)
+    return false
+}
+
 ; Timer định kỳ cập nhật trạng thái chọn file trong Explorer ngoài hook thread (chạy độc lập, không làm trễ hook)
 UpdateExplorerSelectionState:
     ; Chỉ kiểm tra khi cửa sổ active là Explorer để tiết kiệm CPU tối đa
@@ -205,7 +229,7 @@ CheckExplorerHasSelectedItems() {
     return false
 }
 
-#If (GestureScrollEnabled && IsMouseInActiveWindow())  ; Chỉ kích hoạt khi đã BẬT cử chỉ/cuộn và chuột nằm trong cửa sổ active
+#If (GestureScrollEnabled && (IsMouseInActiveWindow() || isGestureTracking))  ; Kích hoạt khi trong active window hoặc đang theo dõi cử chỉ
 ; Khi nhấn chuột phải: Khởi tạo biến và bắt đầu kiểm tra cử chỉ + bánh xe
 RButton:: 
     if GetKeyState("LButton", "P") ; Kiểm tra xem nút trái có đang được nhấn giữ không
@@ -213,6 +237,7 @@ RButton::
         return
     }
         
+    isGestureTracking := 1
     MousePath := "" 
     GestureActive := 0 
     Direction := ""
@@ -231,6 +256,7 @@ RButton::
 
 ; Khi thả chuột phải: Xử lý cử chỉ, AutoScroll, hoặc chuột phải mặc định
 RButton Up::
+    isGestureTracking := 0
     isReleasingRButton := 1     ; Đặt cờ ngay khi bắt đầu xử lý thả chuột
     SetTimer, CheckGesture, Off   ; Tắt kiểm tra cử chỉ
 
@@ -283,7 +309,7 @@ return
     }
 return
 
-#If (!GestureScrollEnabled || !IsMouseInActiveWindow()) 
+#If (!isGestureTracking && (!GestureScrollEnabled || !IsMouseInActiveWindow())) 
 ~RButton:: ; Khi TẮT hoặc ngoài active window: chuột phải hoạt động mặc định
     if (AutoScrollActive)
         StopAutoScroll()
@@ -293,18 +319,34 @@ return
 
 CheckGesture:
     ; ToolTip, CheckGesture Running: %A_TickCount% ; Thêm dòng này để kiểm tra xem hàm có chạy không
-    global isReleasingRButton, ScrollStyle
+    global isReleasingRButton, ScrollStyle, isGestureTracking
 
     ; --- THÊM KIỂM TRA CỜ VÀ TRẠNG THÁI NÚT ---
     if (!GetKeyState("RButton", "P") || isReleasingRButton) ; Nếu nút đã thả HOẶC đang trong quá trình xử lý thả
     {
+        isGestureTracking := 0
         SetTimer, CheckGesture, Off
         HideGestureHint()
         return                     ; Thoát ngay lập tức
     }
     ; --- KẾT THÚC KIỂM TRA ---
 
-    MouseGetPos, X, Y            ; Lấy tọa độ chuột hiện tại
+    MouseGetPos, X, Y, HoverWindow            ; Lấy tọa độ chuột hiện tại và cửa sổ hover
+
+    ; Nếu không chạy quyền Admin và con trỏ chuột lấn sang Task Manager hoặc cửa sổ elevated
+    ; (Nơi Windows UIPI sẽ chặn toàn bộ low-level hook khiến chuột bị đơ/kẹt cử chỉ):
+    if (!A_IsAdmin && IsElevatedOrTaskManager(HoverWindow)) {
+        if (GestureActive && (Direction = "Horizontal" || Direction = "Diagonal")) {
+            PerformGesture(MousePath)
+        }
+        MousePath := ""
+        GestureActive := 0
+        Direction := ""
+        isGestureTracking := 0
+        HideGestureHint()
+        SetTimer, CheckGesture, Off
+        return
+    }
     DX := X - StartX             ; Khoảng cách di chuyển ngang
     DY := Y - StartY             ; Khoảng cách di chuyển dọc
     MinMove := 10                ; Ngưỡng di chuyển tối thiểu (pixel)
@@ -333,7 +375,7 @@ CheckGesture:
 
         }
         ; --- XỬ LÝ CỬ CHỈ NGANG ---
-        if (IsMouseInActiveWindow() && Direction = "Horizontal" && ScrollTriggered = 0) {  ; Xử lý cử chỉ ngang và bánh xe chưa cuộn
+        if (Direction = "Horizontal" && ScrollTriggered = 0) {  ; Xử lý cử chỉ ngang và bánh xe chưa cuộn
             GestureActive := 1
             ; Xác định hướng: R (phải), L (trái), U (lên), D (xuống)
             Dir := (Abs(DX) > Abs(DY)) ? (DX > 0 ? "R" : "L") : (DY > 0 ? "D" : "U")
