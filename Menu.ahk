@@ -2,6 +2,7 @@
 #NoEnv
 
 Menu:
+    global hSettingsGui := 0, hAboutGui := 0, hLockOpt := 0, hAutoLock := 0
     ; Khởi tạo ngôn ngữ và trạng thái cử chỉ
     InitLanguage()
     InitGestureScroll()
@@ -120,7 +121,9 @@ AHK_NOTIFYICON(wParam, lParam) {
     if (lParam = 0x202) { ; WM_LBUTTONUP: Nhấp chuột trái -> Bật/Tắt ngay lập tức
         ToggleGestureScroll()
         return 0
-    } else if (lParam = 0x203) { ; WM_LBUTTONDBLCLK: Nhấp đúp -> Mở Cài đặt
+    } else if (lParam = 0x203) { ; WM_LBUTTONDBLCLK: Nhấp đúp -> Hoàn lại trạng thái ban đầu và mở Cài đặt
+        ToggleGestureScroll() ; Đảo trạng thái lần 2 để sau 2 lần nhấp vẫn giữ nguyên trạng thái ban đầu
+        ToolTip ; Tắt thông báo tooltip bật/tắt
         Gosub, Settings
         return 0
     }
@@ -132,7 +135,8 @@ return
 
 ; Tạo GUI cài đặt - Settings
 Settings:
-Gui, Settings:New,, % L("Set_Title")
+Gui, Settings:New, +HwndhSettingsGui,, % L("Set_Title")
+SetGuiYellowIcon(hSettingsGui)
 Gui, Font, s10, Arial
 
 ; Tải trạng thái cài đặt từ registry, Autostart là giá trị, AutoStart là tên giá trị trong registry
@@ -194,19 +198,19 @@ Gui, Font, Bold
 Gui, Add, GroupBox, xs w500 h170, % L("Set_GroupHotkeys")
 Gui, Font, Normal
 
-Gui, Add, Text, x38 y305, Mute
+Gui, Add, Text, x38 y305, % L("Set_Mute")
 Gui, Add, Picture, x18 yp+1 w14 h14 Icon3, %A_WinDir%\System32\SndVol.exe
 Gui, Add, Button, x200 y300 w130 Center gShowTooltip vText10, Ctrl + Shift + M
 
-Gui, Add, Text, x38 y330, Auto Screen Lock
+Gui, Add, Text, x38 y330, % L("Set_AutoLock")
 Gui, Add, Picture, x15 yp+1 w14 h14 Icon48, %A_WinDir%\System32\shell32.dll
 Gui, Add, Button, x200 y325 w130 Center gShowTooltip vText11, Ctrl + Shift + L
 
-Gui, Add, Text, x38 y355, Volume up/down
+Gui, Add, Text, x38 y355, % L("Set_Volume")
 Gui, Add, Picture, x18 yp+1 w14 h14 Icon2, %A_WinDir%\System32\SndVol.exe
 Gui, Add, Button, x200 y350 w155 Center gShowTooltip vText12, Win + Scroll Up/Down
 
-Gui, Add, Text, x38 y380, Brightness
+Gui, Add, Text, x38 y380, % L("Set_Brightness")
 Gui, Add, Picture, x18 yp+1 w14 h14 Icon26, %A_WinDir%\System32\shell32.dll
 Gui, Add, Button, x200 y375 w130 Center gShowTooltip vText13, F9/F10
 
@@ -237,6 +241,7 @@ OnMessage(0x200, "WM_MOUSEMOVE")  ; Theo dõi di chuyển chuột cho tooltip
 
 ; Hiển thị giao diện
 Gui, Show, AutoSize Center, % "Gesture Mouse - " . L("Set_Title")
+SetGuiYellowIcon(hSettingsGui)
 return
 
 ; Biến toàn cục để theo dõi trạng thái chuột
@@ -304,12 +309,14 @@ CreateOption() {
     if (val != "")
         disableAutoLockScreen := val
 
-    Gui, LockOptions:New, +LastFound +OwnerSettings, % L("Opt_Title")
+    Gui, LockOptions:New, +LastFound +OwnerSettings +HwndhLockOpt, % L("Opt_Title")
+    SetGuiYellowIcon(hLockOpt)
     Gui, Font, s10, Arial
     Gui, Add, Checkbox, Checked Disabled, % L("Opt_LockKB")
     Gui, Add, Checkbox, vmouseLockEnabled gSaveOption Checked%mouseLockEnabled%, % L("Opt_LockMouse")
     Gui, Add, Checkbox, vdisableAutoLockScreen gSaveOption Checked%disableAutoLockScreen% Disabled, % L("Opt_PreventAutoLock")
     Gui, LockOptions:Show, AutoSize Center, % L("Opt_Title")
+    SetGuiYellowIcon(hLockOpt)
     return
 }
 
@@ -337,7 +344,8 @@ RunAsAdmin:
 return
 
 ShowAbout:
-    Gui, About:New, -MaximizeBox -MinimizeBox, % L("About_Title")
+    Gui, About:New, -MaximizeBox -MinimizeBox +HwndhAboutGui, % L("About_Title")
+    SetGuiYellowIcon(hAboutGui)
     Gui, Font, s10, Segoe UI
 
     Gui, Add, GroupBox, x10 y5 w420 h95,
@@ -417,6 +425,7 @@ ShowAbout:
 
     ; Hiển thị GUI
     Gui, Show, AutoSize Center, % L("About_Title")
+    SetGuiYellowIcon(hAboutGui)
     GuiControl, About:Focus, Static1
 return
 
@@ -441,3 +450,52 @@ return
 ExitMenu:
     ExitApp
 return
+
+
+; Đặt icon màu vàng mặc định cho mọi cửa sổ GUI (Taskbar, Titlebar, Alt+Tab luôn là màu vàng)
+; Đặt icon màu vàng mặc định cho mọi cửa sổ GUI (Taskbar, Titlebar, Alt+Tab luôn là màu vàng)
+SetGuiYellowIcon(guiHwnd) {
+    if (!guiHwnd)
+        return
+    static hBig := 0, hSmall := 0
+    if (!hBig) {
+        if (A_IsCompiled) {
+            hMod := DllCall("GetModuleHandle", "Ptr", 0, "Ptr")
+            hBig := DllCall("LoadImage", "Ptr", hMod, "UInt", 1, "UInt", 1, "Int", 32, "Int", 32, "UInt", 0, "Ptr")
+            hSmall := DllCall("LoadImage", "Ptr", hMod, "UInt", 1, "UInt", 1, "Int", 16, "Int", 16, "UInt", 0, "Ptr")
+        }
+        if (!hBig) {
+            iconPath := A_ScriptDir . "\unnamed.ico"
+            if FileExist(iconPath) {
+                hBig := DllCall("LoadImage", "Ptr", 0, "Str", iconPath, "UInt", 1, "Int", 32, "Int", 32, "UInt", 0x10, "Ptr")
+                hSmall := DllCall("LoadImage", "Ptr", 0, "Str", iconPath, "UInt", 1, "Int", 16, "Int", 16, "UInt", 0x10, "Ptr")
+            }
+        }
+    }
+    fnSetClass := (A_PtrSize = 8) ? "SetClassLongPtr" : "SetClassLong"
+    if (hSmall) {
+        SendMessage, 0x80, 0, hSmall,, ahk_id %guiHwnd% ; ICON_SMALL
+        DllCall(fnSetClass, "Ptr", guiHwnd, "Int", -34, "Ptr", hSmall, "Ptr") ; GCLP_HICONSM
+    }
+    if (hBig) {
+        SendMessage, 0x80, 1, hBig,, ahk_id %guiHwnd%   ; ICON_BIG
+        DllCall(fnSetClass, "Ptr", guiHwnd, "Int", -14, "Ptr", hBig, "Ptr")  ; GCLP_HICON
+    }
+}
+
+; Giữ icon chính của ứng dụng và các cửa sổ GUI LUÔN là màu vàng
+SetScriptYellowIcon() {
+    global hSettingsGui, hAboutGui, hLockOpt, hAutoLock
+    dhw := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+    SetGuiYellowIcon(A_ScriptHwnd)
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
+        SetGuiYellowIcon(hSettingsGui)
+    if (hAboutGui && WinExist("ahk_id " . hAboutGui))
+        SetGuiYellowIcon(hAboutGui)
+    if (hLockOpt && WinExist("ahk_id " . hLockOpt))
+        SetGuiYellowIcon(hLockOpt)
+    if (hAutoLock && WinExist("ahk_id " . hAutoLock))
+        SetGuiYellowIcon(hAutoLock)
+    DetectHiddenWindows, %dhw%
+}

@@ -2,6 +2,8 @@
 #NoEnv
 #Persistent
 
+#Include *i Language.ahk
+
 SetBatchLines -1 ; Tăng tốc độ thực thi script
 
 ; Phím tắt Ctrl+Alt+L để khóa/mở khóa bàn phím
@@ -17,9 +19,9 @@ return
 ShowNotification() {
     global isLocked, mouseLockEnabled
 
-    msg := isLocked ? "Đã khóa bàn phím" : "Đã mở khóa bàn phím"
+    msg := isLocked ? L("Lock_Locked") : L("Lock_Unlocked")
     if (mouseLockEnabled)
-        msg .= " và nhấp chuột"
+        msg .= L("Lock_AndMouse")
     
     ; Lấy chiều cao của taskbar
     if (WinExist("ahk_class Shell_TrayWnd")) ; Nếu taskbar đang chạy thì lấy chiều cao của nó 
@@ -48,7 +50,9 @@ ShowNotification() {
     WinSet, Transparent , 220
     WinSet, Region, 0-0 w%GuiWidth% h%GuiHeight% R15-15  ; Bo tròn góc
 
-    UpdateTrayTip()
+    fnTip := "UpdateTrayTip"
+    if (IsFunc(fnTip))
+        %fnTip%()
 
     if (!isLocked) {
         SetTimer, HideNotification, -2000
@@ -82,7 +86,7 @@ ToggleLock() {
         ; Cài đặt low-level keyboard hook
         hKeyboardHook := DllCall("SetWindowsHookEx", "Int", 13, "Ptr", RegisterCallback("KeyboardProc", "Fast"), "Ptr", DllCall("GetModuleHandle", "Ptr", 0, "Ptr"), "UInt", 0, "Ptr")
         if (!hKeyboardHook) {
-            MsgBox, Không thể cài đặt keyboard hook!
+            MsgBox, % L("Lock_HookError")
             isLocked := 0
             return
         }
@@ -133,7 +137,9 @@ UnlockKeyboard() {
     
     ToolTip, ; Xóa tooltip
     ShowNotification()
-    UpdateTrayTip()
+    fnTip := "UpdateTrayTip"
+    if (IsFunc(fnTip))
+        %fnTip%()
 }
 
 ; Hàm xử lý low-level keyboard hook, mục tiêu là chặn các phím khác khi bàn phím bị khóa

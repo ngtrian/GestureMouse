@@ -1,18 +1,34 @@
 ﻿#SingleInstance Force
 #Persistent
 
+#Include *i Language.ahk
+
 ; Hàm chính để khởi tạo GUI khóa màn hình
 ShowLockScreenGUI:
 ^+L::
+    if (!LangTable || !LangTable.HasKey("en")) {
+        if (IsFunc("InitLanguage"))
+            InitLanguage()
+    }
     Gui, AutoScreenLock:Destroy ; Hủy GUI cũ nếu tồn tại
-    Gui, AutoScreenLock:New, +ToolWindow, Tự động khóa màn hình 
+    Gui, AutoScreenLock:New, -MaximizeBox -MinimizeBox +HwndhAutoLock, % L("Hot_LockTitle")
+    if (IsFunc("SetGuiYellowIcon"))
+
+        fnIcon := "SetGuiYellowIcon"
+    if (IsFunc(fnIcon))
+        %fnIcon%(hAutoLock)
     Gui, Font, s10, Segoe UI
-    Gui, Add, Text, xm ym, Nhập thời gian (phút) để tự động khóa màn hình:
+    Gui, Add, Text, xm ym, % L("Hot_Prompt")
     Gui, Add, Edit, Number ; Ô nhập số
-    Gui, Add, UpDown, xm yp+30 w100 vLockTimeInput Range0-1000, 5 ; Thay đổi giá trị từ 0 đến 1000 phút, mặc định là 5 phút
-    Gui, Add, Button, xm yp+30 w80 gStartLock Default, Bắt đầu
-    Gui, Add, Button, x+10 gCancelCountdown, Hủy đếm ngược
-    Gui, Show, AutoSize
+    Gui, Add, UpDown, xm yp+30 w100 vLockTimeInput Range0-1000, 5 ; Mặc định là 5 phút
+    Gui, Add, Button, xm yp+30 w80 gStartLock Default, % L("Hot_Start")
+    Gui, Add, Button, x+10 gCancelCountdown, % L("Hot_Cancel")
+    Gui, Show, AutoSize, % L("Hot_LockTitle")
+    if (IsFunc("SetGuiYellowIcon"))
+
+        fnIcon := "SetGuiYellowIcon"
+    if (IsFunc(fnIcon))
+        %fnIcon%(hAutoLock)
 return
 
 ; Xử lý khi nhấn nút "Bắt đầu"
@@ -21,8 +37,14 @@ StartLock:
     Gui, AutoScreenLock:Submit ; Lấy giá trị từ GUI
     LockTimeInput := LockTimeInput * 60 ; Chuyển phút sang giây
     if (LockTimeInput <= 0) {
-        MsgBox, 48, Lỗi, Vui lòng nhập thời gian lớn hơn 0 phút.
-        Gui, AutoScreenLock:Show ; Hiển thị lại GUI nếu lỗi
+        MsgBox, 48, % L("Hot_ErrTitle"), % L("Hot_ErrMsg")
+        Gui, AutoScreenLock:Show, AutoSize, % L("Hot_LockTitle") ; Hiển thị lại GUI nếu lỗi
+
+        if (IsFunc("SetGuiYellowIcon"))
+
+        fnIcon := "SetGuiYellowIcon"
+    if (IsFunc(fnIcon))
+        %fnIcon%(hAutoLock)
         return
     }
     Gui, AutoScreenLock:Destroy
@@ -33,7 +55,8 @@ StartLock:
     Minutes := Floor(LockTimeInput / 60)
     Seconds := Mod(LockTimeInput, 60)
     FormattedTime := Format("{:02d}:{:02d}", Minutes, Seconds)
-    Gui, Add, Text, xm ym vCountdownText w250, Màn hình sẽ khóa sau %FormattedTime%
+    countMsg := StrReplace(L("Hot_Countdown"), "{time}", FormattedTime)
+    Gui, Add, Text, xm ym vCountdownText w250, %countMsg%
     SysGet, ScreenWidth, 0  ; Lấy chiều rộng màn hình
     SysGet, ScreenHeight, 1 ; Lấy chiều cao màn hình
     posX := (ScreenWidth - 300)
@@ -65,7 +88,8 @@ UpdateCountdown:
     Minutes := Floor(CountdownTime / 60)
     Seconds := Mod(CountdownTime, 60)
     FormattedTime := Format("{:02d}:{:02d}", Minutes, Seconds)
-    GuiControl,, CountdownText, Màn hình sẽ khóa sau %FormattedTime%
+    countMsg := StrReplace(L("Hot_Countdown"), "{time}", FormattedTime)
+    GuiControl,, CountdownText, %countMsg%
     CountdownTime -= 1
 return
 

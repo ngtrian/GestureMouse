@@ -28,7 +28,7 @@ Khác:
 
 - [x] Bật tắt tính năng cuộn, cử chỉ bằng phím tắt (Ctrl+Alt) hoặc khi nhấn vào icon trên system tray (icon chuyển sang màu xám trắng khi tắt)
 
-- đa ngôn ngữ
+- [x] đa ngôn ngữ
 
 - khi giữ chuột và kéo lên xuống sẽ kích hoạt trạng thái đang cuộn và nếu không thả tay ra thì vẫn giữ trạng thái chờ cuộn, nên có thể bỏ qua điều kiện khoảng cách để kích hoạt trạng thái cuộn dọc
 

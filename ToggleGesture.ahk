@@ -55,14 +55,16 @@ UpdateTrayIcon() {
         resId := GestureScrollEnabled ? 1 : 311
         try {
             Menu, Tray, Icon, %A_ScriptFullPath%, -%resId%
-            return
         }
+    } else {
+        targetIcon := A_ScriptDir . "\" . iconName
+        if FileExist(targetIcon)
+            Menu, Tray, Icon, %targetIcon%
+        else
+            Menu, Tray, Icon, %iconName%
     }
-    targetIcon := A_ScriptDir . "\" . iconName
-    if FileExist(targetIcon)
-        Menu, Tray, Icon, %targetIcon%
-    else
-        Menu, Tray, Icon, %iconName%
+    ; Khôi phục icon của A_ScriptHwnd và Taskbar LUÔN là màu vàng
+    SetScriptYellowIcon()
 }
 
 ; Bật/tắt tính năng cuộn và cử chỉ chuột bằng phím tắt Ctrl + Alt

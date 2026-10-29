@@ -481,45 +481,50 @@ UnfocusVideo() {
     }
 }
 ; Hàm hiển thị hint cho cử chỉ ngang
+
+; Hàm tra cứu text của cử chỉ theo ngôn ngữ hiện tại
+GetGestureHintText(Gesture) {
+    if (Gesture = "RU")
+        return L("Hint_CloseTab")
+    if (Gesture = "RD")
+        return L("Hint_Refresh")
+    if (Gesture = "LU")
+        return L("Hint_PrevTab")
+    if (Gesture = "LD")
+        return L("Hint_NextTab")
+    if (Gesture = "L")
+        return L("Hint_Back")
+    if (Gesture = "R")
+        return L("Hint_Forward")
+    if (Gesture = "2h")
+        return L("Hint_Restore")
+    if (Gesture = "8h")
+        return L("Hint_Minimize")
+    return ""
+}
+
 ShowGestureHint(Gesture) {
     Global IconHandles, IsGestureHintVisible, LastGestureHintTime, MainHwnd, GestureIcon, GestureText
     Gesture := CleanGesture(Gesture)
     
     ; --- KHỐI KHỞI TẠO HÌNH ẢNH VÀ TEXT ---
     static hintImages := ""
-    static hintTexts := ""
     if (hintImages = "") {
         hintImages := Object()
-        hintTexts := Object()
         hintImages["L"] := "L" ; Key ánh xạ tới HICON trong IconHandles
         hintImages["LD"] := "LD" 
         hintImages["LU"] := "LU"  
         hintImages["R"] := "R"  
         hintImages["RD"] := "RD" 
         hintImages["RU"] := "RU"
-        hintTexts["RU"] := "Đóng tab"
-        hintTexts["RD"] := "Làm mới trang"
-        hintTexts["LU"] := "Chuyển tab trước đó"
-        hintTexts["LD"] := "Chuyển tab tiếp theo"
-        hintTexts["L"] := "Quay lại"
-        hintTexts["R"] := "Tiến tới"
-
-        ; Thêm ánh xạ cho các cử chỉ chéo
-        hintImages["2h"] := "2h" ; Key ánh xạ tới HICON trong IconHandles
-        ; hintImages["4h"] := "4h"
+        hintImages["2h"] := "2h"
         hintImages["8h"] := "8h"
-        ; hintImages["10h"] := "10h"
-        hintTexts["2h"] := "Phục hồi`ncửa sổ"
-        ; hintTexts["4h"] := "Thu nhỏ`ncửa sổ"
-        hintTexts["8h"] := "Thu nhỏ`ncửa sổ"
-        ; hintTexts["10h"] := "Cử chỉ chéo 10h"
     }
-    ; --- KẾT THÚC KHỐI KHỞI TẠO ---
 
-    ; Lấy HICON và Text tương ứng
+    ; Lấy HICON và Text tương ứng theo ngôn ngữ hiện tại
     ImageKey := hintImages[Gesture]
     hIcon := IconHandles[ImageKey]
-    CurrentText := hintTexts[Gesture]
+    CurrentText := GetGestureHintText(Gesture)
 
     ; --- KIỂM TRA VÀ TẠO GUI LẦN ĐẦU HOẶC CẬP NHẬT ---
     if (IsGestureHintVisible and MainHwnd) { ; Nếu GUI đã hiển thị -> Chỉ cập nhật nội dung
@@ -537,7 +542,7 @@ ShowGestureHint(Gesture) {
             GuiControl, GestureHint:, GestureText, %CurrentText%
         } else { ; Cử chỉ không hợp lệ
             GuiControl, GestureHint:Hide, GestureIcon ; Ẩn Icon
-            GuiControl, GestureHint:, GestureText, Cử chỉ không đúng ; Cập nhật Text
+            GuiControl, GestureHint:, GestureText, % L("Hint_Invalid") ; Cập nhật Text
             GuiControl, GestureHint:Move, GestureText, x10 y30 w100 h140 Center ; Căn giữa Text
 
         }
@@ -565,7 +570,7 @@ ShowGestureHint(Gesture) {
             Gui, GestureHint:Add, Text, cFFFFFF x10 y64 w100 h140 Center vGestureText, %CurrentText% 
         } else { ; Cử chỉ không hợp lệ ban đầu
             Gui, GestureHint:Add, Picture, vGestureIcon Hidden 
-            Gui, GestureHint:Add, Text, cFFFFFF x10 y30 w100 Center vGestureText, Cử chỉ không đúng
+            Gui, GestureHint:Add, Text, cFFFFFF x10 y30 w100 Center vGestureText, % L("Hint_Invalid")
         }
 
         WinSet, Region, 0-0 w150 h140 R45-45  ; Bo tròn góc

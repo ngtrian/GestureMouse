@@ -30,10 +30,10 @@ InitLanguage() {
     v["Tray_About"]             := "Giới thiệu..."
     v["Tray_Exit"]              := "Thoát"
     v["Sub_Toggle"]             := "Bật/Tắt cử chỉ & cuộn (Ctrl + Alt)"
-    v["Sub_LockKB"]             := "Lock Keyboard (Ctrl + Alt + L)"
-    v["Sub_AutoLock"]           := "Auto Screen Lock (Ctrl + Shift + L)"
-    v["Sub_PlainText"]          := "Paste as PlainText (Ctrl + Shift + V)"
-    v["Sub_Mute"]               := "Mute (Ctrl + Shift + M)"
+    v["Sub_LockKB"]             := "Khóa bàn phím (Ctrl + Alt + L)"
+    v["Sub_AutoLock"]           := "Tự động khóa màn hình (Ctrl + Shift + L)"
+    v["Sub_PlainText"]          := "Dán văn bản thuần (Ctrl + Shift + V)"
+    v["Sub_Mute"]               := "Tắt/Bật âm thanh (Ctrl + Shift + M)"
     v["Tip_Title"]              := "Gesture Mouse 1.0`n"
     v["Tip_Gesture"]            := "Cử chỉ chuột & cuộn: "
     v["Tip_LockKB"]             := "Khóa bàn phím: "
@@ -64,6 +64,10 @@ InitLanguage() {
     v["Set_CloseTab"]           := "Đóng tab"
     v["Set_Refresh"]            := "Làm mới trang"
     v["Set_GroupHotkeys"]       := "Phím tắt - Hotkeys"
+    v["Set_Mute"]               := "Tắt/Bật âm thanh"
+    v["Set_AutoLock"]           := "Tự động khóa màn hình"
+    v["Set_Volume"]             := "Tăng/giảm âm lượng"
+    v["Set_Brightness"]         := "Độ sáng"
     v["Set_LockKBAndMouse"]     := "Khóa bàn phím và chuột"
     v["Set_OptionsBtn"]         := "Tùy chọn.."
     v["Set_GroupGeneral"]       := "Cài đặt chung"
@@ -103,6 +107,32 @@ InitLanguage() {
     v["About_GuideTitle"]       := "Hướng dẫn sử dụng:"
     v["About_Author"]           := "Tác giả: Nguyễn Tri Ân | "
     v["About_Donate"]           := "Donate"
+    ; Gesture Hints khi vẽ cử chỉ chuột
+    v["Hint_CloseTab"]          := "Đóng tab"
+    v["Hint_Refresh"]           := "Làm mới trang"
+    v["Hint_PrevTab"]           := "Chuyển tab trước đó"
+    v["Hint_NextTab"]           := "Chuyển tab tiếp theo"
+    v["Hint_Back"]              := "Quay lại"
+    v["Hint_Forward"]           := "Tiến tới"
+    v["Hint_Restore"]           := "Phục hồi`ncửa sổ"
+    v["Hint_Minimize"]          := "Thu nhỏ`ncửa sổ"
+    v["Hint_Invalid"]           := "Cử chỉ không đúng"
+    
+    ; Khóa bàn phím - LockKeyboard
+    v["Lock_Locked"]            := "Đã khóa bàn phím"
+    v["Lock_Unlocked"]          := "Đã mở khóa bàn phím"
+    v["Lock_AndMouse"]          := " và nhấp chuột"
+    v["Lock_HookError"]         := "Không thể cài đặt keyboard hook!"
+    
+    ; Tự động khóa màn hình - Hotkey
+    v["Hot_LockTitle"]          := "Tự động khóa màn hình"
+    v["Hot_Prompt"]             := "Nhập thời gian (phút) để tự động khóa màn hình:"
+    v["Hot_Start"]              := "Bắt đầu"
+    v["Hot_Cancel"]             := "Hủy đếm ngược"
+    v["Hot_ErrTitle"]           := "Lỗi"
+    v["Hot_ErrMsg"]             := "Vui lòng nhập thời gian lớn hơn 0 phút."
+    v["Hot_Countdown"]          := "Màn hình sẽ khóa sau {time}"
+
 
     ; =============================================
     ; ĐỊNH NGHĨA CHUỖI TIẾNG ANH
@@ -119,8 +149,8 @@ InitLanguage() {
     e["Sub_Toggle"]             := "Toggle Gesture & Scroll (Ctrl + Alt)"
     e["Sub_LockKB"]             := "Lock Keyboard (Ctrl + Alt + L)"
     e["Sub_AutoLock"]           := "Auto Screen Lock (Ctrl + Shift + L)"
-    e["Sub_PlainText"]          := "Paste as PlainText (Ctrl + Shift + V)"
-    e["Sub_Mute"]               := "Mute (Ctrl + Shift + M)"
+    e["Sub_PlainText"]          := "Paste as Plain Text (Ctrl + Shift + V)"
+    e["Sub_Mute"]               := "Mute / Unmute (Ctrl + Shift + M)"
     e["Tip_Title"]              := "Gesture Mouse 1.0`n"
     e["Tip_Gesture"]            := "Gesture & Scroll: "
     e["Tip_LockKB"]             := "Lock Keyboard: "
@@ -151,6 +181,10 @@ InitLanguage() {
     e["Set_CloseTab"]           := "Close Tab"
     e["Set_Refresh"]            := "Reload Page"
     e["Set_GroupHotkeys"]       := "Hotkeys"
+    e["Set_Mute"]               := "Mute / Unmute"
+    e["Set_AutoLock"]           := "Auto Screen Lock"
+    e["Set_Volume"]             := "Volume up/down"
+    e["Set_Brightness"]         := "Brightness"
     e["Set_LockKBAndMouse"]     := "Lock keyboard and mouse"
     e["Set_OptionsBtn"]         := "Options.."
     e["Set_GroupGeneral"]       := "General Settings"
@@ -190,6 +224,32 @@ InitLanguage() {
     e["About_GuideTitle"]       := "User Guide:"
     e["About_Author"]           := "Author: Nguyen Tri An | "
     e["About_Donate"]           := "Donate"
+    ; Gesture Hints
+    e["Hint_CloseTab"]          := "Close Tab"
+    e["Hint_Refresh"]           := "Reload Page"
+    e["Hint_PrevTab"]           := "Previous Tab"
+    e["Hint_NextTab"]           := "Next Tab"
+    e["Hint_Back"]              := "Back"
+    e["Hint_Forward"]           := "Forward"
+    e["Hint_Restore"]           := "Restore`nWindow"
+    e["Hint_Minimize"]          := "Minimize`nWindow"
+    e["Hint_Invalid"]           := "Invalid Gesture"
+    
+    ; LockKeyboard
+    e["Lock_Locked"]            := "Keyboard is locked"
+    e["Lock_Unlocked"]          := "Keyboard is unlocked"
+    e["Lock_AndMouse"]          := " and mouse clicks"
+    e["Lock_HookError"]         := "Cannot install keyboard hook!"
+    
+    ; Auto Screen Lock - Hotkey
+    e["Hot_LockTitle"]          := "Auto Screen Lock"
+    e["Hot_Prompt"]             := "Enter time (minutes) to auto lock screen:"
+    e["Hot_Start"]              := "Start"
+    e["Hot_Cancel"]             := "Cancel"
+    e["Hot_ErrTitle"]           := "Error"
+    e["Hot_ErrMsg"]             := "Please enter a time greater than 0 minutes."
+    e["Hot_Countdown"]          := "Screen will lock in {time}"
+
 }
 
 ; Hàm tra cứu chuỗi theo key
@@ -209,6 +269,10 @@ SetLanguage(newLang) {
         return
     CurrentLang := newLang
     RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, Language, %CurrentLang%
-    RebuildTrayMenu()
-    UpdateTrayTip()
+    fnRebuild := "RebuildTrayMenu"
+    if (IsFunc(fnRebuild))
+        %fnRebuild%()
+    fnTip := "UpdateTrayTip"
+    if (IsFunc(fnTip))
+        %fnTip%()
 }
