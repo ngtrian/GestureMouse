@@ -208,9 +208,9 @@ RButton::
     AutoScrollActive := 0
     totalDeltaY := 0
     ScrollTriggered := 0  ; Reset trạng thái cuộn bánh xe
-    MouseGetPos, StartX, StartY   ; Láº¥y tá»a Ä‘á»™ ban Ä‘áº§u
+    MouseGetPos, StartX, StartY   ; Lấy tọa độ ban đầu
     LastY := StartY
-    LastMoveTime := A_TickCount   ; LÆ°u thá»i Ä‘iá»ƒm báº¯t Ä‘áº§u
+    LastMoveTime := A_TickCount   ; Lưu thời điểm bắt đầu
     positionsCount := 0
     Loop, 5                       ; Xóa mảng positions (5 điểm đo vận tốc)
         positions%A_Index%y := "", positions%A_Index%time := ""
@@ -219,13 +219,13 @@ RButton::
 
 ; Khi thả chuột phải: Xử lý cử chỉ, AutoScroll, hoặc chuột phải mặc định
 RButton Up::
-    isReleasingRButton := 1     ; Äáº·t cá» ngay khi báº¯t Ä‘áº§u xá»­ lÃ½ tháº£ chuá»™t
+    isReleasingRButton := 1     ; Đặt cờ ngay khi bắt đầu xử lý thả chuột
     SetTimer, CheckGesture, Off   ; Tắt kiểm tra cử chỉ
 
-    ; áº¨n má»i tooltip sau khi tháº£ chuá»™t pháº£i
+    ; Ẩn mọi tooltip sau khi thả chuột phải
     Tooltip
 
-    ; --- KIá»‚M TRA ÄIá»€U KIá»†N Äá»‚ KÃCH HOáº T Cá»¬ CHá»ˆ NGANG ---
+    ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT CỬ CHỈ NGANG ---
     if (GestureActive && Direction = "Horizontal") {  ; Nếu có cử chỉ ngang
         PerformGesture(MousePath) ; Thực thi phím tắt tương ứng
         MousePath := "" 
@@ -235,15 +235,15 @@ RButton Up::
         MousePath := "" 
         GestureActive := 0
     } else if (!ScrollTriggered && !GestureActive && Direction != "Vertical") {  ; Nếu không có cử chỉ
-        Click, Right             ; Thá»±c hiá»‡n click pháº£i bÃ¬nh thÆ°á»ng
+        Click, Right             ; Thực hiện click phải bình thường
     }
     ScrollTriggered := 0         ; Reset trạng thái cuộn bánh xe
     HideGestureHint()            ; Ẩn hint
     SetTimer, HideGestureHint, -50  ; Kiểm tra sau 50ms nữa để đảm bảo ẩn hint
     
-    ; --- KIá»‚M TRA ÄIá»€U KIá»†N Äá»‚ KÃCH HOáº T AUTOSCROLL ---
-    if (Direction = "Vertical" OR !GestureActive) { ; Náº¿u cÃ³ cá»­ chá»‰ dá»c vÃ  chÆ°a cuá»™n bÃ¡nh xe
-        TimeSinceLastMove := (A_TickCount - LastMoveTime) / 1000.0  ; Thá»i gian ká»ƒ tá»« láº§n di chuyá»ƒn cuá»‘i (giÃ¢y)
+    ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT AUTOSCROLL ---
+    if (Direction = "Vertical" OR !GestureActive) { ; Nếu có cử chỉ dọc và chưa cuộn bánh xe
+        TimeSinceLastMove := (A_TickCount - LastMoveTime) / 1000.0  ; Thời gian kể từ lần di chuyển cuối (giây)
         if (Abs(VelocityY) > 50 && totalDeltaY > 20 && TimeSinceLastMove < 0.15) {
             AutoScrollActive := 1
             AutoScrollStartTime := A_TickCount
@@ -252,12 +252,12 @@ RButton Up::
             SetTimer, AutoScroll, %scrollInterval%  ; Bắt đầu AutoScroll
         }
     }
-    isReleasingRButton := 0     ; Reset cá» khi káº¿t thÃºc xá»­ lÃ½
+    isReleasingRButton := 0     ; Reset cờ khi kết thúc xử lý
     return
 
 ; Hotkey cho WheelUp khi giữ RButton
 ~RButton & WheelUp::
-    if (GetKeyState("RButton", "P") && GestureActive = 0) {  ; Äáº£m báº£o chuá»™t pháº£i Ä‘ang Ä‘Æ°á»£c giá»¯
+    if (GetKeyState("RButton", "P") && GestureActive = 0) {  ; Đảm bảo chuột phải đang được giữ
         Send, {PgUp}
         ScrollTriggered := 1
     }
@@ -265,7 +265,7 @@ return
 
 ; Hotkey cho WheelDown khi giữ RButton
 ~RButton & WheelDown::
-    if (GetKeyState("RButton", "P") && GestureActive = 0) {  ; Äáº£m báº£o chuá»™t pháº£i Ä‘ang Ä‘Æ°á»£c giá»¯
+    if (GetKeyState("RButton", "P") && GestureActive = 0) {  ; Đảm bảo chuột phải đang được giữ
         Send, {PgDn}
         ScrollTriggered := 1
     }
