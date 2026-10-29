@@ -101,7 +101,7 @@ openssl req -new -x509 -key private.key -out certificate.crt -days 3650 -subj "/
 
 openssl pkcs12 -export -out certificate.pfx -inkey private.key -in certificate.crt -password pass:mypassword
 
-Giải thích:
+**Giải thích:**
 genrsa: Tạo khóa bí mật RSA 2048-bit, lưu thành private.key.
 
 req -new -x509: Tạo chứng chỉ tự ký (certificate.crt), hết hạn sau 3650 ngày (10 năm), tên là "MySelfSignedCert".
