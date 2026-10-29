@@ -90,8 +90,9 @@ RebuildTrayMenu() {
         Menu, Tray, Icon, %langMenuLabel%, %currentFlag%
 
     Menu, Tray, Add  ; Dòng phân cách
-    Menu, Tray, Add, % L("Tray_About"), ShowAbout
     Menu, Tray, Add, % L("Tray_Reload"), ReloadApp
+    Menu, Tray, Add  ; Dòng phân cách
+    Menu, Tray, Add, % L("Tray_About"), ShowAbout
     Menu, Tray, Add
     Menu, Tray, Add, % L("Tray_Exit"), ExitMenu
 

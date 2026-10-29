@@ -41,7 +41,6 @@ Khác:
 
 - Cân nhắc cử chỉ đóng tab thành đóng cửa sổ (khi không phải trình duyệt, explorer)
 - [x] khóa chỉ cho phép tương tác với cửa sổ đang active 
-- [] Ngăn cử chỉ khi đang nhấn nút phải
 
 Cử chỉ chuột gồm 2 loại:
     - cử chỉ vẽ cho trình duyệt: edge, chrome, coccoc, firefox, brave, vivaldi, opera, 
@@ -52,10 +51,8 @@ Cử chỉ chuột gồm 2 loại:
 ~~- nếu desktop hoặc không cửa sổ nào active => tắt gesture, vẫn giữ scroll
 - nếu đang kéo file => tắt gesture, scroll~~
 
-- chặn click chuột trái khi dùng RClick+Scroll
-- Tạo video minh họa sử dụng GestureMouse
-- hỗ trợ taskmanager
-- nút restart app trên menu system tray làm gì
+- [] Tạo video minh họa sử dụng GestureMouse
+- [] hỗ trợ taskmanager
 
 
 ------------------------------
