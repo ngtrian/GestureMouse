@@ -108,10 +108,6 @@ LoadIcons() {
     iconData["R"] := Object("id", 304, "path", "image\R.ico")
     iconData["RD"] := Object("id", 305, "path", "image\RD.ico")
     iconData["RU"] := Object("id", 306, "path", "image\RU.ico")
-    iconData["2h"] := Object("id", 307, "path", "image\2h.ico")
-    iconData["4h"] := Object("id", 308, "path", "image\4h.ico")
-    iconData["8h"] := Object("id", 309, "path", "image\8h.ico")
-    iconData["10h"] := Object("id", 310, "path", "image\10h.ico")
 
     for gesture, data in iconData {
         if (A_IsCompiled) {
@@ -507,14 +503,6 @@ PerformGesture(Gesture) {
         ; UnfocusVideo()
         Send !{Right}     ; Tiến tới (Alt+Right)
     }
-    ; Thêm hành động cử chỉ chéo
-    ; else if (Gesture = "2h")
-    ;     RestoreLastWindow()
-    ; else if (Gesture = "8h")
-    ;     MinimizeActiveWindow()
-    ;Tạm thời không dùng 4h và 10h
-    ; else if (Gesture = "4h")
-    ; else if (Gesture = "10h")
 
     HideGestureHint() ; Ẩn hint sau khi thực hiện cử chỉ
 }
@@ -552,10 +540,10 @@ GetGestureHintText(Gesture) {
         return L("Hint_Back")
     if (Gesture = "R")
         return L("Hint_Forward")
-    if (Gesture = "2h")
-        return L("Hint_Restore")
-    if (Gesture = "8h")
-        return L("Hint_Minimize")
+    ; if (Gesture = "2h")
+    ;     return L("Hint_Restore")
+    ; if (Gesture = "8h")
+    ;     return L("Hint_Minimize")
     return ""
 }
 
@@ -573,8 +561,6 @@ ShowGestureHint(Gesture) {
         hintImages["R"] := "R"  
         hintImages["RD"] := "RD" 
         hintImages["RU"] := "RU"
-        hintImages["2h"] := "2h"
-        hintImages["8h"] := "8h"
     }
 
     ; Lấy HICON và Text tương ứng theo ngôn ngữ hiện tại

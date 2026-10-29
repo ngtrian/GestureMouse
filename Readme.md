@@ -35,7 +35,7 @@ Khác:
 
 - [x] - dừng cuộn tự động khi click chuột
 
-- [ ] - khi vẽ cử chỉ LU, RU,... thì khi ban đầu vẽ cử chỉ ngang, sau đó vẽ đứng nhưng thay vì vẽ đứng mà vẽ hơi xéo thì nó nhận cử chỉ không đúng, (cần loại bỏ kiểm trang ngang trong trường hợp này, dể dễ vẽ các cử chỉ LU, LD, RU, RD hơn)
+- [x] - khi vẽ cử chỉ LU, RU,... thì khi ban đầu vẽ cử chỉ ngang, sau đó vẽ đứng nhưng thay vì vẽ đứng mà vẽ hơi xéo thì nó nhận cử chỉ không đúng, (cần loại bỏ kiểm trang ngang trong trường hợp này, dể dễ vẽ các cử chỉ LU, LD, RU, RD hơn)
 
 - [x] Vấn đề nữa là khi đang vẽ cử chỉ bên ngoài cửa số taskmanager, và vẽ sâu vào phạm vi cửa sổ taskmanager thì cử chỉ đó bị đứng lại (tức không ẩn cử chỉ đó)
 
