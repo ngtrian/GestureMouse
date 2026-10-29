@@ -11,13 +11,15 @@
     Send {Blind}{Volume_Down}  ; Giả lập phím giảm âm lượng
     return
 
-~LButton & WheelUp::  ; Left Click + Wheel Up -> Tăng âm lượng
+#If GetKeyState("LButton", "P")
+WheelUp::  ; Left Click + Wheel Up -> Tăng âm lượng
     Send {Blind}{Volume_Up}
-    return
+return
 
-~LButton & WheelDown::  ; Left Click + Wheel Down -> Giảm âm lượng
+WheelDown::  ; Left Click + Wheel Down -> Giảm âm lượng
     Send {Blind}{Volume_Down}
-    return
+return
+#If
 
 #WheelUp Up::
 #WheelDown Up::

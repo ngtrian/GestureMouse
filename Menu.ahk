@@ -6,8 +6,12 @@
     Menu, PhimTat, Add, Paste as PlainText (Ctrl + Shift + V), PastePlainText
     Menu, PhimTat, Add, Mute (Ctrl + Shift + M), MuteFunc
 
+    ; Khởi tạo trạng thái cử chỉ & cuộn từ trước để hiển thị đúng menu
+    InitGestureScroll()
+
     ; Thêm menu vào menu khay hệ thống
-    Menu, Tray, Add, Cử chỉ chuột & cuộn (Ctrl+Alt), ToggleGestureScrollLabel
+    menuGestureText := GestureScrollEnabled ? "Đang bật (Ctrl+Alt)" : "Đang tắt (Ctrl+Alt)"
+    Menu, Tray, Add, %menuGestureText%, ToggleGestureScrollLabel
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, Cài đặt..., Settings
     Menu, Tray, Add, Chạy quyền Admin, RunAsAdmin
@@ -20,11 +24,10 @@
     
     ; Cấu hình System Tray
     Menu, Tray, NoStandard ; Xóa menu mặc định của AutoHotkey
-    Menu, Tray, Default, Cử chỉ chuột & cuộn (Ctrl+Alt) ; Đặt mặc định khi nhấp chuột trái vào icon khay
+    Menu, Tray, Default, 1& ; Đặt mặc định cho mục đầu tiên khi nhấp chuột trái vào icon khay
     Menu, Tray, Click, 1 ; Nhấp 1 lần chuột trái vào icon khay để kích hoạt mặc định
     
     ; Cập nhật biểu tượng và menu khay lần đầu
-    InitGestureScroll()
     UpdateTrayIcon()
     UpdateTrayMenu()
     UpdateTrayTip()  
@@ -49,14 +52,17 @@ UpdateTrayTip() {
     Menu, Tray, Tip, %TrayTip%
 }
 
-; Cập nhật trạng thái checkmark trên Menu Tray
+; Cập nhật trạng thái và tên menu trên Menu Tray
 UpdateTrayMenu() {
     global GestureScrollEnabled
     try {
+        menuGestureText := GestureScrollEnabled ? "Đang bật (Ctrl+Alt)" : "Đang tắt (Ctrl+Alt)"
+        Menu, Tray, Rename, 1&, %menuGestureText%
         if (GestureScrollEnabled)
-            Menu, Tray, Check, Cử chỉ chuột & cuộn (Ctrl+Alt)
+            Menu, Tray, Check, 1&
         else
-            Menu, Tray, Uncheck, Cử chỉ chuột & cuộn (Ctrl+Alt)
+            Menu, Tray, Uncheck, 1&
+        Menu, Tray, Default, 1&
     }
 }
 ; khởi tạo ban đầu gồm menu, icon tray, script dừng ở đây và chờ sự kiện từ menu khay hệ thống, "return" ngăn không cho các label khác tự động chạy
