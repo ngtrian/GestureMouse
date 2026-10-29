@@ -1,4 +1,4 @@
-﻿; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
+; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
 #NoEnv
 
 Menu:
@@ -91,6 +91,7 @@ RebuildTrayMenu() {
 
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_About"), ShowAbout
+    Menu, Tray, Add, % L("Tray_Reload"), ReloadApp
     Menu, Tray, Add
     Menu, Tray, Add, % L("Tray_Exit"), ExitMenu
 
@@ -350,7 +351,8 @@ ShowAbout:
 
     Gui, Add, GroupBox, x10 y5 w420 h95,
     ; Icon (bên trong GroupBox)
-    Gui, Add, Picture, x20 y25 w32 h32, unnamed.ico
+    aboutIcon := A_IsCompiled ? A_ScriptFullPath : (A_ScriptDir . "\image\unnamed.ico")
+    Gui, Add, Picture, x20 y25 w32 h32 Icon1, %aboutIcon%
     ; Dòng 1: Tên ứng dụng
     Gui, Font, s18, Segoe UI
     Gui, Add, Text, x65 y18 w360, Gesture Mouse
@@ -451,6 +453,10 @@ ExitMenu:
     ExitApp
 return
 
+ReloadApp:
+    Reload
+return
+
 
 ; Đặt icon màu vàng mặc định cho mọi cửa sổ GUI (Taskbar, Titlebar, Alt+Tab luôn là màu vàng)
 ; Đặt icon màu vàng mặc định cho mọi cửa sổ GUI (Taskbar, Titlebar, Alt+Tab luôn là màu vàng)
@@ -465,7 +471,7 @@ SetGuiYellowIcon(guiHwnd) {
             hSmall := DllCall("LoadImage", "Ptr", hMod, "UInt", 1, "UInt", 1, "Int", 16, "Int", 16, "UInt", 0, "Ptr")
         }
         if (!hBig) {
-            iconPath := A_ScriptDir . "\unnamed.ico"
+            iconPath := A_ScriptDir . "\image\unnamed.ico"
             if FileExist(iconPath) {
                 hBig := DllCall("LoadImage", "Ptr", 0, "Str", iconPath, "UInt", 1, "Int", 32, "Int", 32, "UInt", 0x10, "Ptr")
                 hSmall := DllCall("LoadImage", "Ptr", 0, "Str", iconPath, "UInt", 1, "Int", 16, "Int", 16, "UInt", 0x10, "Ptr")

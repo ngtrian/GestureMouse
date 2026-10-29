@@ -32,9 +32,9 @@ Khác:
 
 - khi giữ chuột và kéo lên xuống sẽ kích hoạt trạng thái đang cuộn và nếu không thả tay ra thì vẫn giữ trạng thái chờ cuộn, nên có thể bỏ qua điều kiện khoảng cách để kích hoạt trạng thái cuộn dọc
 
-- Lỗi khi  để lâu hoặc sau khi sleep, các thao tác cử chỉ liên quan đến chuột không hoạt động nữa, các phím tắt khác như mute, autolock screen, lockkeyboard, tăng giảm độ sáng... vẫn hoạt động bình thường
+- [x] Lỗi khi  để lâu hoặc sau khi sleep, các thao tác cử chỉ liên quan đến chuột không hoạt động nữa, các phím tắt khác như mute, autolock screen, lockkeyboard, tăng giảm độ sáng... vẫn hoạt động bình thường
 
-- dừng cuộn tự động khi click chuột
+- [] - dừng cuộn tự động khi click chuột
 
 - khi vẽ cử chỉ LU, RU,... thì khi ban đầu vẽ cử chỉ ngang, sau đó vẽ đứng nhưng thay vì vẽ đứng mà vẽ hơi xéo thì nó nhận cử chỉ không đúng, (cần loại bỏ kiểm trang ngang trong trường hợp này, dể dễ vẽ các cử chỉ LU, LD, RU, RD hơn)
 

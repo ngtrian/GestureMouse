@@ -1,4 +1,4 @@
-﻿; ToggleGesture.ahk - Quản lý bật/tắt tính năng cử chỉ chuột và cuộn
+; ToggleGesture.ahk - Quản lý bật/tắt tính năng cử chỉ chuột và cuộn
 #NoEnv
 
 ; Hàm khởi tạo trạng thái từ Registry
@@ -50,7 +50,7 @@ return
 ; Cập nhật biểu tượng System Tray: màu khi Bật, xám trắng khi Tắt
 UpdateTrayIcon() {
     global GestureScrollEnabled
-    iconName := GestureScrollEnabled ? "unnamed.ico" : "unnamed_gray.ico"
+    iconName := GestureScrollEnabled ? "image\unnamed.ico" : "image\unnamed_gray.ico"
     if (A_IsCompiled) {
         resId := GestureScrollEnabled ? 1 : 311
         try {

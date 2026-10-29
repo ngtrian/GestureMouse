@@ -1,22 +1,24 @@
-﻿#Persistent 
+#Persistent 
 #SingleInstance Force
 CoordMode, Mouse, Screen
 #NoEnv
 SendMode, Input
 SetWorkingDir, %A_ScriptDir%
+#InstallMouseHook
+#InstallKeybdHook
 
 ; #Warn
 
-;@Ahk2Exe-ExeName GestureMouse2.exe
+;@Ahk2Exe-ExeName bin\GestureMouse2.exe
 ;@Ahk2Exe-SetName GestureMouse2
 ;@Ahk2Exe-SetDescription Ứng dụng hỗ trợ cử chỉ chuột
 ;@Ahk2Exe-SetCompanyName NGUYENTRIAN
 ;@Ahk2Exe-SetVersion 1.0.0
 ;@Ahk2Exe-SetCopyright © 2025 NGUYENTRIAN. All rights reserved.
-;@Ahk2Exe-Base %A_ScriptDir%\CustomClass.bin
+;@Ahk2Exe-Base %A_ScriptDir%\bin\CustomClass.bin
 
-;@Ahk2Exe-SetMainIcon unnamed.ico
-;@Ahk2Exe-AddResource unnamed_gray.ico, 311
+;@Ahk2Exe-SetMainIcon image\unnamed.ico
+;@Ahk2Exe-AddResource image\unnamed_gray.ico, 311
 
 ;@Ahk2Exe-AddResource image\L.ico, 301
 ;@Ahk2Exe-AddResource image\LD.ico, 302   
@@ -54,6 +56,7 @@ global GuiOn := false             ; Trạng thái GUI (hiện/ẩn)
 global MainHwnd := 0              ; HWND của GUI GestureHint
 global isReleasingRButton := 0
 global ScrollStyle := 1           ; Phương pháp cuộn: 1 - kéo nội dung lên xuống, 2 - kéo thanh cuộn lên xuống
+global ExplorerHasSelection := false ; Trạng thái cache kiểm tra File Explorer có file đang chọn
 
 
 ; Khai báo biến toàn cục LockKeyboard
@@ -79,17 +82,19 @@ hModule := DllCall("GetModuleHandle", "Ptr", 0)
 global IconHandles := {}  ; Mảng lưu HICON
 LoadIcons()  ; Gọi hàm tải biểu tượng
 OnExit("CleanupIcons")  ; Đăng ký hàm giải phóng tài nguyên khi thoát
+InitPowerAndSessionWatch() ; Khởi tạo theo dõi sleep, unlock màn hình, chống drop hook
+SetTimer, UpdateExplorerSelectionState, 300 ; Timer kiểm tra nền selection của Explorer ngoài hook thread
 
-#Include Language.ahk ; Quản lý đa ngôn ngữ (chỉ gồm các hàm)
-#Include Menu.ahk ; Menu, UpdateTrayTip, Settings, ShowAbout, ExitMenu
-#Include ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
-#Include Hotkey.ahk ;AutoScreenLock, Mute
-#Include Brightness.ahk
-#Include Scroll.ahk ; AutoScroll
-#Include LockKeyboard.ahk ; Khóa bàn phím
-#Include Volume.ahk
-; #Include MinimizeRestore.ahk
-; #Include MyToolTip.ahk
+#Include %A_ScriptDir%\Lib\Language.ahk ; Quản lý đa ngôn ngữ (chỉ gồm các hàm)
+#Include %A_ScriptDir%\Lib\Menu.ahk ; Menu, UpdateTrayTip, Settings, ShowAbout, ExitMenu
+#Include %A_ScriptDir%\Lib\ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
+#Include %A_ScriptDir%\Lib\Hotkey.ahk ;AutoScreenLock, Mute
+#Include %A_ScriptDir%\Lib\Brightness.ahk
+#Include %A_ScriptDir%\Lib\Scroll.ahk ; AutoScroll
+#Include %A_ScriptDir%\Lib\LockKeyboard.ahk ; Khóa bàn phím
+#Include %A_ScriptDir%\Lib\Volume.ahk
+
+
 
 ; Hàm tải tất cả biểu tượng vào bộ nhớ
 LoadIcons() {
@@ -129,8 +134,9 @@ CleanupIcons() {
     }
 }
 
-; Hàm kiểm tra chuột có nằm trong vùng cửa sổ đang active không
+; Hàm kiểm tra chuột có nằm trong vùng cửa sổ đang active không (cực nhanh, không block hook)
 IsMouseInActiveWindow() {
+    global ExplorerHasSelection
     MouseGetPos, MouseX, MouseY, HoverWindow ; Lấy tọa độ chuột và ID của cửa sổ hover
     WinGetPos, WinX, WinY, WinWidth, WinHeight, A ; Lấy vị trí và kích thước của cửa sổ 
     WinGetClass, HoverClass, ahk_id %HoverWindow% ; Lấy class của cửa sổ hover
@@ -145,12 +151,9 @@ IsMouseInActiveWindow() {
 
     ; Kiểm tra nếu chuột nằm trong vùng cửa sổ active
     if (MouseX >= WinX && MouseX <= (WinX + WinWidth) && MouseY >= WinY && MouseY <= (WinY + WinHeight)) {
-        ; Kiểm tra nếu chuột đang ở Explorer và có file được chọn
-        if (HoverClass ~= "^(CabinetWClass|ExploreWClass)$" || ActiveClass = "ShellTabWindowClass1") {
-            tab := GetActiveExplorerTab(HoverWindow)
-            if (tab && tab.Document.SelectedItems.Count > 0) {
-                return false ; Nếu đang ở Explorer và có file được chọn, không kích hoạt cử chỉ
-            }
+        ; Kiểm tra nếu chuột đang ở Explorer và có file được chọn (dùng cache từ timer, không gọi COM trong hook thread)
+        if (ExplorerHasSelection && (HoverClass ~= "^(CabinetWClass|ExploreWClass)$" || ActiveClass = "ShellTabWindowClass1")) {
+            return false ; Nếu đang ở Explorer và có file được chọn, không kích hoạt cử chỉ
         }
         return true
     }
@@ -158,39 +161,48 @@ IsMouseInActiveWindow() {
     return false    
 }
 
-; Hàm lấy tab đang hoạt động trong Explorer
-GetActiveExplorerTab(hwnd:="") {
-    static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
-
-    activeTab := 0, hwnd := hwnd ? hwnd : WinExist("A")
-    try {
-        ControlGet, activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd% ; File Explorer (Windows 11)
-    } catch {
-        return false  ; Nếu không tìm thấy tab, thoát hàm.
+; Timer định kỳ cập nhật trạng thái chọn file trong Explorer ngoài hook thread (chạy độc lập, không làm trễ hook)
+UpdateExplorerSelectionState:
+    ; Chỉ kiểm tra khi cửa sổ active là Explorer để tiết kiệm CPU tối đa
+    if (WinActive("ahk_class CabinetWClass") || WinActive("ahk_class ExploreWClass")) {
+        ExplorerHasSelection := CheckExplorerHasSelectedItems()
+    } else {
+        ExplorerHasSelection := false
     }
+return
 
-    ; Trì hoãn việc gọi đối tượng COM để tránh lỗi 0x8001010D
-    Sleep, 50
-
+; Hàm kiểm tra có file/thư mục nào đang được chọn trong File Explorer không
+CheckExplorerHasSelectedItems() {
+    hwnd := WinExist("A")
+    if (!hwnd)
+        return false
+    activeTab := 0
     try {
-        for w in ComObjCreate("Shell.Application").Windows {
+        ControlGet, activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd%
+    } catch {
+        activeTab := 0
+    }
+    try {
+        shellApp := ComObjCreate("Shell.Application")
+        for w in shellApp.Windows {
             if (w.hwnd != hwnd)
                 continue
-            if (activeTab) { ; The window has tabs, so make sure this is the right one.
-                shellBrowser := ComObjQuery(w, IID_IShellBrowser, IID_IShellBrowser)
-                DllCall(NumGet(NumGet(shellBrowser+0), 3*A_PtrSize), "UPtr",shellBrowser, "UIntP",thisTab:=0)
-                if (thisTab != activeTab)
-                    continue
+            if (activeTab) {
+                shellBrowser := ComObjQuery(w, "{000214E2-0000-0000-C000-000000000046}", "{000214E2-0000-0000-C000-000000000046}")
+                if (shellBrowser) {
+                    DllCall(NumGet(NumGet(shellBrowser+0), 3*A_PtrSize), "UPtr", shellBrowser, "UIntP", thisTab:=0)
+                    ObjRelease(shellBrowser)
+                    if (thisTab != activeTab)
+                        continue
+                }
             }
-            ; Kiểm tra nếu tab có mục được chọn
             if (w.Document.SelectedItems.Count > 0)
-                return w
+                return true
         }
     } catch {
-        return false  ; Nếu xảy ra lỗi, trả về false.
+        return false
     }
-
-    return false  ; Không tìm thấy tab hoặc không có mục nào được chọn.
+    return false
 }
 
 #If (GestureScrollEnabled && IsMouseInActiveWindow())  ; Chỉ kích hoạt khi đã BẬT cử chỉ/cuộn và chuột nằm trong cửa sổ active
@@ -588,3 +600,63 @@ HideGestureHint() {
         Gui, GestureHint:Hide 
     IsGestureHintVisible := 0
 }
+
+
+; ==============================================================================
+; QUẢN LÝ KHÔI PHỤC HOOK VÀ SỰ KIỆN NGUỒN / SESSION (CHỐNG LỖI MẤT CHUỘT SAU SLEEP / ĐỂ LÂU)
+; ==============================================================================
+
+; Khởi tạo theo dõi nguồn, session mở khóa và timeout
+InitPowerAndSessionWatch() {
+    ; Đảm bảo LowLevelHooksTimeout trong registry Windows ở mức an toàn (>= 2000 ms)
+    EnsureHooksTimeout()
+
+    ; Lắng nghe thông điệp nguồn của Windows (Sleep/Wake)
+    OnMessage(0x0218, "OnPowerBroadcast")
+
+    ; Đăng ký và lắng nghe thông điệp Session của Windows (Lock/Unlock màn hình)
+    DllCall("Wtsapi32.dll\WTSRegisterSessionNotification", "Ptr", A_ScriptHwnd, "UInt", 0)
+    OnMessage(0x02B1, "OnSessionChange")
+}
+
+; Đảm bảo Windows không tự tiện ngắt hook vì timeout quá ngắn (mặc định Windows chỉ có 200-300ms)
+EnsureHooksTimeout() {
+    RegRead, currentTimeout, HKEY_CURRENT_USER\Control Panel\Desktop, LowLevelHooksTimeout
+    if (ErrorLevel || currentTimeout = "" || currentTimeout < 2000) {
+        try RegWrite, REG_SZ, HKEY_CURRENT_USER\Control Panel\Desktop, LowLevelHooksTimeout, 2000
+    }
+}
+
+; Xử lý thông điệp quản lý nguồn điện WM_POWERBROADCAST (0x0218)
+OnPowerBroadcast(wParam, lParam) {
+    ; 0x4 = PBT_APMSUSPEND (Hệ thống chuẩn bị vào trạng thái Sleep/Hibernate)
+    if (wParam = 0x4) {
+        SetTimer, CheckGesture, Off
+        HideGestureHint()
+    }
+    ; 0x7 = PBT_APMRESUMESUSPEND (Thức dậy sau Sleep do người dùng tương tác)
+    ; 0x12 = PBT_APMRESUMEAUTOMATIC (Thức dậy tự động)
+    else if (wParam = 0x7 || wParam = 0x12) {
+        SetTimer, RecoverFromSleep, -1000  ; Chờ 1 giây để hệ thống và driver nạp xong rồi reload
+    }
+    return true
+}
+
+; Xử lý thông điệp phiên làm việc WM_WTSSESSION_CHANGE (0x02B1)
+OnSessionChange(wParam, lParam) {
+    ; 0x8 = WTS_SESSION_UNLOCK (Chỉ kích hoạt khi người dùng mở khóa màn hình Windows)
+    if (wParam = 0x8) {
+        SetTimer, RecoverFromSleep, -1000
+    }
+}
+
+; Nhãn khôi phục tự động (Reload ứng dụng để làm mới sạch sẽ toàn bộ Windows Mouse Hook)
+RecoverFromSleep:
+    ; Bảo vệ: Không reload nếu script vừa mới khởi động chưa đầy 6 giây (chống loop khi khởi động)
+    if (A_TickCount < 6000)
+        return
+    ; Nếu bàn phím đang bị khóa bởi tính năng LockKeyboard, không tự reload để tránh mở khóa ngoài ý muốn
+    if (isLocked)
+        return
+    Reload
+return
