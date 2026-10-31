@@ -2,10 +2,11 @@
 #NoEnv
 
 Menu:
-    global hSettingsGui := 0, hAboutGui := 0, hLockOpt := 0, hAutoLock := 0
+    global hSettingsGui := 0, hAboutGui := 0, hLockOpt := 0, hAutoLock := 0, hExcludedGui := 0, hRunningAppsGui := 0
     ; Khởi tạo ngôn ngữ và trạng thái cử chỉ
     InitLanguage()
     InitGestureScroll()
+    InitExcludedApps()
 
     ; Xây dựng menu khay hệ thống ban đầu
     RebuildTrayMenu()
@@ -181,73 +182,77 @@ Tooltips["Text13"] := L("TT_13")
 Tooltips["Text14"] := L("TT_14")
 Tooltips["Text15"] := L("TT_15")
 Tooltips["TextInfo"] := L("TT_Info")
+Tooltips["TextVol"] := L("TT_MouseVolume")
+Tooltips["ExAppsBtn"] := L("TT_ExApps")
 
 ; Nhóm Gesture Mouse
 Gui, Font, Bold
-Gui, Add, GroupBox, w500 h260, % L("Set_GroupGesture")
+Gui, Add, GroupBox, w500 h325, % L("Set_GroupGesture")
 Gui, Add, Picture, x160 yp+1 w14 h14 Icon100, %A_WinDir%\System32\shell32.dll
 Gui, Font, Normal
 Gui, Add, Text, x20 y35, % L("Set_ManualScroll")
 Gui, Add, Button, x200 y30 Center gShowTooltip vText1, % L("Set_ManualScrollBtn")
 Gui, Add, Text, x20 y60, % L("Set_AutoScroll")
 Gui, Add, Button, x200 y55 Center gShowTooltip vText2, % L("Set_AutoScrollBtn")
-Gui, Add, Text, x20 y82, % L("Set_PgScroll")
+Gui, Add, Text, x20 y85, % L("Set_PgScroll")
 Gui, Add, Button, x200 y80 Center gShowTooltip vText3, % L("Set_PgScrollBtn")
-Gui, Add, Text, x20 y110, % L("Set_Back")
-Gui, Add, Button, x200 y105 w38 Center gShowTooltip vText4,  ←
-Gui, Add, Text, x20 y135, % L("Set_Forward")
-Gui, Add, Button, x200 y130 w38 Center gShowTooltip vText5,  →
-Gui, Add, Text, x20 y160, % L("Set_PrevTab")
-Gui, Add, Button, x200 y155 w38 Center gShowTooltip vText6,  ↑__
-Gui, Add, Text, x20 y185, % L("Set_NextTab")
-Gui, Add, Button, x200 y180 w38 Center gShowTooltip vText7,  ↓¯¯
-Gui, Add, Text, x20 y210, % L("Set_CloseTab")
-Gui, Add, Button, x200 y205 w38 Center gShowTooltip vText8,  __↑
-Gui, Add, Text, x20 y235, % L("Set_Refresh")
-Gui, Add, Button, x200 y230 w38 Center gShowTooltip vText9,  ¯¯↓
+Gui, Add, Text, x20 y110, % L("Set_MouseVolume")
+Gui, Add, Button, x200 y105 Center gShowTooltip vTextVol, % L("Set_MouseVolumeBtn")
+Gui, Add, Text, x20 y135, % L("Set_Back")
+Gui, Add, Button, x200 y130 w38 Center gShowTooltip vText4,  ←
+Gui, Add, Text, x20 y160, % L("Set_Forward")
+Gui, Add, Button, x200 y155 w38 Center gShowTooltip vText5,  →
+Gui, Add, Text, x20 y185, % L("Set_PrevTab")
+Gui, Add, Button, x200 y180 w38 Center gShowTooltip vText6,  ↑__
+Gui, Add, Text, x20 y210, % L("Set_NextTab")
+Gui, Add, Button, x200 y205 w38 Center gShowTooltip vText7,  ↓¯¯
+Gui, Add, Text, x20 y235, % L("Set_CloseTab")
+Gui, Add, Button, x200 y230 w38 Center gShowTooltip vText8,  __↑
+Gui, Add, Text, x20 y260, % L("Set_Refresh")
+Gui, Add, Button, x200 y255 w38 Center gShowTooltip vText9,  ¯¯↓
+Gui, Add, Button, x20 y288 w160 h26 gOpenExcludedAppsGui vExAppsBtn, % L("Set_ExcludedAppsBtn")
 
 ; Nhóm Hotkeys
 Gui, Font, Bold
 Gui, Add, GroupBox, xs w500 h170, % L("Set_GroupHotkeys")
 Gui, Font, Normal
 
-Gui, Add, Text, x38 y305, % L("Set_Mute")
+Gui, Add, Text, x38 y370, % L("Set_Mute")
 Gui, Add, Picture, x18 yp+1 w14 h14 Icon3, %A_WinDir%\System32\SndVol.exe
-Gui, Add, Button, x200 y300 w130 Center gShowTooltip vText10, Ctrl + Shift + M
+Gui, Add, Button, x200 y365 w130 Center gShowTooltip vText10, Ctrl + Shift + M
 
-Gui, Add, Text, x38 y330, % L("Set_AutoLock")
+Gui, Add, Text, x38 y395, % L("Set_AutoLock")
 Gui, Add, Picture, x15 yp+1 w14 h14 Icon48, %A_WinDir%\System32\shell32.dll
-Gui, Add, Button, x200 y325 w130 Center gShowTooltip vText11, Ctrl + Shift + L
+Gui, Add, Button, x200 y390 w130 Center gShowTooltip vText11, Ctrl + Shift + L
 
-Gui, Add, Text, x38 y355, % L("Set_Volume")
+Gui, Add, Text, x38 y420, % L("Set_Volume")
 Gui, Add, Picture, x18 yp+1 w14 h14 Icon2, %A_WinDir%\System32\SndVol.exe
-Gui, Add, Button, x200 y350 w155 Center gShowTooltip vText12, Win + Scroll Up/Down
+Gui, Add, Button, x200 y415 w155 Center gShowTooltip vText12, Win + Scroll Up/Down
 
-Gui, Add, Text, x38 y380, % L("Set_Brightness")
+Gui, Add, Text, x38 y445, % L("Set_Brightness")
 Gui, Add, Picture, x18 yp+1 w14 h14 Icon26, %A_WinDir%\System32\shell32.dll
-Gui, Add, Button, x200 y375 w130 Center gShowTooltip vText13, F9/F10
+Gui, Add, Button, x200 y440 w130 Center gShowTooltip vText13, F9/F10
 
-Gui, Add, Text, x38 y405, % L("Set_LockKBAndMouse")
+Gui, Add, Text, x38 y470, % L("Set_LockKBAndMouse")
 Gui, Add, Picture, x18 yp+1 w14 h14 Icon28, %A_WinDir%\System32\ddores.dll
-Gui, Add, Button, x200 y400 w130 Center gShowTooltip vText14, Ctrl + Alt + L
+Gui, Add, Button, x200 y465 w130 Center gShowTooltip vText14, Ctrl + Alt + L
 Gui, Add, Picture, x335 yp+5 w14 h14 gShowTooltip vTextInfo Icon-200, %A_WinDir%\System32\shell32.dll
 
 ; Thêm sự kiện nhấn nút để chạy hàm CreateOption()
-Gui, Add, Button, x355 y400 w80 Center gCreateOption, % L("Set_OptionsBtn")
+Gui, Add, Button, x355 y465 w80 Center gCreateOption, % L("Set_OptionsBtn")
 
 ; Nhóm Cài đặt chung
 Gui, Font, Bold
 Gui, Add, GroupBox, xs w500 h115, % L("Set_GroupGeneral")
 Gui, Font, Normal
-Gui, Add, Checkbox, x30 y475 vAutoStart gSave Checked%AutoStart%, % L("Set_AutoStart")
-Gui, Add, Text, x20 y500, % L("Set_ScrollMethodLabel")
-Gui, Add, Radio, x30 y525 vScrollStyle1 gSave Group Checked%ScrollStyle1%, % L("Set_ScrollStyle1")
-Gui, Add, Radio, x30 y545 vScrollStyle2 gSave Checked%ScrollStyle2%, % L("Set_ScrollStyle2")
+Gui, Add, Checkbox, x30 y540 vAutoStart gSave Checked%AutoStart%, % L("Set_AutoStart")
+Gui, Add, Text, x20 y565, % L("Set_ScrollMethodLabel")
+Gui, Add, Radio, x30 y590 vScrollStyle1 gSave Group Checked%ScrollStyle1%, % L("Set_ScrollStyle1")
+Gui, Add, Radio, x30 y610 vScrollStyle2 gSave Checked%ScrollStyle2%, % L("Set_ScrollStyle2")
 
 ; Checked radio theo giá trị từ registry
-GuiControl,, ScrollStyle1, % (ScrollStyle = 1) 
+GuiControl,, ScrollStyle1, % (ScrollStyle = 1)
 GuiControl,, ScrollStyle2, % (ScrollStyle = 2)
-
 ; Theo dõi sự kiện chuột
 Gui, +LastFound
 OnMessage(0x200, "WM_MOUSEMOVE")  ; Theo dõi di chuyển chuột cho tooltip
@@ -312,7 +317,17 @@ Save:
 return
 
 CreateOption() {
-    global mouseLockEnabled, disableAutoLockScreen
+    global mouseLockEnabled, disableAutoLockScreen, hSettingsGui, hLockOpt
+
+    if (hLockOpt && WinExist("ahk_id " . hLockOpt)) {
+        Gui, LockOptions:Show
+        WinActivate, ahk_id %hLockOpt%
+        return
+    }
+
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+        Gui, Settings:+Disabled
+    }
 
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, mouseLockEnabled 
     if (val != "")
@@ -322,7 +337,8 @@ CreateOption() {
     if (val != "")
         disableAutoLockScreen := val
 
-    Gui, LockOptions:New, +LastFound +OwnerSettings +HwndhLockOpt, % L("Opt_Title")
+    ownerOpt := (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) ? "+Owner" . hSettingsGui : ""
+    Gui, LockOptions:New, +LastFound %ownerOpt% +HwndhLockOpt, % L("Opt_Title")
     SetGuiYellowIcon(hLockOpt)
     Gui, Font, s10, Arial
     Gui, Add, Checkbox, Checked Disabled, % L("Opt_LockKB")
@@ -464,10 +480,34 @@ OpenDonateLink:
     Run, https://your-donation-link.com
 return
 
+SettingsGuiClose:
 SettingsGuiEscape:
+    if (hExcludedGui && WinExist("ahk_id " . hExcludedGui) && IsFunc("CloseExcludedGui")) {
+        fnCloseEx := "CloseExcludedGui"
+        %fnCloseEx%()
+    }
+    if (hLockOpt && WinExist("ahk_id " . hLockOpt)) {
+        Gui, LockOptions:Destroy
+        hLockOpt := 0
+    }
+    Gui, Settings:Destroy
+    hSettingsGui := 0
+return
+
+AboutGuiClose:
 AboutGuiEscape:
+    Gui, About:Destroy
+    hAboutGui := 0
+return
+
+LockOptionsGuiClose:
 LockOptionsGuiEscape:
-    Gui, Destroy
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+        Gui, Settings:-Disabled
+        WinActivate, ahk_id %hSettingsGui%
+    }
+    Gui, LockOptions:Destroy
+    hLockOpt := 0
 return
 
 SetLangVI:
@@ -619,5 +659,9 @@ SetScriptYellowIcon() {
         SetGuiYellowIcon(hLockOpt)
     if (hAutoLock && WinExist("ahk_id " . hAutoLock))
         SetGuiYellowIcon(hAutoLock)
+    if (hExcludedGui && WinExist("ahk_id " . hExcludedGui))
+        SetGuiYellowIcon(hExcludedGui)
+    if (hRunningAppsGui && WinExist("ahk_id " . hRunningAppsGui))
+        SetGuiYellowIcon(hRunningAppsGui)
     DetectHiddenWindows, %dhw%
 }
