@@ -51,7 +51,7 @@ global AutoScrollStartTime := 0   ; Thời điểm bắt đầu AutoScroll
 global LastMoveTime := 0          ; Thời điểm di chuyển cuối cùng
 global positionsCount := 0        ; Số lượng điểm đo trong mảng positions
 global scrollInterval := 16       ; Khoảng thời gian giữa các lần cuộn quán tính (16ms ~ 60 FPS)
-global PixelsPerScrollStep := 12  ; Số pixel di chuyển chuột tương ứng 1 nấc cuộn (12px = rất mượt và bám tay)
+global PixelsPerScrollStep := 22  ; Số pixel di chuyển chuột tương ứng 1 nấc cuộn (22px = đầm chắc, kiểm soát tốt khi kéo chậm)
 global ScrollAccumulatorY := 0    ; Bộ tích lũy quãng đường cuộn trực tiếp 1:1
 global FlingVelocityY := 0        ; Vận tốc quán tính khi thả tay (px/s)
 global FlingAccumulator := 0      ; Bộ tích lũy quãng đường cho quán tính
@@ -60,6 +60,10 @@ global TargetHwnd := 0            ; HWND của cửa sổ active lúc nhấn chu
 global TargetControl := 0         ; HWND của control dưới chuột lúc nhấn chuột
 global TargetStartX := 0          ; Tọa độ X ban đầu trên màn hình
 global TargetStartY := 0          ; Tọa độ Y ban đầu trên màn hình
+global AutoScrollStartX := 0      ; Tọa độ X khi bắt đầu AutoScroll
+global AutoScrollStartY := 0      ; Tọa độ Y khi bắt đầu AutoScroll
+global LastAutoScrollMouseX := 0  ; Tọa độ chuột X frame trước của AutoScroll
+global LastAutoScrollMouseY := 0  ; Tọa độ chuột Y frame trước của AutoScroll
 global totalDeltaY := 0           ; Tổng khoảng cách di chuyển dọc (dùng cho AutoScroll)
 global ScrollTriggered := 0       ; Theo dõi trạng thái cuộn bằng bánh xe
 global IsGestureHintVisible := 0  ; Trạng thái hiển thị của GestureHint
@@ -69,6 +73,7 @@ global GuiOn := false             ; Trạng thái GUI (hiện/ẩn)
 global MainHwnd := 0              ; HWND của GUI GestureHint
 global isReleasingRButton := 0
 global isGestureTracking := 0     ; Trạng thái đang theo dõi cử chỉ chuột phải
+global wasBrakingFling := 0       ; Cờ đánh dấu nhấn chuột phải để phanh quán tính
 global ScrollStyle := 1           ; Phương pháp cuộn: 1 - kéo nội dung lên xuống, 2 - kéo thanh cuộn lên xuống
 global ExplorerHasSelection := false ; Trạng thái cache kiểm tra File Explorer có file đang chọn
 
@@ -283,14 +288,15 @@ CheckExplorerHasSelectedItems() {
     return false
 }
 
-#If (isGestureTracking || (GestureScrollEnabled && !IsAppExcluded() && IsMouseInActiveWindow()))  ; Ưu tiên duy trì tracking khi đã bắt đầu cử chỉ
+#If (!isGestureTracking && GestureScrollEnabled && !IsAppExcluded() && IsMouseInActiveWindow())
 ; Khi nhấn chuột phải: Khởi tạo biến và bắt đầu kiểm tra cử chỉ + bánh xe
 RButton:: 
-    if GetKeyState("LButton", "P") ; Kiểm tra xem nút trái có đang được nhấn giữ không
+    if (isReleasingRButton || GetKeyState("LButton", "P")) ; Tránh loop khi đang nhả chuột hoặc nút trái đang giữ
     {
         return
     }
         
+    wasBrakingFling := AutoScrollActive  ; Lưu cờ xem cú click này có phải là phanh quán tính không
     if (AutoScrollActive)
         StopAutoScroll()
         
@@ -316,66 +322,23 @@ RButton::
     SetTimer, CheckGesture, 15     ; Kiểm tra cử chỉ mỗi 15ms
     return
 
-; Khi thả chuột phải: Xử lý cử chỉ, AutoScroll, hoặc chuột phải mặc định
+#If (isGestureTracking)
+; Khi đang theo dõi cử chỉ: RButton Up luôn luôn được bắt 100%, không bị ảnh hưởng bởi vị trí chuột
 RButton Up::
-    isGestureTracking := 0
-    isReleasingRButton := 1     ; Đặt cờ ngay khi bắt đầu xử lý thả chuột
-    SetTimer, CheckGesture, Off   ; Tắt kiểm tra cử chỉ
-
-    ; Ẩn mọi tooltip sau khi thả chuột phải
-    Tooltip
-
-    ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT CỬ CHỈ NGANG ---
-    if (GestureActive && Direction = "Horizontal") {  ; Nếu có cử chỉ ngang
-        PerformGesture(MousePath) ; Thực thi phím tắt tương ứng
-        MousePath := "" 
-        GestureActive := 0
-    } else if (GestureActive && Direction = "Diagonal") {  ; Nếu có cử chỉ chéo
-        PerformGesture(MousePath) ; Thực thi phím tắt tương ứng
-        MousePath := "" 
-        GestureActive := 0
-    } else if (!ScrollTriggered && !GestureActive && (Direction != "Vertical" || totalDeltaY == 0)) {  ; Nếu không có cử chỉ hoặc chưa cuộn
-        Click, Right             ; Thực hiện click phải bình thường
-    }
-    ScrollTriggered := 0         ; Reset trạng thái cuộn bánh xe
-    HideGestureHint()            ; Ẩn hint
-    SetTimer, HideGestureHint, -50  ; Kiểm tra sau 50ms nữa để đảm bảo ẩn hint
-    
-    ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT QUÁN TÍNH KHI THẢ TAY (FLING INERTIA) ---
-    if (Direction = "Vertical" || (!GestureActive && totalDeltaY > 15)) {
-        TimeSinceLastMove := (A_TickCount - LastMoveTime) / 1000.0  ; Thời gian kể từ lần di chuyển cuối (giây)
-        ; Nếu dừng chuột quá 80ms trước khi thả, coi như dừng tay chứ không phải hất (flick)
-        if (TimeSinceLastMove <= 0.08 && Abs(VelocityY) >= 150 && totalDeltaY >= 20) {
-            FlingVelocityY := VelocityY
-            ; Mở rộng trần vận tốc ban đầu lên 7000 px/s để phân biệt rõ rệt giữa vuốt vừa và vuốt cực mạnh
-            if (FlingVelocityY > 7000)
-                FlingVelocityY := 7000
-            else if (FlingVelocityY < -7000)
-                FlingVelocityY := -7000
-                
-            FlingAccumulator := 0
-            LastFlingTick := A_TickCount
-            AutoScrollActive := 1
-            SetTimer, AutoScroll, %scrollInterval%  ; Bắt đầu cuộn quán tính
-        }
-    }
-    isReleasingRButton := 0     ; Reset cờ khi kết thúc xử lý
-    return
-
-; Hotkey cho WheelUp khi giữ RButton
-~RButton & WheelUp::
-    if (GetKeyState("RButton", "P") && GestureActive = 0) {  ; Đảm bảo chuột phải đang được giữ
-        Send, {PgUp}
-        ScrollTriggered := 1
-    }
+    EndGestureTracking()
 return
 
-; Hotkey cho WheelDown khi giữ RButton
-~RButton & WheelDown::
-    if (GetKeyState("RButton", "P") && GestureActive = 0) {  ; Đảm bảo chuột phải đang được giữ
-        Send, {PgDn}
-        ScrollTriggered := 1
-    }
+#If GetKeyState("RButton", "P")
+; Hotkey cuộn trang khi đang giữ chuột phải (lăn bánh xe -> PgUp/PgDn)
+; Bắt buộc kiểm tra GetKeyState("RButton", "P") để khi KHÔNG giữ chuột phải, nút cuộn luôn hoạt động 100% bình thường, không bao giờ bị kẹt PgUp/PgDn
+WheelUp::
+    Send, {PgUp}
+    ScrollTriggered := 1
+return
+
+WheelDown::
+    Send, {PgDn}
+    ScrollTriggered := 1
 return
 
 #If (!isGestureTracking && (!GestureScrollEnabled || IsAppExcluded() || !IsMouseInActiveWindow())) 
@@ -384,19 +347,104 @@ return
         StopAutoScroll()
     return
 
-#If ; Kết thúc điều kiện
+#If ; Kết thúc điều kiện hotkey
+
+; Hàm kết thúc tracking cử chỉ chuột phải (dùng chung cho cả RButton Up và Watchdog tự động giải cứu)
+EndGestureTracking() {
+    global isGestureTracking, isReleasingRButton, Direction, GestureActive, totalDeltaY
+    global MousePath, StartX, StartY, LastMoveTime, VelocityY, FlingVelocityY, FlingAccumulator
+    global LastFlingTick, AutoScrollStartTime, AutoScrollStartX, AutoScrollStartY
+    global LastAutoScrollMouseX, LastAutoScrollMouseY, AutoScrollActive, scrollInterval
+    global ScrollTriggered, wasBrakingFling
+    
+    if (!isGestureTracking)
+        return
+        
+    isReleasingRButton := 1     ; Đặt cờ đang trong quá trình xử lý thả chuột
+    SetTimer, CheckGesture, Off   ; Tắt kiểm tra cử chỉ
+
+    ; Ẩn mọi tooltip sau khi thả chuột phải
+    Tooltip
+
+    ; Lấy tọa độ thả chuột và tính tổng khoảng cách di chuyển từ điểm nhấn ban đầu
+    MouseGetPos, EndX, EndY
+    ReleaseDistance := Sqrt((EndX - StartX)**2 + (EndY - StartY)**2)
+
+    ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT CỬ CHỈ NGANG/CHÉO ---
+    if (GestureActive && Direction = "Horizontal") {  ; Nếu có cử chỉ ngang
+        PerformGesture(MousePath) ; Thực thi phím tắt tương ứng
+        MousePath := "" 
+        GestureActive := 0
+    } else if (GestureActive && Direction = "Diagonal") {  ; Nếu có cử chỉ chéo
+        PerformGesture(MousePath) ; Thực thi phím tắt tương ứng
+        MousePath := "" 
+        GestureActive := 0
+    } else if (wasBrakingFling && !GestureActive && Direction != "Vertical" && totalDeltaY < 6 && ReleaseDistance < 6) {
+        ; Cú nhấn chuột phải này là để PHANH quán tính đang chạy!
+        ; Hấp thụ hoàn toàn, TUYỆT ĐỐI KHÔNG mở Context Menu!
+        wasBrakingFling := 0
+        isGestureTracking := 0
+        isReleasingRButton := 0
+        HideGestureHint()
+        return
+    } else if (!ScrollTriggered && !GestureActive && Direction != "Vertical" && totalDeltaY < 6 && ReleaseDistance < 6) {  
+        ; CHỈ click phải (mở Context Menu) khi chuột đứng yên tại chỗ (< 6px, click bình thường)
+        ; Tuyệt đối không tự tiện mở context menu khi người dùng vuốt/kéo chuột!
+        wasBrakingFling := 0
+        isGestureTracking := 0
+        Click, Right             ; Thực hiện click phải bình thường
+        isReleasingRButton := 0
+        HideGestureHint()
+        return
+    }
+    wasBrakingFling := 0
+    ScrollTriggered := 0         ; Reset trạng thái cuộn bánh xe
+    HideGestureHint()            ; Ẩn hint
+    SetTimer, HideGestureHint, -50  ; Kiểm tra sau 50ms nữa để đảm bảo ẩn hint
+    
+    ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT QUÁN TÍNH KHI THẢ TAY (FLING INERTIA) ---
+    if (Direction = "Vertical" || (!GestureActive && totalDeltaY > 15)) {
+        TimeSinceLastMove := (A_TickCount - LastMoveTime) / 1000.0  ; Thời gian kể từ lần di chuyển cuối (giây)
+        ; Nới lỏng ngưỡng thời gian lên 0.15s (150ms) và vận tốc >= 90 px/s để hất chuột tự nhiên dễ ăn quán tính
+        if (TimeSinceLastMove <= 0.15 && Abs(VelocityY) >= 90 && totalDeltaY >= 15) {
+            rawSpeed := Abs(VelocityY)
+            ; Non-linear kinetic boost: vuốt càng nhanh thì quán tính càng bùng nổ mạnh mẽ như trên điện thoại
+            speedMultiplier := 1.0 + (rawSpeed / 1000.0)
+            FlingVelocityY := VelocityY * speedMultiplier
+            ; Cho phép trần vận tốc lên tới 25000 px/s cho cú hất mạnh lướt qua nhiều trang
+            if (FlingVelocityY > 25000)
+                FlingVelocityY := 25000
+            else if (FlingVelocityY < -25000)
+                FlingVelocityY := -25000
+                
+            FlingAccumulator := 0
+            LastFlingTick := A_TickCount
+            AutoScrollStartTime := A_TickCount
+            MouseGetPos, AutoScrollStartX, AutoScrollStartY
+            LastAutoScrollMouseX := AutoScrollStartX
+            LastAutoScrollMouseY := AutoScrollStartY
+            AutoScrollActive := 1
+            SetTimer, AutoScroll, %scrollInterval%  ; Bắt đầu cuộn quán tính
+        }
+    }
+    
+    ; Xả trạng thái nút chuột phải cho hệ thống (giải phóng mọi kẹt chuột)
+    DllCall("mouse_event", "UInt", 0x0010, "UInt", 0, "UInt", 0, "UInt", 0, "UPtr", 0) ; MOUSEEVENTF_RIGHTUP = 0x0010
+    
+    isGestureTracking := 0      ; Kết thúc theo dõi cử chỉ
+    isReleasingRButton := 0     ; Reset cờ khi kết thúc xử lý
+}
 
 CheckGesture:
     ; ToolTip, CheckGesture Running: %A_TickCount% ; Thêm dòng này để kiểm tra xem hàm có chạy không
     global isReleasingRButton, ScrollStyle, isGestureTracking
 
-    ; --- THÊM KIỂM TRA CỜ VÀ TRẠNG THÁI NÚT ---
-    if (!GetKeyState("RButton", "P") || isReleasingRButton) ; Nếu nút đã thả HOẶC đang trong quá trình xử lý thả
+    ; --- CƠ CHẾ WATCHDOG PHÁT HIỆN KẸT CHUỘT (PHẦN CỨNG BÁO ĐÃ THẢ) ---
+    if (!GetKeyState("RButton", "P") || isReleasingRButton) ; Nếu ngón tay vật lý đã thả nhưng script vẫn đang tracking
     {
-        isGestureTracking := 0
-        SetTimer, CheckGesture, Off
-        HideGestureHint()
-        return                     ; Thoát ngay lập tức
+        ; Tự động giải cứu ngay lập tức: chạy Fling nếu có, xả nút chuột phải và reset cờ tracking
+        EndGestureTracking()
+        return
     }
     ; --- KẾT THÚC KIỂM TRA ---
 
@@ -508,7 +556,7 @@ CheckGesture:
         }
         
         ; -- XỬ LÝ CỬ CHỈ DỌC ---
-        else if (Direction = "Vertical" OR !GestureActive ) {  ; Xử lý cuộn dọc (thủ công) khi không có cử chỉ ngang kích hoạt
+        else if ((Direction = "Vertical" OR !GestureActive) && !ScrollTriggered) {  ; Chỉ cuộn dọc khi chưa xoay bánh xe cuộn trang
             if (DY != 0) {
                 ; Lưu vị trí và thời gian để tính vận tốc
                 CurrentTime := A_TickCount

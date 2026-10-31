@@ -14,6 +14,11 @@ global TargetHwnd
 global TargetControl
 global TargetStartX
 global TargetStartY
+global AutoScrollStartTime
+global AutoScrollStartX
+global AutoScrollStartY
+global LastAutoScrollMouseX
+global LastAutoScrollMouseY
 
 AutoScroll:
     if (!AutoScrollActive)
@@ -24,35 +29,63 @@ AutoScroll:
     
     CurrentTick := A_TickCount
     dt := (CurrentTick - LastFlingTick) / 1000.0
+    if (dt < 0.005)  ; Tránh tick lặp do timer jitter khi chưa đủ 5ms
+        return
     LastFlingTick := CurrentTick
     
     ; Giới hạn dt an toàn đề phòng timer bị delay đột ngột
-    if (dt <= 0 || dt > 0.1)
+    if (dt > 0.05)
         dt := 0.016
     
-    ; 1. Áp dụng ma sát suy giảm theo thời gian (Exponential Deceleration)
-    ; Hệ số ma sát động: ở tốc độ cao ma sát thấp (0.965) giúp trôi dài và mượt;
-    ; ở tốc độ thấp ma sát tăng dần (0.940) giúp dừng dứt khoát và êm ái như trên điện thoại.
-    baseFriction := (Abs(FlingVelocityY) > 500) ? 0.965 : 0.940
-    frictionFactor := baseFriction ** (dt / 0.016)
-    FlingVelocityY *= frictionFactor
+    ; --- 1. KIỂM TRA DI CHUYỂN CHUỘT ĐỂ DỪNG CUỘN QUÁN TÍNH ---
+    MouseGetPos, curMouseX, curMouseY
+    currentElapsed := (CurrentTick - AutoScrollStartTime) / 1000.0
+    frameDist := Sqrt((curMouseX - LastAutoScrollMouseX)**2 + (curMouseY - LastAutoScrollMouseY)**2)
+    LastAutoScrollMouseX := curMouseX
+    LastAutoScrollMouseY := curMouseY
     
-    ; 2. Dừng nếu vận tốc đã giảm xuống dưới ngưỡng tối thiểu (40 px/s)
-    if (Abs(FlingVelocityY) < 40)
+    ; Dành 300ms đầu cho quán tính vung tay tự nhiên (follow-through) khi vừa hất và thả chuột
+    ; Sau 300ms: người dùng chủ động di chuyển chuột (>= 4px trong 1 frame) -> DỪNG NGAY LẬP TỨC!
+    if (currentElapsed >= 0.30 && frameDist >= 4)
     {
         StopAutoScroll()
         return
     }
     
-    ; 3. Tích lũy quãng đường di chuyển trong frame này
+    ; --- 2. ÁP DỤNG MA SÁT SUY GIẢM CO GIÃN THEO ĐỘ MẠNH CỦA CÚ HẤT ---
+    absV := Abs(FlingVelocityY)
+    ; Khi hất mạnh (> 3000 px/s): ma sát cực thấp 0.982 giúp trôi cực xa và lâu (3.0 - 4.5 giây)
+    ; Khi hất vừa (1200 - 3000 px/s): ma sát 0.972 giúp trôi 2.0 - 2.5 giây
+    ; Khi hất nhẹ (< 1200 px/s): ma sát 0.958 giúp dừng êm ái
+    if (absV > 3000)
+        baseFriction := 0.982
+    else if (absV > 1200)
+        baseFriction := 0.972
+    else
+        baseFriction := 0.958
+        
+    frictionFactor := baseFriction ** (dt / 0.016)
+    FlingVelocityY *= frictionFactor
+    
+    ; Dừng êm ái khi vận tốc đã triệt tiêu dần về mức rất nhỏ (< 40 px/s)
+    if (absV < 40)
+    {
+        StopAutoScroll()
+        return
+    }
+    
+    ; --- 3. TÍCH LŨY QUÃNG ĐƯỜNG DI CHUYỂN TRONG FRAME NÀY ---
     FlingAccumulator += FlingVelocityY * dt
     
-    ; 4. Phát lệnh cuộn khi đạt đủ ngưỡng pixel
+    ; --- 4. PHÁT LỆNH CUỘN KHI ĐẠT ĐỦ NGƯỠNG PIXEL ---
     if (Abs(FlingAccumulator) >= PixelsPerScrollStep)
     {
         steps := Floor(Abs(FlingAccumulator) / PixelsPerScrollStep)
-        if (steps > 8)  ; Cho phép tối đa 8 nấc mỗi tick khi vuốt cực nhanh
-            steps := 8
+        
+        ; Phân phối nhịp cuộn mượt mà: Cú hất mạnh cho phép bùng nổ lên tới 8 nấc/nhịp ở đầu rồi giảm dần
+        maxSteps := (absV > 8000) ? 8 : (absV > 4000 ? 5 : (absV > 1500 ? 3 : 2))
+        if (steps > maxSteps)
+            steps := maxSteps
             
         key := (ScrollStyle = 1)
             ? (FlingAccumulator < 0 ? "WheelDown" : "WheelUp")
@@ -106,9 +139,9 @@ StopAutoScroll() {
 }
 
 ; Dừng cuộn tự động khi click bất kỳ nút chuột nào hoặc lăn chuột (chạm để dừng)
+; Riêng RButton được xử lý ở Main.ahk để làm phanh hãm mà không mở context menu
 #If (AutoScrollActive)
 ~LButton::
-~RButton::
 ~MButton::
 ~XButton1::
 ~XButton2::
