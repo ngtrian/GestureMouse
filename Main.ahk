@@ -50,7 +50,16 @@ global LastMouseY := 0            ; Vị trí Y cuối cùng cho AutoScroll
 global AutoScrollStartTime := 0   ; Thời điểm bắt đầu AutoScroll
 global LastMoveTime := 0          ; Thời điểm di chuyển cuối cùng
 global positionsCount := 0        ; Số lượng điểm đo trong mảng positions
-global scrollInterval := 20       ; Khoảng thời gian giữa các lần cuộn tự động (ms)
+global scrollInterval := 16       ; Khoảng thời gian giữa các lần cuộn quán tính (16ms ~ 60 FPS)
+global PixelsPerScrollStep := 12  ; Số pixel di chuyển chuột tương ứng 1 nấc cuộn (12px = rất mượt và bám tay)
+global ScrollAccumulatorY := 0    ; Bộ tích lũy quãng đường cuộn trực tiếp 1:1
+global FlingVelocityY := 0        ; Vận tốc quán tính khi thả tay (px/s)
+global FlingAccumulator := 0      ; Bộ tích lũy quãng đường cho quán tính
+global LastFlingTick := 0         ; Thời điểm tick trước đó của Fling
+global TargetHwnd := 0            ; HWND của cửa sổ active lúc nhấn chuột
+global TargetControl := 0         ; HWND của control dưới chuột lúc nhấn chuột
+global TargetStartX := 0          ; Tọa độ X ban đầu trên màn hình
+global TargetStartY := 0          ; Tọa độ Y ban đầu trên màn hình
 global totalDeltaY := 0           ; Tổng khoảng cách di chuyển dọc (dùng cho AutoScroll)
 global ScrollTriggered := 0       ; Theo dõi trạng thái cuộn bằng bánh xe
 global IsGestureHintVisible := 0  ; Trạng thái hiển thị của GestureHint
@@ -274,7 +283,7 @@ CheckExplorerHasSelectedItems() {
     return false
 }
 
-#If (GestureScrollEnabled && !IsAppExcluded() && (IsMouseInActiveWindow() || isGestureTracking))  ; Kích hoạt khi trong active window hoặc đang theo dõi cử chỉ
+#If (isGestureTracking || (GestureScrollEnabled && !IsAppExcluded() && IsMouseInActiveWindow()))  ; Ưu tiên duy trì tracking khi đã bắt đầu cử chỉ
 ; Khi nhấn chuột phải: Khởi tạo biến và bắt đầu kiểm tra cử chỉ + bánh xe
 RButton:: 
     if GetKeyState("LButton", "P") ; Kiểm tra xem nút trái có đang được nhấn giữ không
@@ -282,15 +291,23 @@ RButton::
         return
     }
         
+    if (AutoScrollActive)
+        StopAutoScroll()
+        
     isGestureTracking := 1
     MousePath := "" 
     GestureActive := 0 
     Direction := ""
     VelocityY := 0
+    ScrollAccumulatorY := 0
     AutoScrollActive := 0
     totalDeltaY := 0
     ScrollTriggered := 0  ; Reset trạng thái cuộn bánh xe
-    MouseGetPos, StartX, StartY   ; Lấy tọa độ ban đầu
+    MouseGetPos, StartX, StartY, TargetHwnd, TargetControl, 2   ; Lấy tọa độ ban đầu, HWND cửa sổ và control
+    if (!TargetHwnd)
+        TargetHwnd := WinExist("A")
+    TargetStartX := StartX
+    TargetStartY := StartY
     LastY := StartY
     LastMoveTime := A_TickCount   ; Lưu thời điểm bắt đầu
     positionsCount := 0
@@ -324,15 +341,22 @@ RButton Up::
     HideGestureHint()            ; Ẩn hint
     SetTimer, HideGestureHint, -50  ; Kiểm tra sau 50ms nữa để đảm bảo ẩn hint
     
-    ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT AUTOSCROLL ---
-    if (Direction = "Vertical" OR !GestureActive) { ; Nếu có cử chỉ dọc và chưa cuộn bánh xe
+    ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT QUÁN TÍNH KHI THẢ TAY (FLING INERTIA) ---
+    if (Direction = "Vertical" || (!GestureActive && totalDeltaY > 15)) {
         TimeSinceLastMove := (A_TickCount - LastMoveTime) / 1000.0  ; Thời gian kể từ lần di chuyển cuối (giây)
-        if (Abs(VelocityY) > 50 && totalDeltaY > 20 && TimeSinceLastMove < 0.15) {
+        ; Nếu dừng chuột quá 80ms trước khi thả, coi như dừng tay chứ không phải hất (flick)
+        if (TimeSinceLastMove <= 0.08 && Abs(VelocityY) >= 150 && totalDeltaY >= 20) {
+            FlingVelocityY := VelocityY
+            ; Mở rộng trần vận tốc ban đầu lên 7000 px/s để phân biệt rõ rệt giữa vuốt vừa và vuốt cực mạnh
+            if (FlingVelocityY > 7000)
+                FlingVelocityY := 7000
+            else if (FlingVelocityY < -7000)
+                FlingVelocityY := -7000
+                
+            FlingAccumulator := 0
+            LastFlingTick := A_TickCount
             AutoScrollActive := 1
-            AutoScrollStartTime := A_TickCount
-            LastMouseX := StartX
-            LastMouseY := StartY
-            SetTimer, AutoScroll, %scrollInterval%  ; Bắt đầu AutoScroll
+            SetTimer, AutoScroll, %scrollInterval%  ; Bắt đầu cuộn quán tính
         }
     }
     isReleasingRButton := 0     ; Reset cờ khi kết thúc xử lý
@@ -378,19 +402,33 @@ CheckGesture:
 
     MouseGetPos, X, Y, HoverWindow            ; Lấy tọa độ chuột hiện tại và cửa sổ hover
 
-    ; Nếu không chạy quyền Admin và con trỏ chuột lấn sang Task Manager hoặc cửa sổ elevated
-    ; (Nơi Windows UIPI sẽ chặn toàn bộ low-level hook khiến chuột bị đơ/kẹt cử chỉ):
-    if (!HasUIAccessOrAdmin() && IsElevatedOrTaskManager(HoverWindow)) {
-        if (GestureActive && (Direction = "Horizontal" || Direction = "Diagonal")) {
-            PerformGesture(MousePath)
+    ; Kiểm tra con trỏ chuột có đang nằm trong cửa sổ mục tiêu (TargetHwnd) không
+    isInsideTarget := false
+    if (TargetHwnd) {
+        if (HoverWindow == TargetHwnd || DllCall("IsChild", "Ptr", TargetHwnd, "Ptr", HoverWindow)) {
+            isInsideTarget := true
+        } else {
+            WinGetPos, tX, tY, tW, tH, ahk_id %TargetHwnd%
+            if (X >= tX && X <= (tX + tW) && Y >= tY && Y <= (tY + tH))
+                isInsideTarget := true
         }
-        MousePath := ""
-        GestureActive := 0
-        Direction := ""
-        isGestureTracking := 0
-        HideGestureHint()
-        SetTimer, CheckGesture, Off
-        return
+    }
+
+    ; Nếu không chạy quyền Admin và con trỏ chuột lấn sang Task Manager hoặc cửa sổ elevated
+    ; (Chỉ ngắt nếu đang vẽ cử chỉ ngang/chéo; nếu đang cuộn dọc thì vẫn duy trì để không mất quán tính khi thả chuột)
+    if (!HasUIAccessOrAdmin() && IsElevatedOrTaskManager(HoverWindow)) {
+        if (Direction != "Vertical") {
+            if (GestureActive && (Direction = "Horizontal" || Direction = "Diagonal")) {
+                PerformGesture(MousePath)
+            }
+            MousePath := ""
+            GestureActive := 0
+            Direction := ""
+            isGestureTracking := 0
+            HideGestureHint()
+            SetTimer, CheckGesture, Off
+            return
+        }
     }
     DX := X - StartX             ; Khoảng cách di chuyển ngang
     DY := Y - StartY             ; Khoảng cách di chuyển dọc
@@ -486,37 +524,45 @@ CheckGesture:
                 positions%positionsCount%y := Y
                 positions%positionsCount%time := CurrentTime
                 
-                ; Tính vận tốc và cuộn thủ công theo hàm logarit
+                ; 1. TÍCH LŨY QUÃNG ĐƯỜNG ĐỂ CUỘN 1:1 TRỰC TIẾP
+                ; CHỈ gửi lệnh cuộn khi con trỏ chuột còn nằm trong phạm vi cửa sổ Active (TargetHwnd)
+                ; Kéo chuột ra ngoài -> Dừng cuộn (không ảnh hưởng cửa sổ nền)
+                ; Đưa chuột vào lại -> Tiếp tục cuộn
+                if (isInsideTarget) {
+                    ScrollAccumulatorY += DY
+                    if (Abs(ScrollAccumulatorY) >= PixelsPerScrollStep) {
+                        scrollSteps := Floor(Abs(ScrollAccumulatorY) / PixelsPerScrollStep)
+                        if (scrollSteps > 6)  ; Giới hạn tối đa 6 nấc mỗi tick để tránh nghẽn phím
+                            scrollSteps := 6
+                        
+                        key := (ScrollStyle = 1)
+                            ? (ScrollAccumulatorY < 0 ? "WheelDown" : "WheelUp")
+                            : (ScrollAccumulatorY < 0 ? "WheelUp" : "WheelDown")
+                        
+                        Loop %scrollSteps% {
+                            Send {Blind}{%key%}
+                        }
+                        ScrollAccumulatorY -= (ScrollAccumulatorY > 0 ? 1 : -1) * (scrollSteps * PixelsPerScrollStep)
+                    }
+                } else {
+                    ; Khi ở ngoài cửa sổ: xóa tích lũy dư để khi đưa chuột vào lại không bị giật khấc
+                    ScrollAccumulatorY := 0
+                }
+                
+                ; 2. THEO DÕI VẬN TỐC TỨC THỜI PHỤC VỤ QUÁN TÍNH (FLING)
                 if (positionsCount >= 2) {
                     firstY := positions1y
                     firstTime := positions1time
                     lastY := positions%positionsCount%y
                     lastTime := positions%positionsCount%time
-                    totalDeltaYForVelocity := lastY - firstY ;Khoảng cách di chuyển
-                    totalTimeDelta := (lastTime - firstTime) / 1000.0 ; Thời gian (giây)
+                    totalDeltaYForVelocity := lastY - firstY
+                    totalTimeDelta := (lastTime - firstTime) / 1000.0
                     if (totalTimeDelta > 0) {
-                        VelocityY := totalDeltaYForVelocity / totalTimeDelta  ; Vận tốc (px/s)
-                        AbsVelocityY := Abs(VelocityY)
-                        ; Dùng hàm logarit để tính số lần cuộn
-                        if (AbsVelocityY > 50) {  ; Ngưỡng tối thiểu 50 px/s
-                            scrollAmount := Round(4 * Log(AbsVelocityY) - 8)  ; 2.5 * ln(|VelocityY|) - 8
-                            if (scrollAmount < 1)  ; Đảm bảo ít nhất 1 dòng khi vượt ngưỡng
-                                scrollAmount := 1
-                            if (scrollAmount > 10)  ; Giới hạn tối đa 10 dòng/lần
-                                scrollAmount := 10
-                            Loop %scrollAmount% {
-                                key := (ScrollStyle = 1)
-                                    ? (DY < 0 ? "WheelDown" : "WheelUp") ; ScrollStyle = 1 -> kéo nội dung lên xuống
-                                    : (DY < 0 ? "WheelUp" : "WheelDown") ; ScrollStyle = 2 -> kéo thanh cuộn lên xuống
-                                if (DY != 0)
-                                    Send {Blind}{%key%} ; Gửi lệnh cuộn
-                            }
-                            
-                        }
+                        VelocityY := totalDeltaYForVelocity / totalTimeDelta  ; Vận tốc tức thời (px/s)
                     }
                 }
                 LastY := Y
-                LastMoveTime := A_TickCount
+                LastMoveTime := CurrentTime
                 totalDeltaY += Abs(DY) ; Tổng khoảng cách di chuyển dọc
             }
             StartX := X  ; Cập nhật cả StartX để tránh lỗi khi chuyển hướng
