@@ -44,7 +44,7 @@ if (A_Args.Length()) {
 ;@Ahk2Exe-AddResource image\RU.ico, 306
 ;@Ahk2Exe-AddResource image\flag_vn.ico, 312
 ;@Ahk2Exe-AddResource image\flag_en.ico, 313
-;@Ahk2Exe-AddResource image\mail.ico, 314
+
 
 ; Khai báo biến toàn cục
 global MousePath := ""            ; Chuỗi lưu các hướng cử chỉ (L, R, U, D)

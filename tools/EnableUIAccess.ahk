@@ -3,6 +3,8 @@
         , "uint", 0, "ptr", 0, "uint", 0x20000 ; SYSTEM_STORE_LOCAL_MACHINE
         , "wstr", "Root", "ptr")
     if !hStore
+        hStore := DllCall("Crypt32\CertOpenStore", "ptr", 10, "uint", 0, "ptr", 0, "uint", 0x28000, "wstr", "Root", "ptr")
+    if !hStore
         throw OSError()
     store := CertStore(hStore)
     ; Find or create certificate for signing.
@@ -163,6 +165,8 @@ EnableUIAccess_DeleteCertAndKey(Name) {
     ; This first call "acquires" the key container but also deletes it.
     DllCall("Advapi32\CryptAcquireContext", "ptr*", 0, "str", Name
         , "ptr", 0, "uint", 1, "uint", 16) ; PROV_RSA_FULL=1, CRYPT_DELETEKEYSET=16
+    if !hStore
+        hStore := DllCall("Crypt32\CertOpenStore", "ptr", 10, "uint", 0, "ptr", 0, "uint", 0x28000, "wstr", "Root", "ptr")
     if !hStore := DllCall("Crypt32\CertOpenStore", "ptr", 10 ; STORE_PROV_SYSTEM_W
         , "uint", 0, "ptr", 0, "uint", 0x20000 ; SYSTEM_STORE_LOCAL_MACHINE
         , "wstr", "Root", "ptr")

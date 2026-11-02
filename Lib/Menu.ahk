@@ -1,4 +1,4 @@
-﻿﻿; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
+﻿; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
 #NoEnv
 
 Menu:
