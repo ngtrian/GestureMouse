@@ -1,4 +1,4 @@
-﻿#Persistent 
+#Persistent 
 #SingleInstance Force
 CoordMode, Mouse, Screen
 #NoEnv
