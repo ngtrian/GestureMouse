@@ -84,14 +84,11 @@ RebuildTrayMenu() {
     Menu, Tray, Add, %menuGestureText%, ToggleGestureScrollLabel
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_Settings"), Settings
-    Menu, Tray, Add, % L("Tray_RunAsAdmin"), RunAsAdmin
 
-    ; Mục Cài đặt / Gỡ cài đặt hệ thống
+    ; Mục Cài đặt vào hệ thống (chỉ hiển thị khi file .exe chưa nằm trong Program Files)
     isInstalledDir := (InStr(A_ScriptDir, "Program Files") > 0)
     if (!isInstalledDir && A_IsCompiled) {
         Menu, Tray, Add, % L("Tray_Install"), InstallToSystem
-    } else if (isInstalledDir && A_IsCompiled) {
-        Menu, Tray, Add, % L("Tray_Uninstall"), UninstallFromSystem
     }
     Menu, Tray, Add, % L("Tray_Shortcuts"), :PhimTat
 
@@ -104,7 +101,11 @@ RebuildTrayMenu() {
         Menu, Tray, Icon, %langMenuLabel%, %currentFlagFile%, %currentFlagIcon%
 
     Menu, Tray, Add  ; Dòng phân cách
-    Menu, Tray, Add, % L("Tray_Reload"), ReloadApp
+    if (!A_IsCompiled) {
+        if (!A_IsCompiled) {
+        Menu, Tray, Add, % L("Tray_Reload"), ReloadApp
+    }
+    }
     Menu, Tray, Add, % L("Tray_CheckUpdate"), CheckForUpdates
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_About"), ShowAbout
@@ -465,6 +466,10 @@ PerformInstallation() {
     FileCreateDir, %startMenuDir%
     FileCreateShortcut, %destExe%, %startMenuDir%\GestureMouse.lnk, %destDir%,, GestureMouse, %destExe%,, 1
     FileCreateShortcut, %destExe%, %startMenuDir%\Uninstall GestureMouse.lnk, %destDir%, /uninstall, "Uninstall GestureMouse", %A_WinDir%\System32\shell32.dll,, 32
+    ; Tạo shortcut gỡ cài đặt ngay trong thư mục Program Files
+    FileCreateShortcut, %destExe%, %destDir%\Uninstall GestureMouse.lnk, %destDir%, /uninstall, "Uninstall GestureMouse", %A_WinDir%\System32\shell32.dll,, 32
+    ; Tạo shortcut gỡ cài đặt ngay trong thư mục Program Files
+    FileCreateShortcut, %destExe%, %destDir%\Uninstall GestureMouse.lnk, %destDir%, /uninstall, "Uninstall GestureMouse", %A_WinDir%\System32\shell32.dll,, 32
 
     ; 6. Tự động thêm vào Startup (Khởi động cùng Windows)
     RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run, GestureMouse, "%destExe%"
