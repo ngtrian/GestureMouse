@@ -56,19 +56,27 @@ AutoScroll:
     absV := Abs(FlingVelocityY)
     ; Khi hất mạnh (> 3000 px/s): ma sát cực thấp 0.982 giúp trôi cực xa và lâu (3.0 - 4.5 giây)
     ; Khi hất vừa (1200 - 3000 px/s): ma sát 0.972 giúp trôi 2.0 - 2.5 giây
-    ; Khi hất nhẹ (< 1200 px/s): ma sát 0.958 giúp dừng êm ái
+    ; Khi hất nhẹ (400 - 1200 px/s): ma sát 0.958 giúp dừng êm ái
+    ; Khi chậm dần (< 400 px/s): tăng ma sát (0.915) để hãm phanh dứt khoát ở nhịp cuối
     if (absV > 3000)
         baseFriction := 0.982
     else if (absV > 1200)
         baseFriction := 0.972
-    else
+    else if (absV > 400)
         baseFriction := 0.958
+    else
+        baseFriction := 0.915
         
     frictionFactor := baseFriction ** (dt / 0.016)
     FlingVelocityY *= frictionFactor
     
-    ; Dừng êm ái khi vận tốc đã triệt tiêu dần về mức rất nhỏ (< 40 px/s)
-    if (absV < 40)
+    ; --- CẮT ĐUÔI SỚM (EARLY CUTOFF) ---
+    ; Ngắt khi vận tốc giảm xuống dưới ngưỡng 130 px/s (~6-7 nấc/giây).
+    ; Khi vận tốc < 130 px/s, khoảng cách giữa 2 nấc cuộn sẽ giãn ra > 150ms.
+    ; Hiệu ứng cuộn mượt của trình duyệt chỉ kéo dài ~100-150ms, nếu trôi tiếp
+    ; mắt sẽ thấy trang dừng lại rồi giật từng nấc rời rạc ("thoi thóp").
+    ; Cắt đuôi tại đây giúp trang dừng lại êm ái và dứt khoát.
+    if (absV < 130)
     {
         StopAutoScroll()
         return

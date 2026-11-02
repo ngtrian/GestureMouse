@@ -405,11 +405,11 @@ EndGestureTracking() {
     ; --- KIỂM TRA ĐIỀU KIỆN ĐỂ KÍCH HOẠT QUÁN TÍNH KHI THẢ TAY (FLING INERTIA) ---
     if (Direction = "Vertical" || (!GestureActive && totalDeltaY > 15)) {
         TimeSinceLastMove := (A_TickCount - LastMoveTime) / 1000.0  ; Thời gian kể từ lần di chuyển cuối (giây)
-        ; Nới lỏng ngưỡng thời gian lên 0.15s (150ms) và vận tốc >= 90 px/s để hất chuột tự nhiên dễ ăn quán tính
-        if (TimeSinceLastMove <= 0.15 && Abs(VelocityY) >= 90 && totalDeltaY >= 15) {
+        ; Ngưỡng thời gian <= 0.15s (150ms) và vận tốc >= 120 px/s để hất chuột kích hoạt quán tính
+        if (TimeSinceLastMove <= 0.15 && Abs(VelocityY) >= 120 && totalDeltaY >= 15) {
             rawSpeed := Abs(VelocityY)
             ; Non-linear kinetic boost: vuốt càng nhanh thì quán tính càng bùng nổ mạnh mẽ như trên điện thoại
-            speedMultiplier := 1.0 + (rawSpeed / 1000.0)
+            speedMultiplier := 1.1 + (rawSpeed / 1000.0)
             FlingVelocityY := VelocityY * speedMultiplier
             ; Cho phép trần vận tốc lên tới 25000 px/s cho cú hất mạnh lướt qua nhiều trang
             if (FlingVelocityY > 25000)
