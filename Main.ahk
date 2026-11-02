@@ -5,10 +5,18 @@ CoordMode, Mouse, Screen
 SendMode, Input
 SetWorkingDir, %A_ScriptDir%
 
-; Xử lý tham số /install khi được gọi với quyền Admin
-if (A_Args.Length() && A_Args[1] = "/install") {
-    PerformInstallation()
-    ExitApp
+; Xử lý các tham số dòng lệnh cài đặt, gỡ cài đặt và thông báo
+if (A_Args.Length()) {
+    arg := A_Args[1]
+    if (arg = "/install") {
+        PerformInstallation()
+        ExitApp
+    } else if (arg = "/uninstall" || arg = "/uninstall_confirmed") {
+        PerformUninstallationCLI(arg = "/uninstall_confirmed")
+        ExitApp
+    } else if (arg = "/installed_notify") {
+        SetTimer, ShowInstallSuccessNotify, -800
+    }
 }
 #InstallMouseHook
 #InstallKeybdHook
@@ -843,4 +851,9 @@ RecoverFromSleep:
     if (isLocked)
         return
     Reload
+return
+
+
+ShowInstallSuccessNotify:
+    MsgBox, 64, GestureMouse, % L("Install_Success")
 return

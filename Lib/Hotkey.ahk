@@ -1,4 +1,4 @@
-﻿#SingleInstance Force
+﻿﻿#SingleInstance Force
 #Persistent
 
 #Include *i Language.ahk
@@ -14,8 +14,8 @@ ShowLockScreenGUI:
     Gui, AutoScreenLock:New, -MaximizeBox -MinimizeBox +HwndhAutoLock, % L("Hot_LockTitle")
     if (IsFunc("SetGuiYellowIcon"))
 
-        fnIcon := "SetGuiYellowIcon"
-    if (IsFunc(fnIcon))
+        fnIcon := "SetGuiYellowIcon"
+    if (IsFunc(fnIcon))
         %fnIcon%(hAutoLock)
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, xm ym, % L("Hot_Prompt")
@@ -26,8 +26,8 @@ ShowLockScreenGUI:
     Gui, Show, AutoSize, % L("Hot_LockTitle")
     if (IsFunc("SetGuiYellowIcon"))
 
-        fnIcon := "SetGuiYellowIcon"
-    if (IsFunc(fnIcon))
+        fnIcon := "SetGuiYellowIcon"
+    if (IsFunc(fnIcon))
         %fnIcon%(hAutoLock)
 return
 
@@ -42,8 +42,8 @@ StartLock:
 
         if (IsFunc("SetGuiYellowIcon"))
 
-        fnIcon := "SetGuiYellowIcon"
-    if (IsFunc(fnIcon))
+        fnIcon := "SetGuiYellowIcon"
+    if (IsFunc(fnIcon))
         %fnIcon%(hAutoLock)
         return
     }

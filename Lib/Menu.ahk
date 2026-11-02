@@ -1,4 +1,4 @@
-﻿; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
+﻿﻿; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
 #NoEnv
 
 Menu:
@@ -86,10 +86,12 @@ RebuildTrayMenu() {
     Menu, Tray, Add, % L("Tray_Settings"), Settings
     Menu, Tray, Add, % L("Tray_RunAsAdmin"), RunAsAdmin
 
-    ; Mục Cài đặt vào hệ thống (chỉ hiển thị khi file .exe chưa nằm trong Program Files)
+    ; Mục Cài đặt / Gỡ cài đặt hệ thống
     isInstalledDir := (InStr(A_ScriptDir, "Program Files") > 0)
     if (!isInstalledDir && A_IsCompiled) {
         Menu, Tray, Add, % L("Tray_Install"), InstallToSystem
+    } else if (isInstalledDir && A_IsCompiled) {
+        Menu, Tray, Add, % L("Tray_Uninstall"), UninstallFromSystem
     }
     Menu, Tray, Add, % L("Tray_Shortcuts"), :PhimTat
 
@@ -445,22 +447,100 @@ PerformInstallation() {
     ; 2. Tạo thư mục đích
     FileCreateDir, %destDir%
 
-    ; 3. Copy file vào Program Files
+    ; 3. Tắt nhẹ tiến trình GestureMouse trong Program Files nếu đang chạy để tránh khóa file
+    currentPid := DllCall("GetCurrentProcessId")
+    RunWait, %ComSpec% /c powershell -NoProfile -Command "Get-Process -Name GestureMouse -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne %currentPid% } | Stop-Process -Force",, Hide
+    Sleep, 400
+
+    ; 4. Copy file vào Program Files
     FileCopy, %A_ScriptFullPath%, %destExe%, 1
     if (ErrorLevel) {
         MsgBox, 16, GestureMouse, % L("Install_Error") . "Không thể sao chép file vào " . destDir
         return
     }
 
-    ; 4. Tạo Shortcut trong Start Menu
+    ; 5. Tạo Shortcut trong Start Menu (Shortcut ứng dụng và Shortcut gỡ cài đặt)
     startMenuDir := A_AppDataCommon . "\Microsoft\Windows\Start Menu\Programs\GestureMouse"
     FileCreateDir, %startMenuDir%
-    FileCreateShortcut, %destExe%, %startMenuDir%\GestureMouse.lnk, %destDir%,, GestureMouse
+    FileCreateShortcut, %destExe%, %startMenuDir%\GestureMouse.lnk, %destDir%,, GestureMouse, %destExe%,, 1
+    FileCreateShortcut, %destExe%, %startMenuDir%\Uninstall GestureMouse.lnk, %destDir%, /uninstall, "Uninstall GestureMouse", %A_WinDir%\System32\shell32.dll,, 32
 
-    ; 5. Khởi chạy bản đã cài đặt trong Program Files
-    Run, "%destExe%"
+    ; 6. Tự động thêm vào Startup (Khởi động cùng Windows)
+    RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run, GestureMouse, "%destExe%"
 
-    ; 6. Thoát bản hiện tại
+    ; 7. Khởi chạy bản đã cài đặt trong Program Files kèm cờ thông báo thành công
+    Run, "%destExe%" /installed_notify
+
+    ; 8. Thoát bản chạy tạm thời
+    ExitApp
+}
+
+UninstallFromSystem:
+    UninstallApp()
+return
+
+UninstallApp() {
+    if (!A_IsCompiled) {
+        MsgBox, 64, GestureMouse, % "Tính năng này chỉ dành cho file .exe đã cài đặt!"
+        return
+    }
+
+    ; Xác nhận từ người dùng
+    MsgBox, 36, GestureMouse, % L("Uninstall_Confirm")
+    IfMsgBox, No
+        return
+
+    ; Nếu chưa có quyền Admin, yêu cầu nâng quyền và chuyển sang chế độ đã xác nhận
+    if (!A_IsAdmin) {
+        try {
+            Run *RunAs "%A_ScriptFullPath%" /uninstall_confirmed
+        }
+        return
+    }
+
+    PerformUninstallation()
+}
+
+PerformUninstallationCLI(isConfirmed := false) {
+    if (!isConfirmed) {
+        MsgBox, 36, GestureMouse, % L("Uninstall_Confirm")
+        IfMsgBox, No
+            return
+    }
+
+    if (!A_IsAdmin) {
+        try {
+            Run *RunAs "%A_ScriptFullPath%" /uninstall_confirmed
+        }
+        return
+    }
+
+    PerformUninstallation()
+}
+
+PerformUninstallation() {
+    destDir := "C:\Program Files\GestureMouse"
+    startMenuDir := A_AppDataCommon . "\Microsoft\Windows\Start Menu\Programs\GestureMouse"
+
+    ; 1. Tắt các tiến trình GestureMouse khác đang chạy
+    currentPid := DllCall("GetCurrentProcessId")
+    RunWait, %ComSpec% /c powershell -NoProfile -Command "Get-Process -Name GestureMouse -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne %currentPid% } | Stop-Process -Force",, Hide
+
+    ; 2. Xóa khỏi danh sách khởi động cùng Windows
+    try {
+        RegDelete, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run, GestureMouse
+    }
+
+    ; 3. Xóa thư mục và shortcut trong Start Menu
+    FileRemoveDir, %startMenuDir%, 1
+
+    ; 4. Thông báo cho người dùng đã gỡ cài đặt thành công
+    MsgBox, 64, GestureMouse, % L("Uninstall_Success")
+
+    ; 5. Dọn dẹp thư mục Program Files sau khi tiến trình thoát
+    cmdCleanup := "cmd.exe /c timeout /t 2 /nobreak >nul & rmdir /s /q """ . destDir . """"
+    Run, %cmdCleanup%,, Hide
+
     ExitApp
 }
 

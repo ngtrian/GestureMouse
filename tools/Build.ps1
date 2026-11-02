@@ -104,7 +104,17 @@ try {
             $shortcut.WorkingDirectory = $destDir
             $shortcut.Description = "GestureMouse - Ung dung ho tro cu chi chuot"
             $shortcut.Save()
-            Write-Host "[+] Da them GestureMouse vao Start Menu!" -ForegroundColor Green
+
+            # Tao shortcut Go cai dat (Uninstall) trong Start Menu
+            $uninstShortcut = $wshShell.CreateShortcut("$startMenuDir\Uninstall GestureMouse.lnk")
+            $uninstShortcut.TargetPath = $installedExe
+            $uninstShortcut.Arguments = "/uninstall"
+            $uninstShortcut.WorkingDirectory = $destDir
+            $uninstShortcut.Description = "Go cai dat GestureMouse khoi he thong"
+            $uninstShortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,32"
+            $uninstShortcut.Save()
+
+            Write-Host "[+] Da them GestureMouse va Shortcut Go cai dat vao Start Menu!" -ForegroundColor Green
         } catch {
             Write-Host "[!] Khong the tao shortcut Start Menu: $($_.Exception.Message)" -ForegroundColor Yellow
         }

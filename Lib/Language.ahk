@@ -26,8 +26,13 @@ InitLanguage() {
     v["Tray_Settings"]          := "Cài đặt..."
     v["Tray_RunAsAdmin"]        := "Chạy quyền Admin"
     v["Tray_Install"]           := "Cài đặt vào hệ thống (UIAccess)"
-    v["Install_Confirm"]        := "Bạn có muốn cài đặt GestureMouse vào Program Files và đăng ký UIAccess (để cuộn được Task Manager và không bao giờ bị hỏi UAC) không?"
+    v["Tray_Uninstall"]         := "Gỡ cài đặt khỏi hệ thống"
+    v["Install_Confirm"]        := "Bạn có muốn cài đặt GestureMouse vào Program Files và đăng ký UIAccess (để cuộn được Task Manager, khởi động cùng Windows và không bao giờ bị hỏi UAC) không?"
+    v["Install_Success"]        := "Đã cài đặt thành công GestureMouse vào hệ thống!`n`nPhần mềm đã được cấp đặc quyền UIAccess và tự động khởi động cùng Windows."
     v["Install_Error"]          := "Cài đặt thất bại: "
+    v["Uninstall_Confirm"]      := "Bạn có chắc chắn muốn gỡ cài đặt GestureMouse khỏi hệ thống không?`n`nThao tác này sẽ xóa ứng dụng khỏi Program Files, Start Menu và danh sách tự khởi động."
+    v["Uninstall_Success"]      := "Đã gỡ cài đặt GestureMouse thành công khỏi hệ thống!"
+    v["Uninstall_Error"]        := "Gỡ cài đặt thất bại: "
     v["Tray_Shortcuts"]         := "Phím tắt"
     v["Tray_Language"]          := "Ngôn ngữ"
     v["Tray_About"]             := "Giới thiệu..."
@@ -173,8 +178,13 @@ InitLanguage() {
     e["Tray_Settings"]          := "Settings..."
     e["Tray_RunAsAdmin"]        := "Run as Administrator"
     e["Tray_Install"]           := "Install to System (UIAccess)"
-    e["Install_Confirm"]        := "Do you want to install GestureMouse into Program Files and register UIAccess (to scroll in Task Manager without UAC)?"
+    e["Tray_Uninstall"]         := "Uninstall from System"
+    e["Install_Confirm"]        := "Do you want to install GestureMouse into Program Files and register UIAccess (to scroll in Task Manager, start with Windows, and never get prompted by UAC)?"
+    e["Install_Success"]        := "GestureMouse has been successfully installed into the system!`n`nIt is now granted UIAccess privilege and set to start with Windows."
     e["Install_Error"]          := "Installation failed: "
+    e["Uninstall_Confirm"]      := "Are you sure you want to uninstall GestureMouse from the system?`n`nThis will remove the application from Program Files, Start Menu, and Startup."
+    e["Uninstall_Success"]      := "GestureMouse has been successfully uninstalled from the system!"
+    e["Uninstall_Error"]        := "Uninstallation failed: "
     e["Tray_Shortcuts"]         := "Shortcuts"
     e["Tray_Language"]          := "Language"
     e["Tray_About"]             := "About..."
@@ -315,6 +325,8 @@ InitLanguage() {
 ; Hàm tra cứu chuỗi theo key
 L(key) {
     global CurrentLang, LangTable
+    if (!LangTable || !LangTable.HasKey("vi"))
+        InitLanguage()
     if (LangTable[CurrentLang].HasKey(key))
         return LangTable[CurrentLang][key]
     if (LangTable["vi"].HasKey(key))

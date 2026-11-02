@@ -1,4 +1,4 @@
-﻿#SingleInstance, force
+﻿﻿#SingleInstance, force
 #NoEnv
 #Persistent
 
@@ -50,8 +50,8 @@ ShowNotification() {
     WinSet, Transparent , 220
     WinSet, Region, 0-0 w%GuiWidth% h%GuiHeight% R15-15  ; Bo tròn góc
 
-    fnTip := "UpdateTrayTip"
-    if (IsFunc(fnTip))
+    fnTip := "UpdateTrayTip"
+    if (IsFunc(fnTip))
         %fnTip%()
 
     if (!isLocked) {
@@ -137,8 +137,8 @@ UnlockKeyboard() {
     
     ToolTip, ; Xóa tooltip
     ShowNotification()
-    fnTip := "UpdateTrayTip"
-    if (IsFunc(fnTip))
+    fnTip := "UpdateTrayTip"
+    if (IsFunc(fnTip))
         %fnTip%()
 }
 
