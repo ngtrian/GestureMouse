@@ -36,6 +36,7 @@ if (A_Args.Length() && A_Args[1] = "/install") {
 ;@Ahk2Exe-AddResource image\RU.ico, 306
 ;@Ahk2Exe-AddResource image\flag_vn.ico, 312
 ;@Ahk2Exe-AddResource image\flag_en.ico, 313
+;@Ahk2Exe-AddResource image\mail.ico, 314
 
 ; Khai báo biến toàn cục
 global MousePath := ""            ; Chuỗi lưu các hướng cử chỉ (L, R, U, D)
@@ -105,7 +106,8 @@ InitPowerAndSessionWatch() ; Khởi tạo theo dõi sleep, unlock màn hình, ch
 SetTimer, UpdateExplorerSelectionState, 300 ; Timer kiểm tra nền selection của Explorer ngoài hook thread
 
 #Include %A_ScriptDir%\Lib\Language.ahk ; Quản lý đa ngôn ngữ (chỉ gồm các hàm)
-#Include %A_ScriptDir%\Lib\Menu.ahk ; Menu, UpdateTrayTip, Settings, ShowAbout, ExitMenu
+#Include %A_ScriptDir%\Lib\Menu.ahk ; Menu, UpdateTrayTip, Settings, ExitMenu
+#Include %A_ScriptDir%\Lib\About.ahk ; Giới thiệu và hướng dẫn sử dụng
 #Include %A_ScriptDir%\Lib\ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
 #Include %A_ScriptDir%\Lib\ExcludedApps.ahk ; Quản lý danh sách ứng dụng loại trừ khỏi cử chỉ chuột
 #Include %A_ScriptDir%\Lib\Hotkey.ahk ;AutoScreenLock, Mute

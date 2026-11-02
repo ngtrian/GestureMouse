@@ -184,6 +184,7 @@ Tooltips["Text15"] := L("TT_15")
 Tooltips["TextInfo"] := L("TT_Info")
 Tooltips["TextVol"] := L("TT_MouseVolume")
 Tooltips["ExAppsBtn"] := L("TT_ExApps")
+Tooltips["TextPaste"] := L("TT_PastePlain")
 
 ; Nhóm Gesture Mouse
 Gui, Font, Bold
@@ -214,7 +215,7 @@ Gui, Add, Button, x20 y288 w160 h26 gOpenExcludedAppsGui vExAppsBtn, % L("Set_Ex
 
 ; Nhóm Hotkeys
 Gui, Font, Bold
-Gui, Add, GroupBox, xs w500 h170, % L("Set_GroupHotkeys")
+Gui, Add, GroupBox, xs w500 h195, % L("Set_GroupHotkeys")
 Gui, Font, Normal
 
 Gui, Add, Text, x38 y370, % L("Set_Mute")
@@ -241,14 +242,18 @@ Gui, Add, Picture, x335 yp+5 w14 h14 gShowTooltip vTextInfo Icon-200, %A_WinDir%
 ; Thêm sự kiện nhấn nút để chạy hàm CreateOption()
 Gui, Add, Button, x355 y465 w80 Center gCreateOption, % L("Set_OptionsBtn")
 
+Gui, Add, Text, x38 y495, % L("Set_PastePlain")
+Gui, Add, Picture, x18 yp+1 w14 h14 Icon261, %A_WinDir%\System32\shell32.dll
+Gui, Add, Button, x200 y490 w130 Center gShowTooltip vTextPaste, Ctrl + Shift + V
+
 ; Nhóm Cài đặt chung
 Gui, Font, Bold
 Gui, Add, GroupBox, xs w500 h115, % L("Set_GroupGeneral")
 Gui, Font, Normal
-Gui, Add, Checkbox, x30 y540 vAutoStart gSave Checked%AutoStart%, % L("Set_AutoStart")
-Gui, Add, Text, x20 y565, % L("Set_ScrollMethodLabel")
-Gui, Add, Radio, x30 y590 vScrollStyle1 gSave Group Checked%ScrollStyle1%, % L("Set_ScrollStyle1")
-Gui, Add, Radio, x30 y610 vScrollStyle2 gSave Checked%ScrollStyle2%, % L("Set_ScrollStyle2")
+Gui, Add, Checkbox, x30 y565 vAutoStart gSave Checked%AutoStart%, % L("Set_AutoStart")
+Gui, Add, Text, x20 y590, % L("Set_ScrollMethodLabel")
+Gui, Add, Radio, x30 y615 vScrollStyle1 gSave Group Checked%ScrollStyle1%, % L("Set_ScrollStyle1")
+Gui, Add, Radio, x30 y635 vScrollStyle2 gSave Checked%ScrollStyle2%, % L("Set_ScrollStyle2")
 
 ; Checked radio theo giá trị từ registry
 GuiControl,, ScrollStyle1, % (ScrollStyle = 1)
@@ -372,114 +377,6 @@ RunAsAdmin:
     }
 return
 
-ShowAbout:
-    Gui, About:New, -MaximizeBox -MinimizeBox +HwndhAboutGui, % L("About_Title")
-    SetGuiYellowIcon(hAboutGui)
-    Gui, Font, s10, Segoe UI
-
-    Gui, Add, GroupBox, x10 y5 w420 h95,
-    ; Icon (bên trong GroupBox)
-    aboutIcon := A_IsCompiled ? A_ScriptFullPath : (A_ScriptDir . "\image\unnamed.ico")
-    Gui, Add, Picture, x20 y25 w32 h32 Icon1, %aboutIcon%
-    ; Dòng 1: Tên ứng dụng
-    Gui, Font, s18, Segoe UI
-    Gui, Add, Text, x65 y18 w360, Gesture Mouse
-    Gui, Font, s10 Normal, Segoe UI
-    ; Dòng 2: Headline
-    Gui, Add, Text, x65 y50 w360, % L("About_Headline")
-    ; Dòng 3: Phiên bản và Ngày cập nhật
-    Gui, Font, s9, Segoe UI
-    Gui, Add, Text, x65 y70 w360, % L("About_Version")
-
-    Gui, Add, Text, x20 y125, % L("About_GuideTitle")
-    
-    if (CurrentLang = "en") {
-        UsageGuideText =
-        ( LTrim Join`n
-        1. Right Mouse Gestures (Browsers & File Explorer):
-        - Hold Right Mouse Button and move in direction:
-          • Left (←): Go back to previous page
-          • Right (→): Go forward to next page
-          • Up then Left (↑__): Switch to previous tab
-          • Down then Left (↓¯¯): Switch to next tab
-          • Right then Up (__↑): Close current tab
-          • Right then Down (¯¯↓): Reload / Refresh current page
-        * Drawing gestures work in Chrome, Edge, Firefox, CocCoc, Brave... and File Explorer (when no file is selected).
-
-        2. Mouse Scrolling (All Windows):
-        - Hold Right Click + drag up/down: Direct scroll (scroll content or scrollbar, configurable in Settings).
-        - Hold Right Click + flick up/down then release: Trigger inertial Auto-Scroll. Click left/middle button or move mouse to stop.
-        - Hold Right Click + scroll mouse wheel: Fast page scroll (Page Up / Page Down).
-
-        3. Volume & Brightness:
-        - Hold Left Click + scroll wheel: Quickly adjust volume up / down.
-        - Win + Scroll (or Win + PgUp/PgDn): Increase / Decrease system volume.
-        - Ctrl + Shift + M: Mute / Unmute system audio.
-        - F9 / F10: Decrease / Increase screen brightness.
-
-        4. Useful Hotkeys:
-        - Ctrl + Alt (or click tray icon): Toggle gestures & mouse scrolling (colored icon: On, gray icon: Off).
-        - Ctrl + Alt + L: Lock keyboard (and optional mouse clicks). Type 'unlock' to unlock.
-        - Ctrl + Shift + L: Schedule auto screen lock countdown timer.
-        - Ctrl + Shift + V: Paste plain text (automatically trims whitespace and empty newlines at start/end).
-
-        5. System Permissions & Elevated Apps:
-        - To use in Task Manager or elevated Administrator windows (UIPI):
-          => Right-click tray icon > select "Run as Administrator" or "Install to System (UIAccess)".
-        )
-    } else {
-        UsageGuideText =
-        ( LTrim Join`n
-        1. Cử chỉ chuột phải (Trình duyệt & File Explorer):
-        Giữ chuột phải và rê theo các hướng để thao tác nhanh:
-          - Sang trái (←): Quay lại trang trước (Back)
-          - Sang phải (→): Tiến tới trang tiếp theo (Forward)
-          - Lên rồi Trái (↑__): Chuyển sang tab trước đó
-          - Xuống rồi Trái (↓¯¯): Chuyển sang tab tiếp theo
-          - Phải rồi Lên (__↑): Đóng tab hiện tại
-          - Phải rồi Xuống (¯¯↓): Tải lại / Làm mới trang
-        * Cử chỉ vẽ hỗ trợ trên Chrome, Edge, Firefox, Cốc Cốc, Brave... và File Explorer (khi không chọn file).
-
-        2. Thao tác cuộn chuột (Tất cả cửa sổ):
-        - Giữ chuột phải + rê lên/xuống: Cuộn trang trực tiếp (cuộn nội dung hoặc kéo thanh cuộn tùy Cài đặt).
-        - Giữ chuột phải + vuốt nhanh lên/xuống rồi thả: Cuộn tự động theo quán tính (Auto-Scroll). Nhấp chuột trái/giữa hoặc rê chuột để dừng cuộn.
-        - Giữ chuột phải + lăn bánh xe: Cuộn nhanh từng trang (Page Up / Page Down).
-
-        3. Âm lượng & Độ sáng:
-        - Giữ chuột trái + lăn bánh xe: Tăng / Giảm âm lượng nhanh chóng.
-        - Win + Lăn chuột (hoặc Win + PgUp/PgDn): Tăng / Giảm âm lượng hệ thống.
-        - Ctrl + Shift + M: Bật / Tắt âm thanh hệ thống (Mute).
-        - F9 / F10: Giảm / Tăng độ sáng màn hình.
-
-        4. Phím tắt tiện ích:
-        - Ctrl + Alt (hoặc click chuột trái icon khay): Bật / Tắt cử chỉ và cuộn chuột (icon màu: Bật, icon xám: Tắt).
-        - Ctrl + Alt + L: Khóa bàn phím (và chuột tùy chọn). Gõ chữ 'unlock' để mở khóa.
-        - Ctrl + Shift + L: Hẹn giờ tự động khóa màn hình.
-        - Ctrl + Shift + V: Dán văn bản thuần túy (tự động xóa khoảng trắng và dòng trống ở đầu/cuối).
-
-        5. Quyền hệ thống & Ứng dụng Quản trị:
-        - Để hoạt động trên Task Manager hoặc ứng dụng chạy quyền Administrator (UIPI):
-          => Nhấp chuột phải icon khay > chọn "Chạy với quyền Administrator" hoặc "Cài đặt vào hệ thống (UIAccess)".
-        )
-    }
-    
-    Gui, Add, Edit, x20 y145 w400 h190 ReadOnly +VScroll ClassEdit1 +Border, %UsageGuideText%
-
-    Gui, Font, s9, Segoe UI
-    Gui, Add, Text, x15 y360 Left, % L("About_Author")
-    Gui, Add, Link, x+2 y360 Left, <a href="mailto:nguyentrian87@gmail.com">Email</a>
-    Gui, Add, Button, x350 y358 w70 gOpenDonateLink, % L("About_Donate")
-
-    ; Hiển thị GUI
-    Gui, Show, AutoSize Center, % L("About_Title")
-    SetGuiYellowIcon(hAboutGui)
-    GuiControl, About:Focus, Static1
-return
-
-OpenDonateLink:
-    Run, https://your-donation-link.com
-return
-
 SettingsGuiClose:
 SettingsGuiEscape:
     if (hExcludedGui && WinExist("ahk_id " . hExcludedGui) && IsFunc("CloseExcludedGui")) {
@@ -492,12 +389,6 @@ SettingsGuiEscape:
     }
     Gui, Settings:Destroy
     hSettingsGui := 0
-return
-
-AboutGuiClose:
-AboutGuiEscape:
-    Gui, About:Destroy
-    hAboutGui := 0
 return
 
 LockOptionsGuiClose:

@@ -1,4 +1,4 @@
-; ExcludedApps.ahk - Quản lý danh sách ứng dụng loại trừ khỏi cử chỉ chuột và cuộn chuột
+﻿; ExcludedApps.ahk - Quản lý danh sách ứng dụng loại trừ khỏi cử chỉ chuột và cuộn chuột
 #NoEnv
 
 global ExcludedAppsList := []     ; Danh sách mảng tên tiến trình (ví dụ: ["photoshop.exe", "figma.exe"])

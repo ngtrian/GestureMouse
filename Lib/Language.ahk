@@ -74,6 +74,7 @@ InitLanguage() {
     v["Set_Volume"]             := "Tăng/giảm âm lượng"
     v["Set_Brightness"]         := "Độ sáng"
     v["Set_LockKBAndMouse"]     := "Khóa bàn phím và chuột"
+    v["Set_PastePlain"]         := "Dán văn bản thuần"
     v["Set_OptionsBtn"]         := "Tùy chọn.."
     v["Set_ExcludedAppsBtn"]    := "Ứng dụng loại trừ..."
     v["TT_ExApps"]              := "Quản lý danh sách ứng dụng không áp dụng cử chỉ chuột và cuộn chuột"
@@ -117,6 +118,7 @@ InitLanguage() {
     v["TT_14"]                  := "Khóa bàn phím và chuột (gõ 'unlock' để mở)"
     v["TT_15"]                  := "Chọn phương pháp cuộn chuột"
     v["TT_Info"]                := "Gõ 'unlock' để mở khóa bàn phím và chuột"
+    v["TT_PastePlain"]          := "Dán văn bản thuần túy (tự động xóa khoảng trắng và dòng trống ở đầu/cuối)"
     
     ; Tùy chọn LockOptions
     v["Opt_Title"]              := "Tùy chọn"
@@ -129,8 +131,12 @@ InitLanguage() {
     v["About_Headline"]         := "Hỗ trợ thao tác cử chỉ, phím tắt và cuộn tự động"
     v["About_Version"]          := "Phiên bản: 1.0 | Ngày cập nhật: 20/04/2025"
     v["About_GuideTitle"]       := "Hướng dẫn sử dụng:"
-    v["About_Author"]           := "Tác giả: Nguyễn Tri Ân | "
+    v["About_Author"]           := "Tác giả: Nguyễn Tri Ân"
     v["About_Donate"]           := "Donate"
+    v["About_Close"]            := "Đóng"
+    v["About_TabGestures"]      := "Cử chỉ"
+    v["About_TabShortcuts"]     := "Phím tắt"
+    v["About_TabSystem"]        := "Hệ thống"
     ; Gesture Hints khi vẽ cử chỉ chuột
     v["Hint_CloseTab"]          := "Đóng tab"
     v["Hint_Refresh"]           := "Làm mới trang"
@@ -215,6 +221,7 @@ InitLanguage() {
     e["Set_Volume"]             := "Volume up/down"
     e["Set_Brightness"]         := "Brightness"
     e["Set_LockKBAndMouse"]     := "Lock keyboard and mouse"
+    e["Set_PastePlain"]         := "Paste Plain Text"
     e["Set_OptionsBtn"]         := "Options.."
     e["Set_ExcludedAppsBtn"]    := "Excluded Apps..."
     e["TT_ExApps"]              := "Manage applications excluded from mouse gestures and right-click scroll"
@@ -258,6 +265,7 @@ InitLanguage() {
     e["TT_14"]                  := "Lock keyboard and mouse (type 'unlock' to unlock)"
     e["TT_15"]                  := "Select mouse scroll method"
     e["TT_Info"]                := "Type 'unlock' to unlock keyboard and mouse"
+    e["TT_PastePlain"]          := "Paste plain text (automatically trims whitespace & empty lines)"
     
     ; Options
     e["Opt_Title"]              := "Options"
@@ -270,8 +278,12 @@ InitLanguage() {
     e["About_Headline"]         := "Mouse gestures, shortcuts and auto-scroll utility"
     e["About_Version"]          := "Version: 1.0 | Updated: 20/04/2025"
     e["About_GuideTitle"]       := "User Guide:"
-    e["About_Author"]           := "Author: Nguyen Tri An | "
+    e["About_Author"]           := "Author: Nguyen Tri An"
     e["About_Donate"]           := "Donate"
+    e["About_Close"]            := "Close"
+    e["About_TabGestures"]      := "Gestures"
+    e["About_TabShortcuts"]     := "Shortcuts"
+    e["About_TabSystem"]        := "System"
     ; Gesture Hints
     e["Hint_CloseTab"]          := "Close Tab"
     e["Hint_Refresh"]           := "Reload Page"
