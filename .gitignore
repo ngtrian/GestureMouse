@@ -1,4 +1,4 @@
-# Local History extensions
+﻿# Local History extensions
 .history/
 .lh/
 
@@ -7,3 +7,6 @@
 
 
 *.zip
+
+# AI Rules
+GEMINI.md
