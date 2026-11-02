@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestureMouse - Cử chỉ chuột thông minh & Cuộn siêu tốc cho Windows</title>
+    <title>GestureMouse - Smart Mouse Gestures & Inertial Scrolling for Windows</title>
     <meta name="description" content="Tiện ích cử chỉ chuột phải thông minh, cuộn trang quán tính mượt mà và phím tắt đa năng hoàn toàn miễn phí, mã nguồn mở cho Windows.">
     <link rel="icon" type="image/x-icon" href="image/icon1.ico">
     <!-- Google Fonts -->
@@ -67,7 +67,7 @@
 
         /* Header & Navbar */
         header {
-            padding: 18px 0;
+            padding: 16px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(12px);
             position: sticky;
@@ -102,7 +102,7 @@
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 28px;
+            gap: 20px;
             list-style: none;
         }
 
@@ -116,6 +116,28 @@
 
         .nav-links a:hover {
             color: var(--text-main);
+        }
+
+        .btn-lang {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            background: rgba(37, 99, 235, 0.15);
+            border: 1px solid rgba(37, 99, 235, 0.35);
+            color: #93c5fd;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-lang:hover {
+            background: rgba(37, 99, 235, 0.3);
+            color: #fff;
+            transform: translateY(-1px);
         }
 
         .btn-github {
@@ -140,7 +162,7 @@
 
         /* Hero Section */
         .hero {
-            padding: 90px 0 70px;
+            padding: 85px 0 65px;
             text-align: center;
         }
 
@@ -187,7 +209,7 @@
         .hero p {
             font-size: 1.15rem;
             color: var(--text-muted);
-            max-width: 680px;
+            max-width: 700px;
             margin: 0 auto 36px;
         }
 
@@ -257,6 +279,55 @@
 
         .hero-highlights svg {
             color: var(--success);
+        }
+
+        /* Winget Install Terminal Banner */
+        .winget-banner {
+            max-width: 620px;
+            margin: 0 auto 70px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        .winget-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: #58a6ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .winget-code span.prompt {
+            color: #8b949e;
+            user-select: none;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .btn-copy:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
         }
 
         /* Features Section */
@@ -448,7 +519,8 @@
         @media (max-width: 768px) {
             .hero { padding: 60px 0 40px; }
             .gestures-section, .install-box { padding: 24px; }
-            .nav-links { display: none; }
+            .nav-links { display: flex; gap: 10px; }
+            .nav-links li:not(:last-child):not(:nth-last-child(2)) { display: none; }
         }
     </style>
 </head>
@@ -464,12 +536,17 @@
                     <span>GestureMouse</span>
                 </a>
                 <ul class="nav-links">
-                    <li><a href="#features">Tính năng</a></li>
-                    <li><a href="#gestures">Cử chỉ mẫu</a></li>
-                    <li><a href="#install">Cách sử dụng</a></li>
+                    <li><a href="#features" id="i18n-nav-features">Tính năng</a></li>
+                    <li><a href="#gestures" id="i18n-nav-gestures">Cử chỉ mẫu</a></li>
+                    <li><a href="#install" id="i18n-nav-install">Cách sử dụng</a></li>
+                    <li>
+                        <button id="langToggleBtn" class="btn-lang" onclick="toggleLanguage()">
+                            <span id="langFlag">🇻🇳</span> <span id="langLabel">Tiếng Việt</span>
+                        </button>
+                    </li>
                     <li><a href="https://github.com/ngtrian/GestureMouse" target="_blank" class="btn-github">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                        GitHub Repo
+                        GitHub
                     </a></li>
                 </ul>
             </div>
@@ -481,33 +558,41 @@
         <section class="hero">
             <div class="tag-pill">
                 <span class="dot"></span>
-                <span>Phiên bản v1.0 • 100% Miễn phí & Mã nguồn mở</span>
+                <span id="i18n-hero-pill">Phiên bản v1.0.0 • 100% Miễn phí & Mã nguồn mở</span>
             </div>
-            <h1>Nâng Tầm Trải Nghiệm Chuột Trên <span class="gradient-text">Windows</span></h1>
-            <p>Biến mọi con chuột thành công cụ đa năng với Cử chỉ chuột phải thông minh, Cuộn trang quán tính mượt mà và Phím tắt tăng tốc làm việc.</p>
+            <h1 id="i18n-hero-title">Nâng Tầm Trải Nghiệm Chuột Trên <span class="gradient-text">Windows</span></h1>
+            <p id="i18n-hero-desc">Biến mọi con chuột thành công cụ đa năng với Cử chỉ chuột phải thông minh, Cuộn trang quán tính mượt mà và Phím tắt tăng tốc làm việc.</p>
             
             <div class="hero-actions">
-                <a href="https://github.com/ngtrian/GestureMouse/releases" target="_blank" class="btn-primary">
+                <a href="https://github.com/ngtrian/GestureMouse/releases/latest" target="_blank" class="btn-primary" id="i18n-hero-btn-dl">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Tải Về Ngay (.exe)
                 </a>
-                <a href="#features" class="btn-secondary">
+                <a href="#features" class="btn-secondary" id="i18n-hero-btn-feat">
                     Khám phá tính năng
                 </a>
             </div>
 
+            <!-- Winget Install Command -->
+            <div class="winget-banner">
+                <div class="winget-code">
+                    <span class="prompt">&gt;</span> winget install GestureMouse
+                </div>
+                <button class="btn-copy" onclick="copyWinget()" id="btnCopyText">Copy</button>
+            </div>
+
             <div class="hero-highlights">
-                <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> Không cần cài đặt (Portable)</span>
-                <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> Tích hợp UIAccess vượt UAC</span>
-                <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> Không thu thập dữ liệu</span>
+                <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> <span id="i18n-hl-1">Không cần cài đặt (Portable)</span></span>
+                <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> <span id="i18n-hl-2">Tích hợp UIAccess vượt UAC</span></span>
+                <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> <span id="i18n-hl-3">Không thu thập dữ liệu</span></span>
             </div>
         </section>
 
         <!-- Features Grid -->
         <section id="features">
             <div class="section-title">
-                <h2>Tính Năng Đột Phá</h2>
-                <p>Thiết kế dành cho dân văn phòng, lập trình viên và người muốn tối ưu hóa từng giây làm việc</p>
+                <h2 id="i18n-feat-heading">Tính Năng Đột Phá</h2>
+                <p id="i18n-feat-sub">Thiết kế dành cho dân văn phòng, lập trình viên và người muốn tối ưu hóa từng giây làm việc</p>
             </div>
 
             <div class="grid-3">
@@ -515,48 +600,48 @@
                     <div class="card-icon">
                         <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
                     </div>
-                    <h3>Cử Chỉ Chuột Phải (Gestures)</h3>
-                    <p>Giữ chuột phải và lướt nhẹ để Back, Forward, Chuyển tab hoặc Đóng tab trên Chrome, Edge, Cốc Cốc, VS Code và Explorer. Có màn hình HUD trực quan xuất hiện ngay tức thì.</p>
+                    <h3 id="i18n-card-1-title">Cử Chỉ Chuột Phải (Gestures)</h3>
+                    <p id="i18n-card-1-desc">Giữ chuột phải và lướt nhẹ để Back, Forward, Chuyển tab hoặc Đóng tab trên Chrome, Edge, Cốc Cốc, VS Code và Explorer. Có màn hình HUD trực quan xuất hiện ngay tức thì.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="card-icon">
                         <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                     </div>
-                    <h3>Cuộn Quán Tính (Inertial Scroll)</h3>
-                    <p>Vuốt nhanh chuột rồi thả tay, trang sẽ trượt đi mượt mà và giảm tốc êm ái nhờ thuật toán mô phỏng vật lý như trên màn hình cảm ứng điện thoại.</p>
+                    <h3 id="i18n-card-2-title">Cuộn Quán Tính (Inertial Scroll)</h3>
+                    <p id="i18n-card-2-desc">Vuốt nhanh chuột rồi thả tay, trang sẽ trượt đi mượt mà và giảm tốc êm ái nhờ thuật toán mô phỏng vật lý như trên màn hình cảm ứng điện thoại.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="card-icon">
                         <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
                     </div>
-                    <h3>Âm Lượng & Độ Sáng Siêu Tốc</h3>
-                    <p>Giữ chuột trái + Lăn con lăn chuột ở bất kỳ đâu để tăng/giảm âm lượng tức thì. Phím tắt F9/F10 điều chỉnh độ sáng màn hình dịu mắt vào ban đêm.</p>
+                    <h3 id="i18n-card-3-title">Âm Lượng & Độ Sáng Siêu Tốc</h3>
+                    <p id="i18n-card-3-desc">Giữ chuột trái + Lăn con lăn chuột ở bất kỳ đâu để tăng/giảm âm lượng tức thì. Phím tắt F9/F10 điều chỉnh độ sáng màn hình dịu mắt vào ban đêm.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="card-icon">
                         <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     </div>
-                    <h3>Khóa Bàn Phím Khẩn Cấp</h3>
-                    <p>Nhấn <code>Ctrl + Alt + L</code> để khóa an toàn bàn phím và chuột khi cần vệ sinh bụi bẩn hoặc tránh trẻ em nghịch máy. Gõ từ khóa bí mật để mở lại.</p>
+                    <h3 id="i18n-card-4-title">Khóa Bàn Phím Khẩn Cấp</h3>
+                    <p id="i18n-card-4-desc">Nhấn Ctrl + Alt + L để khóa an toàn bàn phím và chuột khi cần vệ sinh bụi bẩn hoặc tránh trẻ em nghịch máy. Gõ từ khóa unlock để mở lại.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="card-icon">
                         <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                     </div>
-                    <h3>Dán Văn Bản Thuần Túy</h3>
-                    <p>Nhấn <code>Ctrl + Shift + V</code> để dán văn bản đã tự động lọc sạch định dạng màu mè, font chữ, tự động cắt tỉa khoảng trắng và dòng trống ở đầu/cuối.</p>
+                    <h3 id="i18n-card-5-title">Dán Văn Bản Thuần Túy</h3>
+                    <p id="i18n-card-5-desc">Nhấn Ctrl + Shift + V để dán văn bản đã tự động lọc sạch định dạng màu mè, font chữ, tự động cắt tỉa khoảng trắng và dòng trống ở đầu/cuối.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="card-icon">
                         <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                     </div>
-                    <h3>UIAccess Thông Minh</h3>
-                    <p>Tự động xử lý đặc quyền UIAccess để điều khiển được cả các cửa sổ đặc biệt như Task Manager mà không bị hộp thoại UAC hỏi phiền phức.</p>
+                    <h3 id="i18n-card-6-title">UIAccess Thông Minh</h3>
+                    <p id="i18n-card-6-desc">Tự động xử lý đặc quyền UIAccess để điều khiển được cả các cửa sổ đặc biệt như Task Manager mà không bị hộp thoại UAC hỏi phiền phức.</p>
                 </div>
             </div>
         </section>
@@ -564,8 +649,8 @@
         <!-- Gestures Showcase -->
         <section id="gestures" class="gestures-section">
             <div class="section-title" style="margin-bottom: 20px;">
-                <h2>Bảng Cử Chỉ Mặc Định</h2>
-                <p>Chỉ cần giữ chuột phải và di chuyển nhẹ theo hướng tương ứng</p>
+                <h2 id="i18n-gest-heading">Bảng Cử Chỉ Mặc Định</h2>
+                <p id="i18n-gest-sub">Chỉ cần giữ chuột phải và di chuyển nhẹ theo hướng tương ứng</p>
             </div>
 
             <div class="gestures-grid">
@@ -574,8 +659,8 @@
                         <img src="image/L.ico" alt="L">
                     </div>
                     <div class="gesture-info">
-                        <h4>Quay lại (Back)</h4>
-                        <span>Sang trái ← (Alt + Left)</span>
+                        <h4 id="i18n-g-1-name">Quay lại (Back)</h4>
+                        <span id="i18n-g-1-desc">Sang trái ← (Alt + Left)</span>
                     </div>
                 </div>
 
@@ -584,8 +669,8 @@
                         <img src="image/R.ico" alt="R">
                     </div>
                     <div class="gesture-info">
-                        <h4>Tiến tới (Forward)</h4>
-                        <span>Sang phải → (Alt + Right)</span>
+                        <h4 id="i18n-g-2-name">Tiến tới (Forward)</h4>
+                        <span id="i18n-g-2-desc">Sang phải → (Alt + Right)</span>
                     </div>
                 </div>
 
@@ -594,8 +679,8 @@
                         <img src="image/LU.ico" alt="LU">
                     </div>
                     <div class="gesture-info">
-                        <h4>Tab trước</h4>
-                        <span>Lên rồi sang trái (Ctrl+Shift+Tab)</span>
+                        <h4 id="i18n-g-3-name">Tab trước</h4>
+                        <span id="i18n-g-3-desc">Lên rồi sang trái (Ctrl+Shift+Tab)</span>
                     </div>
                 </div>
 
@@ -604,8 +689,8 @@
                         <img src="image/LD.ico" alt="LD">
                     </div>
                     <div class="gesture-info">
-                        <h4>Tab kế tiếp</h4>
-                        <span>Xuống rồi sang trái (Ctrl+Tab)</span>
+                        <h4 id="i18n-g-4-name">Tab kế tiếp</h4>
+                        <span id="i18n-g-4-desc">Xuống rồi sang trái (Ctrl+Tab)</span>
                     </div>
                 </div>
 
@@ -614,8 +699,8 @@
                         <img src="image/RU.ico" alt="RU">
                     </div>
                     <div class="gesture-info">
-                        <h4>Đóng tab</h4>
-                        <span>Phải rồi hướng lên (Ctrl+W)</span>
+                        <h4 id="i18n-g-5-name">Đóng tab</h4>
+                        <span id="i18n-g-5-desc">Phải rồi hướng lên (Ctrl+W)</span>
                     </div>
                 </div>
 
@@ -624,8 +709,8 @@
                         <img src="image/RD.ico" alt="RD">
                     </div>
                     <div class="gesture-info">
-                        <h4>Tải lại trang</h4>
-                        <span>Phải rồi hướng xuống (F5 / Ctrl+R)</span>
+                        <h4 id="i18n-g-6-name">Tải lại trang</h4>
+                        <span id="i18n-g-6-desc">Phải rồi hướng xuống (F5 / Ctrl+R)</span>
                     </div>
                 </div>
             </div>
@@ -633,29 +718,29 @@
 
         <!-- Installation Section -->
         <section id="install" class="install-box">
-            <h2>Bắt Đầu Dùng Thử Sau 10 Giây</h2>
-            <p style="color: var(--text-muted); margin-top: 8px;">Không cần cài đặt phức tạp, không rác hệ thống</p>
+            <h2 id="i18n-inst-heading">Bắt Đầu Dùng Thử Sau 10 Giây</h2>
+            <p id="i18n-inst-sub" style="color: var(--text-muted); margin-top: 8px;">Không cần cài đặt phức tạp, không rác hệ thống</p>
 
             <div class="steps-row">
                 <div class="step-col">
                     <div class="step-num">1</div>
-                    <h4>Tải file .exe</h4>
-                    <p>Tải bản phát hành mới nhất từ GitHub Releases về thư mục bất kỳ trên máy bạn.</p>
+                    <h4 id="i18n-step-1-title">Tải file .exe</h4>
+                    <p id="i18n-step-1-desc">Tải bản phát hành mới nhất từ GitHub Releases hoặc dùng lệnh winget install GestureMouse.</p>
                 </div>
                 <div class="step-col">
                     <div class="step-num">2</div>
-                    <h4>Mở & Trải nghiệm</h4>
-                    <p>Nhấp đúp chuột vào file <code>GestureMouse.exe</code> để bắt đầu sử dụng ngay lập tức.</p>
+                    <h4 id="i18n-step-2-title">Mở & Trải nghiệm</h4>
+                    <p id="i18n-step-2-desc">Nhấp đúp chuột vào file GestureMouse.exe để bắt đầu sử dụng ngay lập tức.</p>
                 </div>
                 <div class="step-col">
                     <div class="step-num">3</div>
-                    <h4>Cài đặt UIAccess</h4>
-                    <p>Nhấp chuột phải vào icon ở khay hệ thống, chọn <strong>Cài đặt vào hệ thống</strong> để mở khóa mọi tính năng nâng cao.</p>
+                    <h4 id="i18n-step-3-title">Cài đặt UIAccess</h4>
+                    <p id="i18n-step-3-desc">Nhấp chuột phải vào icon ở khay hệ thống, chọn Cài đặt vào hệ thống để mở khóa mọi tính năng nâng cao và tự khởi động.</p>
                 </div>
             </div>
 
             <div style="margin-top: 40px;">
-                <a href="https://github.com/ngtrian/GestureMouse/releases" target="_blank" class="btn-primary" style="padding: 16px 36px; font-size: 1.1rem;">
+                <a href="https://github.com/ngtrian/GestureMouse/releases/latest" target="_blank" class="btn-primary" style="padding: 16px 36px; font-size: 1.1rem;" id="i18n-inst-btn">
                     Tải GestureMouse Mới Nhất
                 </a>
             </div>
@@ -664,11 +749,207 @@
 
     <footer>
         <div class="container">
-            <p>Phát triển bởi <strong>Nguyễn Tri Ân</strong> • Mã nguồn mở theo giấy phép MIT / Bản quyền © 2026</p>
+            <p id="i18n-footer-author">Phát triển bởi <strong>Nguyễn Tri Ân</strong> • Mã nguồn mở theo giấy phép <a href="https://github.com/ngtrian/GestureMouse/blob/main/LICENSE" target="_blank">MIT License</a> / Bản quyền © 2026</p>
             <p style="margin-top: 8px; font-size: 0.85rem;">Liên hệ: <a href="mailto:nguyentrian87@gmail.com">nguyentrian87@gmail.com</a> | GitHub: <a href="https://github.com/ngtrian/GestureMouse" target="_blank">GestureMouse Repository</a></p>
         </div>
     </footer>
 
+    <script>
+        const translations = {
+            vi: {
+                flag: "🇻🇳",
+                langName: "Tiếng Việt",
+                navFeatures: "Tính năng",
+                navGestures: "Cử chỉ mẫu",
+                navInstall: "Cách sử dụng",
+                heroPill: "Phiên bản v1.0.0 • 100% Miễn phí & Mã nguồn mở",
+                heroTitle: 'Nâng Tầm Trải Nghiệm Chuột Trên <span class="gradient-text">Windows</span>',
+                heroDesc: "Biến mọi con chuột thành công cụ đa năng với Cử chỉ chuột phải thông minh, Cuộn trang quán tính mượt mà và Phím tắt tăng tốc làm việc.",
+                heroBtnDl: '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Tải Về Ngay (.exe)',
+                heroBtnFeat: "Khám phá tính năng",
+                hl1: "Không cần cài đặt (Portable)",
+                hl2: "Tích hợp UIAccess vượt UAC",
+                hl3: "Không thu thập dữ liệu",
+                featHeading: "Tính Năng Đột Phá",
+                featSub: "Thiết kế dành cho dân văn phòng, lập trình viên và người muốn tối ưu hóa từng giây làm việc",
+                card1Title: "Cử Chỉ Chuột Phải (Gestures)",
+                card1Desc: "Giữ chuột phải và lướt nhẹ để Back, Forward, Chuyển tab hoặc Đóng tab trên Chrome, Edge, Cốc Cốc, VS Code và Explorer. Có màn hình HUD trực quan xuất hiện ngay tức thì.",
+                card2Title: "Cuộn Quán Tính (Inertial Scroll)",
+                card2Desc: "Vuốt nhanh chuột rồi thả tay, trang sẽ trượt đi mượt mà và giảm tốc êm ái nhờ thuật toán mô phỏng vật lý như trên màn hình cảm ứng điện thoại.",
+                card3Title: "Âm Lượng & Độ Sáng Siêu Tốc",
+                card3Desc: "Giữ chuột trái + Lăn con lăn chuột ở bất kỳ đâu để tăng/giảm âm lượng tức thì. Phím tắt F9/F10 điều chỉnh độ sáng màn hình dịu mắt vào ban đêm.",
+                card4Title: "Khóa Bàn Phím Khẩn Cấp",
+                card4Desc: "Nhấn Ctrl + Alt + L để khóa an toàn bàn phím và chuột khi cần vệ sinh bụi bẩn hoặc tránh trẻ em nghịch máy. Gõ từ khóa unlock để mở lại.",
+                card5Title: "Dán Văn Bản Thuần Túy",
+                card5Desc: "Nhấn Ctrl + Shift + V để dán văn bản đã tự động lọc sạch định dạng màu mè, font chữ, tự động cắt tỉa khoảng trắng và dòng trống ở đầu/cuối.",
+                card6Title: "UIAccess Thông Minh",
+                card6Desc: "Tự động xử lý đặc quyền UIAccess để điều khiển được cả các cửa sổ đặc biệt như Task Manager mà không bị hộp thoại UAC hỏi phiền phức.",
+                gestHeading: "Bảng Cử Chỉ Mặc Định",
+                gestSub: "Chỉ cần giữ chuột phải và di chuyển nhẹ theo hướng tương ứng",
+                g1Name: "Quay lại (Back)",
+                g1Desc: "Sang trái ← (Alt + Left)",
+                g2Name: "Tiến tới (Forward)",
+                g2Desc: "Sang phải → (Alt + Right)",
+                g3Name: "Tab trước",
+                g3Desc: "Lên rồi sang trái (Ctrl+Shift+Tab)",
+                g4Name: "Tab kế tiếp",
+                g4Desc: "Xuống rồi sang trái (Ctrl+Tab)",
+                g5Name: "Đóng tab",
+                g5Desc: "Phải rồi hướng lên (Ctrl+W)",
+                g6Name: "Tải lại trang",
+                g6Desc: "Phải rồi hướng xuống (F5 / Ctrl+R)",
+                instHeading: "Bắt Đầu Dùng Thử Sau 10 Giây",
+                instSub: "Không cần cài đặt phức tạp, không rác hệ thống",
+                step1Title: "Tải file .exe",
+                step1Desc: "Tải bản phát hành mới nhất từ GitHub Releases hoặc dùng lệnh winget install GestureMouse.",
+                step2Title: "Mở & Trải nghiệm",
+                step2Desc: "Nhấp đúp chuột vào file GestureMouse.exe để bắt đầu sử dụng ngay lập tức.",
+                step3Title: "Cài đặt UIAccess",
+                step3Desc: "Nhấp chuột phải vào icon ở khay hệ thống, chọn Cài đặt vào hệ thống để mở khóa mọi tính năng nâng cao và tự khởi động.",
+                instBtn: "Tải GestureMouse Mới Nhất",
+                footerAuthor: 'Phát triển bởi <strong>Nguyễn Tri Ân</strong> • Mã nguồn mở theo giấy phép <a href="https://github.com/ngtrian/GestureMouse/blob/main/LICENSE" target="_blank">MIT License</a> / Bản quyền © 2026'
+            },
+            en: {
+                flag: "🇺🇸",
+                langName: "English",
+                navFeatures: "Features",
+                navGestures: "Gestures",
+                navInstall: "How to Use",
+                heroPill: "Version v1.0.0 • 100% Free & Open Source",
+                heroTitle: 'Supercharge Your Mouse on <span class="gradient-text">Windows</span>',
+                heroDesc: "Turn any mouse into a productivity powerhouse with smart right-click gestures, physics-based inertial scrolling, and instant desktop shortcuts.",
+                heroBtnDl: '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Download Now (.exe)',
+                heroBtnFeat: "Explore Features",
+                hl1: "No installation required (Portable)",
+                hl2: "Built-in UIAccess for elevated windows",
+                hl3: "Zero telemetry & privacy-first",
+                featHeading: "Breakthrough Features",
+                featSub: "Engineered for office pros, developers, and power users who value every second",
+                card1Title: "Right-Click Mouse Gestures",
+                card1Desc: "Hold right-click and flick to Back, Forward, Switch tabs, or Close tabs across Chrome, Edge, Firefox, VS Code, and Explorer with an instant HUD overlay.",
+                card2Title: "Physics Inertial Scrolling",
+                card2Desc: "Flick the mouse and release—pages glide smoothly and decelerate with simulated natural friction just like an iPhone or iPad touch screen.",
+                card3Title: "Fast Volume & Brightness",
+                card3Desc: "Hold left-click + scroll mouse wheel anywhere to instantly adjust master volume. Press F9/F10 to adjust screen dimming for eye comfort at night.",
+                card4Title: "Emergency Keyboard Lock",
+                card4Desc: "Press Ctrl + Alt + L to safely lock keyboard and mouse clicks when cleaning off dust or keeping curious kids away. Type 'unlock' to restore.",
+                card5Title: "Clean Plain-Text Paste",
+                card5Desc: "Press Ctrl + Shift + V to paste clipboard text completely stripped of font styles, colors, and excess blank spaces and empty lines.",
+                card6Title: "Smart UIAccess Integration",
+                card6Desc: "Automatically configures UIAccess privileges so mouse gestures work seamlessly even over Task Manager and admin windows without UAC prompts.",
+                gestHeading: "Default Gestures Guide",
+                gestSub: "Just hold right-click and move your mouse in the corresponding direction",
+                g1Name: "Go Back",
+                g1Desc: "Flick Left ← (Alt + Left)",
+                g2Name: "Go Forward",
+                g2Desc: "Flick Right → (Alt + Right)",
+                g3Name: "Previous Tab",
+                g3Desc: "Up then Left (Ctrl+Shift+Tab)",
+                g4Name: "Next Tab",
+                g4Desc: "Down then Left (Ctrl+Tab)",
+                g5Name: "Close Tab",
+                g5Desc: "Right then Up (Ctrl+W)",
+                g6Name: "Reload Page",
+                g6Desc: "Right then Down (F5 / Ctrl+R)",
+                instHeading: "Get Started in 10 Seconds",
+                instSub: "No bloated installers, clean portable design",
+                step1Title: "Download .exe",
+                step1Desc: "Download the latest release from GitHub Releases or run 'winget install GestureMouse'.",
+                step2Title: "Run & Enjoy",
+                step2Desc: "Double-click GestureMouse.exe to start boosting your productivity immediately.",
+                step3Title: "Install UIAccess",
+                step3Desc: "Right-click the system tray icon, select 'Install to System' to enable auto-start and interaction with elevated apps.",
+                instBtn: "Download Latest GestureMouse",
+                footerAuthor: 'Developed by <strong>Nguyen Tri An</strong> • Open source under the <a href="https://github.com/ngtrian/GestureMouse/blob/main/LICENSE" target="_blank">MIT License</a> / © 2026'
+            }
+        };
+
+        let currentLang = localStorage.getItem("gm_lang") || "vi";
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem("gm_lang", lang);
+            const t = translations[lang];
+
+            document.getElementById("langFlag").textContent = t.flag;
+            document.getElementById("langLabel").textContent = t.langName;
+            document.getElementById("i18n-nav-features").textContent = t.navFeatures;
+            document.getElementById("i18n-nav-gestures").textContent = t.navGestures;
+            document.getElementById("i18n-nav-install").textContent = t.navInstall;
+            document.getElementById("i18n-hero-pill").textContent = t.heroPill;
+            document.getElementById("i18n-hero-title").innerHTML = t.heroTitle;
+            document.getElementById("i18n-hero-desc").textContent = t.heroDesc;
+            document.getElementById("i18n-hero-btn-dl").innerHTML = t.heroBtnDl;
+            document.getElementById("i18n-hero-btn-feat").textContent = t.heroBtnFeat;
+            document.getElementById("i18n-hl-1").textContent = t.hl1;
+            document.getElementById("i18n-hl-2").textContent = t.hl2;
+            document.getElementById("i18n-hl-3").textContent = t.hl3;
+            document.getElementById("i18n-feat-heading").textContent = t.featHeading;
+            document.getElementById("i18n-feat-sub").textContent = t.featSub;
+
+            document.getElementById("i18n-card-1-title").textContent = t.card1Title;
+            document.getElementById("i18n-card-1-desc").textContent = t.card1Desc;
+            document.getElementById("i18n-card-2-title").textContent = t.card2Title;
+            document.getElementById("i18n-card-2-desc").textContent = t.card2Desc;
+            document.getElementById("i18n-card-3-title").textContent = t.card3Title;
+            document.getElementById("i18n-card-3-desc").textContent = t.card3Desc;
+            document.getElementById("i18n-card-4-title").textContent = t.card4Title;
+            document.getElementById("i18n-card-4-desc").textContent = t.card4Desc;
+            document.getElementById("i18n-card-5-title").textContent = t.card5Title;
+            document.getElementById("i18n-card-5-desc").textContent = t.card5Desc;
+            document.getElementById("i18n-card-6-title").textContent = t.card6Title;
+            document.getElementById("i18n-card-6-desc").textContent = t.card6Desc;
+
+            document.getElementById("i18n-gest-heading").textContent = t.gestHeading;
+            document.getElementById("i18n-gest-sub").textContent = t.gestSub;
+            document.getElementById("i18n-g-1-name").textContent = t.g1Name;
+            document.getElementById("i18n-g-1-desc").textContent = t.g1Desc;
+            document.getElementById("i18n-g-2-name").textContent = t.g2Name;
+            document.getElementById("i18n-g-2-desc").textContent = t.g2Desc;
+            document.getElementById("i18n-g-3-name").textContent = t.g3Name;
+            document.getElementById("i18n-g-3-desc").textContent = t.g3Desc;
+            document.getElementById("i18n-g-4-name").textContent = t.g4Name;
+            document.getElementById("i18n-g-4-desc").textContent = t.g4Desc;
+            document.getElementById("i18n-g-5-name").textContent = t.g5Name;
+            document.getElementById("i18n-g-5-desc").textContent = t.g5Desc;
+            document.getElementById("i18n-g-6-name").textContent = t.g6Name;
+            document.getElementById("i18n-g-6-desc").textContent = t.g6Desc;
+
+            document.getElementById("i18n-inst-heading").textContent = t.instHeading;
+            document.getElementById("i18n-inst-sub").textContent = t.instSub;
+            document.getElementById("i18n-step-1-title").textContent = t.step1Title;
+            document.getElementById("i18n-step-1-desc").textContent = t.step1Desc;
+            document.getElementById("i18n-step-2-title").textContent = t.step2Title;
+            document.getElementById("i18n-step-2-desc").textContent = t.step2Desc;
+            document.getElementById("i18n-step-3-title").textContent = t.step3Title;
+            document.getElementById("i18n-step-3-desc").textContent = t.step3Desc;
+            document.getElementById("i18n-inst-btn").textContent = t.instBtn;
+            document.getElementById("i18n-footer-author").innerHTML = t.footerAuthor;
+
+            document.documentElement.lang = lang;
+        }
+
+        function toggleLanguage() {
+            const nextLang = (currentLang === "vi") ? "en" : "vi";
+            applyLanguage(nextLang);
+        }
+
+        function copyWinget() {
+            const cmd = "winget install GestureMouse";
+            navigator.clipboard.writeText(cmd).then(() => {
+                const btn = document.getElementById("btnCopyText");
+                btn.textContent = (currentLang === "vi") ? "Đã chép!" : "Copied!";
+                setTimeout(() => {
+                    btn.textContent = "Copy";
+                }, 2000);
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener("DOMContentLoaded", () => {
+            applyLanguage(currentLang);
+        });
+    </script>
+
 </body>
 </html>
-
