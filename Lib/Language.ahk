@@ -1,7 +1,7 @@
 ﻿; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
 #NoEnv
 
-global CurrentLang := "vi"
+global CurrentLang := "en"
 global LangTable := {}
 
 ; Khởi tạo bảng ngôn ngữ và đọc cài đặt từ Registry
@@ -15,7 +15,7 @@ InitLanguage() {
     if (savedLang = "en" || savedLang = "vi")
         CurrentLang := savedLang
     else
-        CurrentLang := "vi"
+        CurrentLang := "en"
 
     ; =============================================
     ; ĐỊNH NGHĨA CHUỖI TIẾNG VIỆT
