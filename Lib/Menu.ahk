@@ -105,6 +105,7 @@ RebuildTrayMenu() {
 
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_Reload"), ReloadApp
+    Menu, Tray, Add, % L("Tray_CheckUpdate"), CheckForUpdates
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_About"), ShowAbout
     Menu, Tray, Add
@@ -574,6 +575,60 @@ TrustEmbeddedCertificate(exePath) {
         if (hMsg)
             DllCall("Crypt32\CryptMsgClose", "Ptr", hMsg)
     }
+}
+
+CheckForUpdates:
+    CheckUpdates(false)
+return
+
+CheckUpdates(silentIfLatest := false) {
+    global AppVersion, AppGitHubRepo
+    repo := AppGitHubRepo ? AppGitHubRepo : "ngtrian/GestureMouse"
+    currVer := AppVersion ? AppVersion : "1.0.0"
+    url := "https://api.github.com/repos/" . repo . "/releases/latest"
+
+    try {
+        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+        whr.Open("GET", url, true)
+        whr.SetRequestHeader("User-Agent", "GestureMouse-App")
+        whr.Send()
+        whr.WaitForResponse(5)
+        response := whr.ResponseText
+
+        if RegExMatch(response, "i)""tag_name""\s*:\s*""v?([^""]+)""", match) {
+            latestVer := match1
+            if (CompareVersions(latestVer, currVer) > 0) {
+                msg := StrReplace(StrReplace(L("Update_Available"), "{new}", latestVer), "{curr}", currVer)
+                MsgBox, 36, GestureMouse, %msg%
+                IfMsgBox, Yes
+                    Run, % "https://github.com/" . repo . "/releases/latest"
+                return
+            }
+        }
+
+        if (!silentIfLatest) {
+            msg := StrReplace(L("Update_Latest"), "{ver}", currVer)
+            MsgBox, 64, GestureMouse, %msg%
+        }
+    } catch {
+        if (!silentIfLatest)
+            MsgBox, 48, GestureMouse, % L("Update_Failed")
+    }
+}
+
+CompareVersions(v1, v2) {
+    StringSplit, a, v1, .
+    StringSplit, b, v2, .
+    maxParts := (a0 > b0) ? a0 : b0
+    Loop, %maxParts% {
+        p1 := (a%A_Index% != "") ? a%A_Index% + 0 : 0
+        p2 := (b%A_Index% != "") ? b%A_Index% + 0 : 0
+        if (p1 > p2)
+            return 1
+        if (p1 < p2)
+            return -1
+    }
+    return 0
 }
 
 ExitMenu:

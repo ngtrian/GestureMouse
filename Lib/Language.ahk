@@ -6,7 +6,7 @@ global LangTable := {}
 
 ; Khởi tạo bảng ngôn ngữ và đọc cài đặt từ Registry
 InitLanguage() {
-    global CurrentLang, LangTable
+    global CurrentLang, LangTable, AppVersion, AppReleaseDate
     LangTable["vi"] := {}
     LangTable["en"] := {}
     
@@ -42,7 +42,11 @@ InitLanguage() {
     v["Sub_AutoLock"]           := "Tự động khóa màn hình`tCtrl + Shift + L"
     v["Sub_PlainText"]          := "Dán văn bản thuần`tCtrl + Shift + V"
     v["Sub_Mute"]               := "Tắt/Bật âm thanh`tCtrl + Shift + M"
-    v["Tip_Title"]              := "Gesture Mouse 1.0`n"
+    v["Tray_CheckUpdate"]       := "Kiểm tra cập nhật..."
+    v["Update_Available"]       := "Đã có phiên bản mới v{new} (bản hiện tại: v{curr})!`n`nBạn có muốn mở trang GitHub Releases để cập nhật không?"
+    v["Update_Latest"]          := "Bạn đang sử dụng phiên bản mới nhất (v{ver})."
+    v["Update_Failed"]          := "Không thể kiểm tra bản cập nhật. Vui lòng kiểm tra lại kết nối mạng."
+    v["Tip_Title"]              := "GestureMouse v" . (AppVersion ? AppVersion : "1.0.0") . "`n"
     v["Tip_Gesture"]            := "Cử chỉ chuột & cuộn: "
     v["Tip_LockKB"]             := "Khóa bàn phím: "
     v["Tip_LockMouse"]          := "Khóa chuột: "
@@ -134,7 +138,7 @@ InitLanguage() {
     ; Giới thiệu - About
     v["About_Title"]            := "Giới thiệu về Gesture Mouse"
     v["About_Headline"]         := "Hỗ trợ thao tác cử chỉ, phím tắt và cuộn tự động"
-    v["About_Version"]          := "Phiên bản: 1.0 | Ngày cập nhật: 20/04/2025"
+    v["About_Version"]          := "Phiên bản: " . (AppVersion ? AppVersion : "1.0.0") . " | Ngày phát hành: " . (AppReleaseDate ? AppReleaseDate : "02/11/2026")
     v["About_GuideTitle"]       := "Hướng dẫn sử dụng:"
     v["About_Author"]           := "Tác giả: Nguyễn Tri Ân"
     v["About_Donate"]           := "Donate"
@@ -194,7 +198,11 @@ InitLanguage() {
     e["Sub_AutoLock"]           := "Auto Screen Lock`tCtrl + Shift + L"
     e["Sub_PlainText"]          := "Paste as Plain Text`tCtrl + Shift + V"
     e["Sub_Mute"]               := "Mute / Unmute`tCtrl + Shift + M"
-    e["Tip_Title"]              := "Gesture Mouse 1.0`n"
+    e["Tray_CheckUpdate"]       := "Check for Updates..."
+    e["Update_Available"]       := "A new version v{new} is available (current: v{curr})!`n`nWould you like to open GitHub Releases to download it?"
+    e["Update_Latest"]          := "You are using the latest version (v{ver})."
+    e["Update_Failed"]          := "Unable to check for updates. Please check your internet connection."
+    e["Tip_Title"]              := "GestureMouse v" . (AppVersion ? AppVersion : "1.0.0") . "`n"
     e["Tip_Gesture"]            := "Gesture & Scroll: "
     e["Tip_LockKB"]             := "Lock Keyboard: "
     e["Tip_LockMouse"]          := "Lock Mouse: "
@@ -286,7 +294,7 @@ InitLanguage() {
     ; About
     e["About_Title"]            := "About Gesture Mouse"
     e["About_Headline"]         := "Mouse gestures, shortcuts and auto-scroll utility"
-    e["About_Version"]          := "Version: 1.0 | Updated: 20/04/2025"
+    e["About_Version"]          := "Version: " . (AppVersion ? AppVersion : "1.0.0") . " | Release Date: " . (AppReleaseDate ? AppReleaseDate : "02/11/2026")
     e["About_GuideTitle"]       := "User Guide:"
     e["About_Author"]           := "Author: Nguyen Tri An"
     e["About_Donate"]           := "Donate"

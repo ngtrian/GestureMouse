@@ -1,4 +1,4 @@
-#Persistent 
+﻿#Persistent 
 #SingleInstance Force
 CoordMode, Mouse, Screen
 #NoEnv
@@ -45,6 +45,11 @@ if (A_Args.Length()) {
 ;@Ahk2Exe-AddResource image\flag_vn.ico, 312
 ;@Ahk2Exe-AddResource image\flag_en.ico, 313
 
+
+; Khai báo phiên bản ứng dụng (Nguồn chân lý duy nhất cho toàn bộ hệ thống)
+global AppVersion := "1.0.0"
+global AppReleaseDate := "02/11/2026"
+global AppGitHubRepo := "ngtrian/GestureMouse"
 
 ; Khai báo biến toàn cục
 global MousePath := ""            ; Chuỗi lưu các hướng cử chỉ (L, R, U, D)
