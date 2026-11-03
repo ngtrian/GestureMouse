@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -397,6 +397,136 @@
             line-height: 1.6;
         }
 
+        
+        /* Interactive Demos Section */
+        .demos-section {
+            margin-bottom: 85px;
+        }
+
+        .demo-tabs-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 25px 0 35px;
+        }
+
+        .btn-demo-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 999px;
+            background: rgba(31, 41, 55, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: inherit;
+        }
+
+        .btn-demo-tab:hover {
+            color: #fff;
+            border-color: rgba(6, 182, 212, 0.4);
+            background: rgba(37, 99, 235, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .btn-demo-tab.active {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(6, 182, 212, 0.25) 100%);
+            border-color: var(--accent);
+            color: #67e8f9;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+        }
+
+        .demo-player-box {
+            max-width: 920px;
+            margin: 0 auto;
+            background: #0f1523;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(6, 182, 212, 0.15);
+        }
+
+        .demo-window-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 18px;
+            background: #151c2e;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .window-dots {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .window-dots span {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .window-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .window-badge {
+            font-size: 0.72rem;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.15);
+            color: #67e8f9;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+        }
+
+        .video-wrapper video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .demo-caption-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: #111827;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font-size: 0.92rem;
+        }
+
+        .demo-caption-bar .caption-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
         /* Gestures Showcase Table */
         .gestures-section {
             background: var(--surface);
@@ -538,6 +668,7 @@
                     <span>GestureMouse</span>
                 </a>
                 <ul class="nav-links">
+                    <li><a href="#demos" id="i18n-nav-demos">Video Demo</a></li>
                     <li><a href="#features" id="i18n-nav-features">Tính năng</a></li>
                     <li><a href="#gestures" id="i18n-nav-gestures">Cử chỉ mẫu</a></li>
                     <li><a href="#install" id="i18n-nav-install">Cách sử dụng</a></li>
@@ -587,6 +718,68 @@
                 <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> <span id="i18n-hl-1">Không cần cài đặt (Portable)</span></span>
                 <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> <span id="i18n-hl-2">Tích hợp UIAccess vượt UAC</span></span>
                 <span><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> <span id="i18n-hl-3">Không thu thập dữ liệu</span></span>
+            </div>
+        </section>
+
+        <!-- Interactive Demos Section -->
+        <section id="demos" class="demos-section">
+            <div class="section-title">
+                <div class="tag-pill" style="margin-bottom: 12px;">
+                    <span class="dot"></span>
+                    <span id="i18n-demo-pill">Trải nghiệm trực quan • 60 FPS Video Demos</span>
+                </div>
+                <h2 id="i18n-demo-heading">Trải Nghiệm Thao Tác Thực Tế</h2>
+                <p id="i18n-demo-sub">Quan sát trực tiếp cử chỉ vẽ chuột, cuộn quán tính tự nhiên và phím tắt thông minh</p>
+            </div>
+
+            <!-- Demo Switcher Tabs -->
+            <div class="demo-tabs-wrap">
+                <button class="btn-demo-tab active" onclick="switchDemo('back_forward', this)">
+                    <span>⮌ ⮎</span> <span id="tab-label-back-forward">Back & Forward</span>
+                </button>
+                <button class="btn-demo-tab" onclick="switchDemo('tab_switch', this)">
+                    <span>⮂ ⮃</span> <span id="tab-label-tab-switch">Chuyển Tab</span>
+                </button>
+                <button class="btn-demo-tab" onclick="switchDemo('close_refresh', this)">
+                    <span>✕ ↻</span> <span id="tab-label-close-refresh">Đóng & Tải Lại</span>
+                </button>
+                <button class="btn-demo-tab" onclick="switchDemo('kinetic_scroll', this)">
+                    <span>🌊</span> <span id="tab-label-kinetic-scroll">Cuộn Quán Tính</span>
+                </button>
+                <button class="btn-demo-tab" onclick="switchDemo('drag_scroll', this)">
+                    <span>🖐️</span> <span id="tab-label-drag-scroll">Kéo Cuộn Trực Tiếp</span>
+                </button>
+                <button class="btn-demo-tab" onclick="switchDemo('pgup_pgdn', this)">
+                    <span>⮟ ⮝</span> <span id="tab-label-pgup-pgdn">Cuộn Trang PgUp/PgDn</span>
+                </button>
+                <button class="btn-demo-tab" onclick="switchDemo('volume', this)">
+                    <span>🔊</span> <span id="tab-label-volume">Chỉnh Âm Lượng</span>
+                </button>
+            </div>
+
+            <!-- Main Demo Window Player -->
+            <div class="demo-player-box">
+                <div class="demo-window-header">
+                    <div class="window-dots">
+                        <span class="dot-red"></span>
+                        <span class="dot-yellow"></span>
+                        <span class="dot-green"></span>
+                    </div>
+                    <div class="window-title">
+                        <span>🔒</span> <span id="demoWindowTitle">https://www.google.com/search?q=GestureMouse</span>
+                    </div>
+                    <div class="window-badge" id="demoWindowBadge">60 FPS • Real-Time Input</div>
+                </div>
+                <div class="video-wrapper">
+                    <video id="mainDemoVideo" autoplay loop muted playsinline width="100%">
+                        <source id="mainDemoSource" src="image/demo_back_forward.mp4" type="video/mp4">
+                        <img id="mainDemoGif" src="image/demo_back_forward.gif" alt="GestureMouse Demo">
+                    </video>
+                </div>
+                <div class="demo-caption-bar">
+                    <span class="caption-icon" id="demoCaptionIcon">🖱️</span>
+                    <span class="caption-text" id="demoCaptionText">Giữ chuột phải vẽ thẳng sang trái ← để Quay lại (Back), vẽ thẳng sang phải → để Tiến tới (Forward).</span>
+                </div>
             </div>
         </section>
 
@@ -762,6 +955,17 @@
                 flag: "🇻🇳",
                 langName: "Tiếng Việt",
                 navFeatures: "Tính năng",
+                navDemos: "Video Demo",
+                demoPill: "Trải nghiệm trực quan • 60 FPS Video Demos",
+                demoHeading: "Trải Nghiệm Thao Tác Thực Tế",
+                demoSub: "Quan sát trực tiếp cử chỉ vẽ chuột, cuộn quán tính tự nhiên và phím tắt thông minh",
+                tabBackForward: "Back & Forward",
+                tabTabSwitch: "Chuyển Tab",
+                tabCloseRefresh: "Đóng & Tải Lại",
+                tabKineticScroll: "Cuộn Quán Tính",
+                tabDragScroll: "Kéo Cuộn Trực Tiếp",
+                tabPgupPgdn: "Cuộn Trang PgUp/PgDn",
+                tabVolume: "Chỉnh Âm Lượng",
                 navGestures: "Cử chỉ mẫu",
                 navInstall: "Cách sử dụng",
                 heroPill: "Phiên bản v1.0.0 • 100% Miễn phí & Mã nguồn mở",
@@ -815,6 +1019,17 @@
                 flag: "🇺🇸",
                 langName: "English",
                 navFeatures: "Features",
+                navDemos: "Demos",
+                demoPill: "Interactive Visual Demos • 60 FPS Videos",
+                demoHeading: "Watch GestureMouse in Action",
+                demoSub: "See fluid right-click gestures, touchscreen-like kinetic scrolling, and fast shortcuts live",
+                tabBackForward: "Back & Forward",
+                tabTabSwitch: "Switch Tabs",
+                tabCloseRefresh: "Close & Reload",
+                tabKineticScroll: "Kinetic Fling",
+                tabDragScroll: "Direct Drag",
+                tabPgupPgdn: "Page Up / Down",
+                tabVolume: "Rocker Volume",
                 navGestures: "Gestures",
                 navInstall: "How to Use",
                 heroPill: "Version v1.0.0 • 100% Free & Open Source",
@@ -866,6 +1081,111 @@
             }
         };
 
+        
+        // Demo Metadata
+        const demoData = {
+            back_forward: {
+                video: "image/demo_back_forward.mp4",
+                gif: "image/demo_back_forward.gif",
+                title: "https://www.google.com/search?q=GestureMouse",
+                badge: "Gestures (L / R)",
+                icon: "⮌",
+                captionVi: "Giữ chuột phải quẹt thẳng sang trái ← để Quay lại (Back), quẹt thẳng sang phải → để Tiến tới (Forward).",
+                captionEn: "Hold Right Click and flick straight Left ← to Go Back, straight Right → to Go Forward."
+            },
+            tab_switch: {
+                video: "image/demo_tab_switch.mp4",
+                gif: "image/demo_tab_switch.gif",
+                title: "https://ngtrian.github.io/GestureMouse/ — Tab Switching",
+                badge: "Gestures (LD / LU)",
+                icon: "⮂",
+                captionVi: "Vẽ sang trái rồi xuống ← ↓ (LD) để Chuyển Tab kế tiếp; vẽ sang trái rồi lên ← ↑ (LU) để về Tab trước.",
+                captionEn: "Flick Left then Down ← ↓ (LD) for Next Tab; flick Left then Up ← ↑ (LU) for Previous Tab."
+            },
+            close_refresh: {
+                video: "image/demo_close_refresh.mp4",
+                gif: "image/demo_close_refresh.gif",
+                title: "https://ngtrian.github.io/GestureMouse/ — Close & Reload",
+                badge: "Gestures (RU / RD)",
+                icon: "✕",
+                captionVi: "Vẽ sang phải rồi lên → ↑ (RU) đóng ngay tab đang active; vẽ sang phải rồi xuống → ↓ (RD) để tải lại trang.",
+                captionEn: "Flick Right then Up → ↑ (RU) to Close active tab; flick Right then Down → ↓ (RD) to Reload page."
+            },
+            kinetic_scroll: {
+                video: "image/demo_kinetic_scroll.mp4",
+                gif: "image/demo_kinetic_scroll.gif",
+                title: "GestureMouse Inertial Kinetic Engine (60 FPS)",
+                badge: "Kinetic Fling Physics",
+                icon: "🌊",
+                captionVi: "Giữ chuột phải vuốt mạnh rồi thả tay để tự động cuộn quán tính như iPhone; cử động chuột nhẹ để phanh dừng lập tức.",
+                captionEn: "Hold Right Click and swipe-release to fling with smartphone momentum; move mouse to brake and halt instantly."
+            },
+            drag_scroll: {
+                video: "image/demo_drag_scroll.mp4",
+                gif: "image/demo_drag_scroll.gif",
+                title: "Direct Drag Scrolling (1:1 Tracking)",
+                badge: "AutoScroll 1:1",
+                icon: "🖐️",
+                captionVi: "Giữ chuột phải kéo xuống để cuộn xuống, kéo lên để cuộn lên theo tỷ lệ 1:1. Kéo càng nhanh cuộn càng nhanh.",
+                captionEn: "Hold Right Click and drag down to scroll down, drag up to scroll up. Proportional 1:1 hand tracking."
+            },
+            pgup_pgdn: {
+                video: "image/demo_pgup_pgdn.mp4",
+                gif: "image/demo_pgup_pgdn.gif",
+                title: "GestureMouse Documentation — 3-Page Leap",
+                badge: "Rapid Navigation",
+                icon: "⮟",
+                captionVi: "Giữ chuột phải + lăn con lăn chuột xuống để nhảy nguyên 1 trang (Page Down); lăn lên để nhảy lên 1 trang (Page Up).",
+                captionEn: "Hold Right Click + scroll wheel down for Page Down; scroll wheel up for Page Up whole-page leaps."
+            },
+            volume: {
+                video: "image/demo_volume.mp4",
+                gif: "image/demo_volume.gif",
+                title: "YouTube Music / Master Audio Controller",
+                badge: "Rocker Gesture",
+                icon: "🔊",
+                captionVi: "Giữ chuột trái + lăn bánh xe cuộn lên/xuống để tinh chỉnh âm lượng tức thì trong 0.5 giây mà không cần mở Taskbar.",
+                captionEn: "Hold Left Click + scroll wheel to adjust master volume in under a second without opening taskbar."
+            }
+        };
+
+        let currentDemoKey = "back_forward";
+
+        function switchDemo(key, btnElem) {
+            currentDemoKey = key;
+            const data = demoData[key];
+            if (!data) return;
+
+            // Update active tab buttons
+            document.querySelectorAll(".btn-demo-tab").forEach(btn => btn.classList.remove("active"));
+            if (btnElem) btnElem.classList.add("active");
+
+            // Update Video Player
+            const video = document.getElementById("mainDemoVideo");
+            const source = document.getElementById("mainDemoSource");
+            const gif = document.getElementById("mainDemoGif");
+
+            source.src = data.video;
+            if (gif) gif.src = data.gif;
+            video.load();
+            video.play().catch(() => {});
+
+            // Update Window Header & Caption
+            document.getElementById("demoWindowTitle").textContent = data.title;
+            document.getElementById("demoWindowBadge").textContent = data.badge;
+            document.getElementById("demoCaptionIcon").textContent = data.icon;
+            updateDemoCaption();
+        }
+
+        function updateDemoCaption() {
+            const data = demoData[currentDemoKey];
+            if (!data) return;
+            const captionElem = document.getElementById("demoCaptionText");
+            if (captionElem) {
+                captionElem.textContent = (currentLang === "vi") ? data.captionVi : data.captionEn;
+            }
+        }
+
         let currentLang = localStorage.getItem("gm_lang") || "vi";
 
         function applyLanguage(lang) {
@@ -876,6 +1196,19 @@
             document.getElementById("langFlag").textContent = t.flag;
             document.getElementById("langLabel").textContent = t.langName;
             document.getElementById("i18n-nav-features").textContent = t.navFeatures;
+            if (document.getElementById("i18n-nav-demos")) document.getElementById("i18n-nav-demos").textContent = t.navDemos;
+            if (document.getElementById("i18n-demo-pill")) document.getElementById("i18n-demo-pill").textContent = t.demoPill;
+            if (document.getElementById("i18n-demo-heading")) document.getElementById("i18n-demo-heading").textContent = t.demoHeading;
+            if (document.getElementById("i18n-demo-sub")) document.getElementById("i18n-demo-sub").textContent = t.demoSub;
+            if (document.getElementById("tab-label-back-forward")) document.getElementById("tab-label-back-forward").textContent = t.tabBackForward;
+            if (document.getElementById("tab-label-tab-switch")) document.getElementById("tab-label-tab-switch").textContent = t.tabTabSwitch;
+            if (document.getElementById("tab-label-close-refresh")) document.getElementById("tab-label-close-refresh").textContent = t.tabCloseRefresh;
+            if (document.getElementById("tab-label-kinetic-scroll")) document.getElementById("tab-label-kinetic-scroll").textContent = t.tabKineticScroll;
+            if (document.getElementById("tab-label-drag-scroll")) document.getElementById("tab-label-drag-scroll").textContent = t.tabDragScroll;
+            if (document.getElementById("tab-label-pgup-pgdn")) document.getElementById("tab-label-pgup-pgdn").textContent = t.tabPgupPgdn;
+            if (document.getElementById("tab-label-volume")) document.getElementById("tab-label-volume").textContent = t.tabVolume;
+            if (typeof updateDemoCaption === "function") updateDemoCaption();
+
             document.getElementById("i18n-nav-gestures").textContent = t.navGestures;
             document.getElementById("i18n-nav-install").textContent = t.navInstall;
             document.getElementById("i18n-hero-pill").textContent = t.heroPill;
