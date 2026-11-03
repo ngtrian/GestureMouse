@@ -1,4 +1,4 @@
-; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
+﻿; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
 #NoEnv
 
 global CurrentLang := "en"
@@ -82,7 +82,7 @@ InitLanguage() {
     v["Set_AutoLock"]           := "Hẹn giờ khóa màn hình"
     v["Set_Volume"]             := "Tăng/giảm âm lượng"
     v["Set_Brightness"]         := "Độ sáng"
-    v["Set_LockKBAndMouse"]     := "Khóa bàn phím và chuột"
+    v["Set_LockKBAndMouse"]     := "Khóa bàn phím && chuột"
     v["Set_PastePlain"]         := "Dán văn bản thuần"
     v["Set_OptionsBtn"]         := "Tùy chọn.."
     v["Set_ExcludedAppsBtn"]    := "Ứng dụng loại trừ..."
