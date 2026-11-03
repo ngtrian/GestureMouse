@@ -332,252 +332,555 @@
             color: #fff;
         }
 
-        /* Features Section */
-        .section-title {
-            text-align: center;
+        /* Interactive Demos Section */
+        .demos-section {
             margin-bottom: 50px;
         }
 
-        .section-title h2 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.8px;
-            margin-bottom: 12px;
-        }
-
-        .section-title p {
-            color: var(--text-muted);
-            font-size: 1.05rem;
-        }
-
-        .grid-3 {
+        .demo-split-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: 390px 1fr;
             gap: 24px;
-            margin-bottom: 80px;
+            align-items: start; /* Khóa cố định mép trên, ngăn nhảy hình khi chuyển đổi */
+            margin-top: 24px;
         }
 
-        .feature-card {
-            background: var(--surface);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 32px;
-            transition: all 0.25s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(37, 99, 235, 0.4);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: rgba(37, 99, 235, 0.12);
+        .demo-nav-list {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            color: #60a5fa;
-        }
-
-        .feature-card h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-
-        .feature-card p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        
-        /* Interactive Demos Section */
-        .demos-section {
-            margin-bottom: 85px;
-        }
-
-        .demo-tabs-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin: 25px 0 35px;
-        }
-
-        .btn-demo-tab {
-            display: inline-flex;
-            align-items: center;
+            flex-direction: column;
             gap: 8px;
-            padding: 8px 18px;
-            border-radius: 999px;
-            background: rgba(31, 41, 55, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .demo-nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(22, 28, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.07);
             color: var(--text-muted);
-            font-size: 0.88rem;
-            font-weight: 600;
+            text-align: left;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: all 0.2s ease;
             font-family: inherit;
+            gap: 10px;
+            min-height: 52px;
+            width: 100%;
         }
 
-        .btn-demo-tab:hover {
+        .demo-nav-item:hover {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: rgba(6, 182, 212, 0.45);
             color: #fff;
-            border-color: rgba(6, 182, 212, 0.4);
-            background: rgba(37, 99, 235, 0.15);
-            transform: translateY(-1px);
+            transform: translateX(3px);
         }
 
-        .btn-demo-tab.active {
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(6, 182, 212, 0.25) 100%);
-            border-color: var(--accent);
-            color: #67e8f9;
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+        .demo-nav-item.active {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.28) 0%, rgba(6, 182, 212, 0.28) 100%);
+            border-color: rgba(6, 182, 212, 0.9);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(6, 182, 212, 0.25);
         }
 
-        .demo-player-box {
-            max-width: 920px;
-            margin: 0 auto;
-            background: #0f1523;
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            border-radius: 18px;
+        .demo-nav-item .nav-text-col {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .demo-nav-item .nav-text-col h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 2px;
+            white-space: nowrap;
             overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(6, 182, 212, 0.15);
+            text-overflow: ellipsis;
+            transition: color 0.2s;
+        }
+
+        .demo-nav-item.active .nav-text-col h4 {
+            color: #67e8f9;
+        }
+
+        .demo-nav-item .nav-text-col p {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Adjacent Stroke Drawing Boxes Container (Total ~90px) */
+        .stroke-boxes-wrap {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .stroke-box-mini {
+            width: 42px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 8px;
+            padding: 2px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+            transition: all 0.2s ease;
+        }
+
+        .stroke-box-wide {
+            width: 89px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 8px;
+            padding: 2px 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+            transition: all 0.2s ease;
+        }
+
+        .demo-nav-item:hover .stroke-box-mini,
+        .demo-nav-item.active .stroke-box-mini,
+        .demo-nav-item:hover .stroke-box-wide,
+        .demo-nav-item.active .stroke-box-wide {
+            background: rgba(6, 182, 212, 0.25);
+            border-color: #67e8f9;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+        }
+
+        .stroke-box-mini svg,
+        .stroke-box-wide svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.6));
+        }
+
+        /* Video Player Box Right Side */
+        .demo-player-box {
+            background: #0f172a;
+            border: 1px solid rgba(6, 182, 212, 0.35);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 25px rgba(6, 182, 212, 0.12);
         }
 
         .demo-window-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 18px;
-            background: #151c2e;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 8px 14px;
+            background: #1e293b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
         }
 
         .window-dots {
             display: flex;
-            align-items: center;
-            gap: 7px;
+            gap: 6px;
         }
 
         .window-dots span {
-            width: 11px;
-            height: 11px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
             display: inline-block;
         }
 
-        .dot-red { background: #ff5f56; }
-        .dot-yellow { background: #ffbd2e; }
-        .dot-green { background: #27c93f; }
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #f59e0b; }
+        .dot-green { background: #10b981; }
 
         .window-title {
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             color: var(--text-muted);
-            font-weight: 500;
+            font-family: var(--font-mono, monospace);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 320px;
         }
 
         .window-badge {
-            font-size: 0.72rem;
-            padding: 3px 10px;
-            border-radius: 6px;
-            background: rgba(6, 182, 212, 0.15);
-            color: #67e8f9;
+            font-size: 0.7rem;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            color: #67e8f9;
+            background: rgba(6, 182, 212, 0.15);
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(6, 182, 212, 0.3);
         }
 
         .video-wrapper {
             position: relative;
-            width: 100%;
-            aspect-ratio: 16 / 9;
             background: #000;
+            line-height: 0;
+            aspect-ratio: 16 / 9; /* Cố định tỉ lệ 16:9, triệt tiêu 100% hiện tượng sụp layout khi load video */
+            width: 100%;
+            overflow: hidden;
         }
 
         .video-wrapper video {
             width: 100%;
             height: 100%;
+            aspect-ratio: 16 / 9;
             object-fit: cover;
             display: block;
         }
 
+        /* Prominent High-Contrast Gesture Caption Bar Under Video */
         .demo-caption-bar {
+            padding: 11px 18px;
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.22) 0%, rgba(15, 23, 42, 0.98) 100%);
+            border-top: 1px solid rgba(6, 182, 212, 0.45);
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 14px 20px;
-            background: #111827;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
-            font-size: 0.92rem;
+            font-size: 0.94rem;
+            line-height: 1.45;
+            min-height: 60px; /* Khóa chiều cao ổn định, không co giãn khi số dòng text thay đổi */
+            box-sizing: border-box;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
-        .demo-caption-bar .caption-icon {
-            font-size: 1.25rem;
+        .caption-icon {
+            font-size: 1.3rem;
             flex-shrink: 0;
+            filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.8));
         }
 
-        /* Gestures Showcase Table */
-        .gestures-section {
-            background: var(--surface);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 40px;
-            margin-bottom: 80px;
+        .caption-text {
+            color: #38bdf8; /* Vibrant glowing sky blue / cyan */
+            font-weight: 700;
+            letter-spacing: 0.25px;
+            text-shadow: 0 0 14px rgba(56, 189, 248, 0.45);
         }
 
-        .gestures-grid {
+        /* Settings Spotlight & Productivity Utilities (Compact & Sleek) */
+        .features-section {
+            margin-bottom: 55px;
+        }
+
+        .settings-spotlight-card {
+            background: linear-gradient(145deg, #101726 0%, #0c121e 100%);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 18px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 25px rgba(6, 182, 212, 0.08);
+        }
+
+        .spotlight-header {
+            margin-bottom: 14px;
+        }
+
+        .spotlight-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.15);
+            color: #67e8f9;
+            margin-bottom: 6px;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        .spotlight-title-box h3 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .spotlight-title-box p {
+            color: var(--text-muted);
+            font-size: 0.86rem;
+            margin: 0;
+        }
+
+        .spotlight-body {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
-            margin-top: 30px;
+            grid-template-columns: 290px 1fr;
+            gap: 22px;
+            align-items: center;
         }
 
-        .gesture-item {
+        .gui-mockup-window {
+            background: #090d16;
+            border: 1px solid rgba(6, 182, 212, 0.35);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+            max-width: 290px;
+        }
+
+        .gui-titlebar {
             display: flex;
             align-items: center;
-            gap: 16px;
-            background: var(--surface-card);
-            padding: 16px 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            gap: 8px;
+            padding: 7px 12px;
+            background: #141c2c;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .gesture-icon-badge {
-            width: 48px;
-            height: 48px;
-            background: rgba(37, 99, 235, 0.15);
-            border-radius: 10px;
+        .gui-title-text {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .gui-img-container {
+            padding: 6px;
+            background: #080c14;
+        }
+
+        .img-gui-main {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 6px;
+            transition: transform 0.2s ease;
+        }
+
+        .img-gui-main:hover {
+            transform: scale(1.02);
+        }
+
+        .spotlight-features-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .spotlight-feature-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 10px 14px;
+            transition: all 0.2s ease;
+        }
+
+        .spotlight-feature-box:hover {
+            background: rgba(255, 255, 255, 0.045);
+            border-color: rgba(6, 182, 212, 0.35);
+        }
+
+        .spot-feat-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: rgba(37, 99, 235, 0.16);
+            color: #60a5fa;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
         }
 
-        .gesture-icon-badge img {
-            width: 28px;
-            height: 28px;
+        .spot-feat-text {
+            flex: 1;
         }
 
-        .gesture-info h4 {
-            font-size: 0.98rem;
+        .spot-feat-text h4 {
+            font-size: 0.95rem;
             font-weight: 700;
-            margin-bottom: 2px;
+            color: var(--text-main);
+            margin-bottom: 3px;
         }
 
-        .gesture-info span {
-            font-size: 0.82rem;
+        .spot-feat-text p {
+            font-size: 0.81rem;
             color: var(--text-muted);
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .scroll-mode-pills {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .mode-pill {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 9px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.78rem;
+        }
+
+        .mode-pill.active {
+            background: rgba(6, 182, 212, 0.12);
+            border-color: rgba(6, 182, 212, 0.4);
+        }
+
+        .mode-pill .radio-dot {
+            color: #67e8f9;
+            font-weight: 700;
+            font-size: 0.88rem;
+            line-height: 1.2;
+        }
+
+        .mode-pill strong {
+            color: var(--text-main);
+            display: block;
+            font-size: 0.8rem;
+        }
+
+        .mode-pill span {
+            color: var(--text-muted);
+            font-size: 0.72rem;
+        }
+
+        /* Productivity Hotkeys Grid (Key on Top, Description on Bottom) */
+        .section-subtitle-bar {
+            margin-bottom: 14px;
+        }
+
+        .section-subtitle-bar h3 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .section-subtitle-bar p {
+            color: var(--text-muted);
+            font-size: 0.84rem;
+            margin: 0;
+        }
+
+        .hotkeys-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 11px;
+        }
+
+        .hk-card {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 14px;
+            transition: all 0.22s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hk-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(6, 182, 212, 0.4);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        /* Hotkey combination on Top */
+        .hk-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .hk-kbd-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: #67e8f9;
+        }
+
+        .hk-kbd-pill kbd {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(6, 182, 212, 0.45);
+            border-radius: 5px;
+            padding: 2px 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            font-family: inherit;
+        }
+
+        .hk-icon-mini {
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Description on Bottom */
+        .hk-card-bottom h4 {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .hk-card-bottom p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .dialog-img-compact {
+            margin-top: 8px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            background: #0b0f19;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .dialog-img-compact img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.2s ease;
+        }
+
+        .dialog-img-compact img:hover {
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 1024px) {
+            .demo-split-layout {
+            display: grid;
+            grid-template-columns: 390px 1fr;
+            gap: 24px;
+            align-items: start; /* Khóa cố định mép trên, ngăn nhảy hình khi chuyển đổi */
+            margin-top: 24px;
+        }
+            .spotlight-body {
+                grid-template-columns: 1fr;
+            }
+            .gui-mockup-window {
+                max-width: 300px;
+                margin: 0 auto;
+            }
         }
 
         /* Installation Guide */
@@ -668,9 +971,8 @@
                     <span>GestureMouse</span>
                 </a>
                 <ul class="nav-links">
-                    <li><a href="#demos" id="i18n-nav-demos">Video Demo</a></li>
-                    <li><a href="#features" id="i18n-nav-features">Tính năng</a></li>
-                    <li><a href="#gestures" id="i18n-nav-gestures">Cử chỉ mẫu</a></li>
+                    <li><a href="#demos" id="i18n-nav-demos">Cử chỉ &amp; Demo 60 FPS</a></li>
+                    <li><a href="#features" id="i18n-nav-features">Tiện ích &amp; Cài đặt</a></li>
                     <li><a href="#install" id="i18n-nav-install">Cách sử dụng</a></li>
                     <li>
                         <button id="langToggleBtn" class="btn-lang" onclick="toggleLanguage()">
@@ -721,10 +1023,12 @@
             </div>
         </section>
 
-        <!-- Interactive Demos Section -->
+        <!-- Interactive Demos Section (2-Column Split: Gestures Left, 60FPS Video Right) -->
+        <!-- Interactive Demos Section (10 Split Gestures Left, 60FPS Video Right) -->
+        <!-- Interactive Demos Section (7 Gestures Left, 60FPS Video Right) -->
         <section id="demos" class="demos-section">
             <div class="section-title">
-                <div class="tag-pill" style="margin-bottom: 12px;">
+                <div class="tag-pill" style="margin-bottom: 10px;">
                     <span class="dot"></span>
                     <span id="i18n-demo-pill">Trải nghiệm trực quan • 60 FPS Video Demos</span>
                 </div>
@@ -732,180 +1036,380 @@
                 <p id="i18n-demo-sub">Quan sát trực tiếp cử chỉ vẽ chuột, cuộn quán tính tự nhiên và phím tắt thông minh</p>
             </div>
 
-            <!-- Demo Switcher Tabs -->
-            <div class="demo-tabs-wrap">
-                <button class="btn-demo-tab active" onclick="switchDemo('back_forward', this)">
-                    <span>⮌ ⮎</span> <span id="tab-label-back-forward">Back & Forward</span>
-                </button>
-                <button class="btn-demo-tab" onclick="switchDemo('tab_switch', this)">
-                    <span>⮂ ⮃</span> <span id="tab-label-tab-switch">Chuyển Tab</span>
-                </button>
-                <button class="btn-demo-tab" onclick="switchDemo('close_refresh', this)">
-                    <span>✕ ↻</span> <span id="tab-label-close-refresh">Đóng & Tải Lại</span>
-                </button>
-                <button class="btn-demo-tab" onclick="switchDemo('kinetic_scroll', this)">
-                    <span>🌊</span> <span id="tab-label-kinetic-scroll">Cuộn Quán Tính</span>
-                </button>
-                <button class="btn-demo-tab" onclick="switchDemo('drag_scroll', this)">
-                    <span>🖐️</span> <span id="tab-label-drag-scroll">Kéo Cuộn Trực Tiếp</span>
-                </button>
-                <button class="btn-demo-tab" onclick="switchDemo('pgup_pgdn', this)">
-                    <span>⮟ ⮝</span> <span id="tab-label-pgup-pgdn">Cuộn Trang PgUp/PgDn</span>
-                </button>
-                <button class="btn-demo-tab" onclick="switchDemo('volume', this)">
-                    <span>🔊</span> <span id="tab-label-volume">Chỉnh Âm Lượng</span>
-                </button>
-            </div>
+            <div class="demo-split-layout">
+                <!-- Left Column: 7 Interactive Gesture Items -->
+                <div class="demo-nav-list">
+                    <!-- 1. Back & Forward (2 Adjacent Stroke Boxes: Left & Right) -->
+                    <button class="demo-nav-item active" data-key="back_forward" onclick="switchDemo('back_forward', this)">
+                        <div class="nav-text-col">
+                            <h4 id="tab-label-back-forward">Quay lại &amp; Tiến tới</h4>
+                            <p id="tab-sub-back-forward">Vẽ thẳng sang trái hoặc sang phải</p>
+                        </div>
+                        <div class="stroke-boxes-wrap">
+                            <div class="stroke-box-mini" title="Quay lại (Left ←)">
+                                <svg viewBox="0 0 38 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M28 16 L8 16 M15 9 L8 16 L15 23" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="stroke-box-mini" title="Tiến tới (Right →)">
+                                <svg viewBox="0 0 38 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M10 16 L30 16 M23 9 L30 16 L23 23" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </button>
 
-            <!-- Main Demo Window Player -->
-            <div class="demo-player-box">
-                <div class="demo-window-header">
-                    <div class="window-dots">
-                        <span class="dot-red"></span>
-                        <span class="dot-yellow"></span>
-                        <span class="dot-green"></span>
-                    </div>
-                    <div class="window-title">
-                        <span>🔒</span> <span id="demoWindowTitle">https://www.google.com/search?q=GestureMouse</span>
-                    </div>
-                    <div class="window-badge" id="demoWindowBadge">60 FPS • Real-Time Input</div>
+                    <!-- 2. Tab Switch (2 Adjacent Stroke Boxes: Prev & Next) -->
+                    <button class="demo-nav-item" data-key="tab_switch" onclick="switchDemo('tab_switch', this)">
+                        <div class="nav-text-col">
+                            <h4 id="tab-label-tab-switch">Chuyển Đổi Tab</h4>
+                            <p id="tab-sub-tab-switch">Trái rồi lên hoặc Trái rồi xuống</p>
+                        </div>
+                        <div class="stroke-boxes-wrap">
+                            <div class="stroke-box-mini" title="Tab Trước (Left-Up ←↑)">
+                                <svg viewBox="0 0 38 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M28 24 L12 24 L12 8 M6 14 L12 7 L18 14" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="stroke-box-mini" title="Tab Tiếp (Left-Down ←↓)">
+                                <svg viewBox="0 0 38 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M28 8 L12 8 L12 24 M6 18 L12 25 L18 18" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- 3. Close & Reload (2 Adjacent Stroke Boxes: Close & Reload) -->
+                    <button class="demo-nav-item" data-key="close_refresh" onclick="switchDemo('close_refresh', this)">
+                        <div class="nav-text-col">
+                            <h4 id="tab-label-close-refresh">Đóng &amp; Tải Lại Tab</h4>
+                            <p id="tab-sub-close-refresh">Phải rồi lên hoặc Phải rồi xuống</p>
+                        </div>
+                        <div class="stroke-boxes-wrap">
+                            <div class="stroke-box-mini" title="Đóng Tab (Right-Up →↑)">
+                                <svg viewBox="0 0 38 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M10 24 L26 24 L26 8 M20 14 L26 7 L32 14" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="stroke-box-mini" title="Tải Lại Trang (Right-Down →↓)">
+                                <svg viewBox="0 0 38 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M10 8 L26 8 L26 24 M20 18 L26 25 L32 18" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- 4. Kinetic Scroll -->
+                    <button class="demo-nav-item" data-key="kinetic_scroll" onclick="switchDemo('kinetic_scroll', this)">
+                        <div class="nav-text-col">
+                            <h4 id="tab-label-kinetic-scroll">Cuộn Quán Tính Tự Động</h4>
+                            <p id="tab-sub-kinetic-scroll">Vuốt nhanh &amp; thả tay mượt mà</p>
+                        </div>
+                        <div class="stroke-boxes-wrap">
+                            <div class="stroke-box-wide" title="Cuộn Quán Tính Tự Động">
+                                <svg viewBox="0 0 76 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M38 5 L38 27 M30 19 L38 28 L46 19" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="38" cy="5" r="2.8" fill="#ffffff"/>
+                                    <path d="M20 10 L20 22 M56 10 L56 22" stroke="rgba(34,211,238,0.4)" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- 5. Direct Drag Scroll -->
+                    <button class="demo-nav-item" data-key="drag_scroll" onclick="switchDemo('drag_scroll', this)">
+                        <div class="nav-text-col">
+                            <h4 id="tab-label-drag-scroll">Kéo Cuộn Trực Tiếp 1:1</h4>
+                            <p id="tab-sub-drag-scroll">Giữ chuột phải rê kéo trang lên xuống</p>
+                        </div>
+                        <div class="stroke-boxes-wrap">
+                            <div class="stroke-box-wide" title="Kéo Cuộn 1:1">
+                                <svg viewBox="0 0 76 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M38 6 L38 26 M30 12 L38 6 L46 12 M30 20 L38 26 L46 20" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="38" cy="16" r="2.8" fill="#ffffff"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- 6. Page Up / Page Down Leap (Mouse: Right Click + Wheel Scroll Active) -->
+                    <button class="demo-nav-item" data-key="pgup_pgdn" onclick="switchDemo('pgup_pgdn', this)">
+                        <div class="nav-text-col">
+                            <h4 id="tab-label-pgup-pgdn">Cuộn Trang PgUp / PgDn</h4>
+                            <p id="tab-sub-pgup-pgdn">Giữ chuột phải + xoay con lăn</p>
+                        </div>
+                        <div class="stroke-boxes-wrap">
+                            <div class="stroke-box-wide" title="Giữ chuột phải + xoay con lăn (PgUp/PgDn)">
+                                <svg viewBox="0 0 86 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <!-- Mouse Base Silhouette -->
+                                    <path d="M 29 17 C 29 28, 34 33, 43 33 C 52 33, 57 28, 57 17 Z" fill="#0b111e" stroke="rgba(103, 232, 249, 0.45)" stroke-width="1.5"/>
+                                    <!-- Left Button (Idle Dark) -->
+                                    <path d="M 29 15.5 L 29 10.5 C 29 5, 33 2.5, 40.5 2.5 L 40.5 15.5 Z" fill="#1e293b" stroke="rgba(103, 232, 249, 0.45)" stroke-width="1.5"/>
+                                    <!-- Right Button (Active Pressed Cyan) -->
+                                    <path d="M 45.5 2.5 C 53 2.5, 57 5, 57 10.5 L 57 15.5 L 45.5 15.5 Z" fill="#06b6d4" stroke="#67e8f9" stroke-width="1.5"/>
+                                    <!-- Scroll Wheel Active with Rotation -->
+                                    <rect x="41.2" y="4.5" width="3.6" height="9.5" rx="1.8" fill="#ffffff" stroke="#38bdf8" stroke-width="1.2"/>
+                                    <line x1="41.5" y1="7.5" x2="44.5" y2="7.5" stroke="#0284c7" stroke-width="1"/>
+                                    <line x1="41.5" y1="11" x2="44.5" y2="11" stroke="#0284c7" stroke-width="1"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- 7. Volume Rocker (Mouse: Left Click + Wheel Active Glowing) -->
+                    <button class="demo-nav-item" data-key="volume" onclick="switchDemo('volume', this)">
+                        <div class="nav-text-col">
+                            <h4 id="tab-label-volume">Chỉnh Âm Lượng Siêu Tốc</h4>
+                            <p id="tab-sub-volume">Giữ chuột trái + cuộn con lăn</p>
+                        </div>
+                        <div class="stroke-boxes-wrap">
+                            <div class="stroke-box-wide" title="Giữ chuột trái + xoay con lăn (Chỉnh âm lượng)">
+                                <svg viewBox="0 0 86 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <!-- Mouse Base Silhouette -->
+                                    <path d="M 29 17 C 29 28, 34 33, 43 33 C 52 33, 57 28, 57 17 Z" fill="#0b111e" stroke="rgba(103, 232, 249, 0.45)" stroke-width="1.5"/>
+                                    <!-- Left Button (Active Pressed Cyan) -->
+                                    <path d="M 29 15.5 L 29 10.5 C 29 5, 33 2.5, 40.5 2.5 L 40.5 15.5 Z" fill="#06b6d4" stroke="#67e8f9" stroke-width="1.5"/>
+                                    <!-- Right Button (Idle Dark) -->
+                                    <path d="M 45.5 2.5 C 53 2.5, 57 5, 57 10.5 L 57 15.5 L 45.5 15.5 Z" fill="#1e293b" stroke="rgba(103, 232, 249, 0.45)" stroke-width="1.5"/>
+                                    <!-- Scroll Wheel Active Glowing Bright -->
+                                    <circle cx="43" cy="9.2" r="6.5" fill="rgba(6, 182, 212, 0.3)"/>
+                                    <rect x="41.2" y="4.5" width="3.6" height="9.5" rx="1.8" fill="#ffffff" stroke="#38bdf8" stroke-width="1.2"/>
+                                    <line x1="41.5" y1="7.5" x2="44.5" y2="7.5" stroke="#0284c7" stroke-width="1"/>
+                                    <line x1="41.5" y1="11" x2="44.5" y2="11" stroke="#0284c7" stroke-width="1"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </button>
                 </div>
-                <div class="video-wrapper">
-                    <video id="mainDemoVideo" autoplay loop muted playsinline width="100%">
-                        <source id="mainDemoSource" src="image/demo_back_forward.mp4" type="video/mp4">
-                        <img id="mainDemoGif" src="image/demo_back_forward.gif" alt="GestureMouse Demo">
-                    </video>
-                </div>
-                <div class="demo-caption-bar">
-                    <span class="caption-icon" id="demoCaptionIcon">🖱️</span>
-                    <span class="caption-text" id="demoCaptionText">Giữ chuột phải vẽ thẳng sang trái ← để Quay lại (Back), vẽ thẳng sang phải → để Tiến tới (Forward).</span>
+
+                <!-- Right Column: Clean 60 FPS Video Player -->
+                <div class="demo-player-box">
+                    <div class="demo-window-header">
+                        <div class="window-dots">
+                            <span class="dot-red"></span>
+                            <span class="dot-yellow"></span>
+                            <span class="dot-green"></span>
+                        </div>
+                        <div class="window-title">
+                            <span>🔒</span> <span id="demoWindowTitle">https://www.google.com/search?q=GestureMouse</span>
+                        </div>
+                        <div class="window-badge" id="demoWindowBadge">60 FPS • Real-Time Input</div>
+                    </div>
+                    <div class="video-wrapper">
+                        <video id="mainDemoVideo" autoplay loop muted playsinline width="100%">
+                            <source id="mainDemoSource" src="image/demo_back_forward.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="demo-caption-bar">
+                        <span class="caption-icon" id="demoCaptionIcon">🖱️</span>
+                        <span class="caption-text" id="demoCaptionText">Giữ chuột phải vẽ thẳng sang trái ← để Quay lại (Back), vẽ thẳng sang phải → để Tiến tới (Forward).</span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Features Grid -->
-        <section id="features">
+        <!-- Features Section: Settings Spotlight & Productivity Utilities -->
+        <section id="features" class="features-section">
             <div class="section-title">
-                <h2 id="i18n-feat-heading">Tính Năng Đột Phá</h2>
-                <p id="i18n-feat-sub">Thiết kế dành cho dân văn phòng, lập trình viên và người muốn tối ưu hóa từng giây làm việc</p>
+                <div class="tag-pill" style="margin-bottom: 10px;">
+                    <span class="dot"></span>
+                    <span id="i18n-feat-pill">Cài đặt trực quan • Tùy biến toàn diện</span>
+                </div>
+                <h2 id="i18n-feat-heading">Tiện Ích Đi Kèm &amp; Tùy Biến Chuyên Sâu</h2>
+                <p id="i18n-feat-sub">Mọi phím tắt thông minh, phương pháp cuộn tùy biến và khả năng kiểm soát ứng dụng</p>
             </div>
 
-            <div class="grid-3">
-                <div class="feature-card">
-                    <div class="card-icon">
-                        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+            <!-- Block 1: Real Settings GUI Spotlight (Scroll Mode & App Exclusions) -->
+            <div class="settings-spotlight-card">
+                <div class="spotlight-header">
+                    <div class="spotlight-title-box">
+                        <span class="spotlight-badge">Control Center</span>
+                        <h3 id="i18n-spot-title">Trung Tâm Cài Đặt &amp; Tùy Biến Chuyên Sâu</h3>
+                        <p id="i18n-spot-sub">Giao diện đồ họa trực quan • Dễ dàng điều chỉnh phương pháp cuộn và danh sách loại trừ</p>
                     </div>
-                    <h3 id="i18n-card-1-title">Cử Chỉ Chuột Phải (Gestures)</h3>
-                    <p id="i18n-card-1-desc">Giữ chuột phải và lướt nhẹ để Back, Forward, Chuyển tab hoặc Đóng tab trên Chrome, Edge, Cốc Cốc, VS Code và Explorer. Có màn hình HUD trực quan xuất hiện ngay tức thì.</p>
                 </div>
 
-                <div class="feature-card">
-                    <div class="card-icon">
-                        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                <div class="spotlight-body">
+                    <!-- Left: Real GUI Window Mockup with VI/EN Switching -->
+                    <div class="spotlight-gui-col">
+                        <div class="gui-mockup-window">
+                            <div class="gui-titlebar">
+                                <div class="window-dots">
+                                    <span class="dot-red"></span>
+                                    <span class="dot-yellow"></span>
+                                    <span class="dot-green"></span>
+                                </div>
+                                <span class="gui-title-text" id="guiTitleText">⭐ Gesture Mouse - Cài đặt</span>
+                            </div>
+                            <div class="gui-img-container">
+                                <a id="guiImgLink" href="image/settings_gui.png" target="_blank" title="Bấm để xem ảnh kích thước gốc">
+                                    <img id="imgSettingsMain" src="image/settings_gui.png" alt="GestureMouse Settings GUI" class="img-gui-main">
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <h3 id="i18n-card-2-title">Cuộn Quán Tính (Inertial Scroll)</h3>
-                    <p id="i18n-card-2-desc">Vuốt nhanh chuột rồi thả tay, trang sẽ trượt đi mượt mà và giảm tốc êm ái nhờ thuật toán mô phỏng vật lý như trên màn hình cảm ứng điện thoại.</p>
-                </div>
 
-                <div class="feature-card">
-                    <div class="card-icon">
-                        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-                    </div>
-                    <h3 id="i18n-card-3-title">Âm Lượng & Độ Sáng Siêu Tốc</h3>
-                    <p id="i18n-card-3-desc">Giữ chuột trái + Lăn con lăn chuột ở bất kỳ đâu để tăng/giảm âm lượng tức thì. Phím tắt F9/F10 điều chỉnh độ sáng màn hình dịu mắt vào ban đêm.</p>
-                </div>
+                    <!-- Right: Deep Settings Features -->
+                    <div class="spotlight-features-col">
+                        <!-- Scroll Mode Feature -->
+                        <div class="spotlight-feature-box">
+                            <div class="spot-feat-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7l4-4m0 0l4 4m-4-4v18m-4-7l4 4 4-4"></path></svg>
+                            </div>
+                            <div class="spot-feat-text">
+                                <h4 id="i18n-spot-f1-title">Tùy Chọn 2 Phương Pháp Cuộn Chuột</h4>
+                                <p id="i18n-spot-f1-desc">Linh hoạt lựa chọn cơ chế cuộn kéo thủ công và tự động theo thói quen cá nhân:</p>
+                                <div class="scroll-mode-pills">
+                                    <div class="mode-pill active">
+                                        <span class="radio-dot">●</span>
+                                        <div>
+                                            <strong id="i18n-mode-1-name">Kéo nội dung lên xuống</strong>
+                                            <span id="i18n-mode-1-desc">Tự nhiên như màn hình cảm ứng</span>
+                                        </div>
+                                    </div>
+                                    <div class="mode-pill">
+                                        <span class="radio-dot">○</span>
+                                        <div>
+                                            <strong id="i18n-mode-2-name">Kéo thanh cuộn</strong>
+                                            <span id="i18n-mode-2-desc">Chuẩn con lăn Windows</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="feature-card">
-                    <div class="card-icon">
-                        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                    </div>
-                    <h3 id="i18n-card-4-title">Khóa Bàn Phím Khẩn Cấp</h3>
-                    <p id="i18n-card-4-desc">Nhấn Ctrl + Alt + L để khóa an toàn bàn phím và chuột khi cần vệ sinh bụi bẩn hoặc tránh trẻ em nghịch máy. Gõ từ khóa unlock để mở lại.</p>
-                </div>
+                        <!-- App Exclusion List Feature -->
+                        <div class="spotlight-feature-box">
+                            <div class="spot-feat-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                            </div>
+                            <div class="spot-feat-text">
+                                <h4 id="i18n-spot-f2-title">Danh Sách Ứng Dụng Loại Trừ (Exclusion List)</h4>
+                                <p id="i18n-spot-f2-desc">Thêm phần mềm đồ họa (Photoshop, CAD, Blender) hoặc game FPS (Valorant, CS:GO). GestureMouse tự động bỏ qua để giữ nguyên 100% chuột phải gốc.</p>
+                            </div>
+                        </div>
 
-                <div class="feature-card">
-                    <div class="card-icon">
-                        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        <!-- System Start & UIAccess -->
+                        <div class="spotlight-feature-box">
+                            <div class="spot-feat-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            </div>
+                            <div class="spot-feat-text">
+                                <h4 id="i18n-spot-f3-title">Khởi Chạy Cùng Windows &amp; UIAccess</h4>
+                                <p id="i18n-spot-f3-desc">Tự khởi động cùng hệ thống và tích hợp UIAccess để điều khiển Task Manager và các cửa sổ Administrator mà không bị UAC chặn.</p>
+                            </div>
+                        </div>
                     </div>
-                    <h3 id="i18n-card-5-title">Dán Văn Bản Thuần Túy</h3>
-                    <p id="i18n-card-5-desc">Nhấn Ctrl + Shift + V để dán văn bản đã tự động lọc sạch định dạng màu mè, font chữ, tự động cắt tỉa khoảng trắng và dòng trống ở đầu/cuối.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="card-icon">
-                        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                    </div>
-                    <h3 id="i18n-card-6-title">UIAccess Thông Minh</h3>
-                    <p id="i18n-card-6-desc">Tự động xử lý đặc quyền UIAccess để điều khiển được cả các cửa sổ đặc biệt như Task Manager mà không bị hộp thoại UAC hỏi phiền phức.</p>
                 </div>
             </div>
-        </section>
 
-        <!-- Gestures Showcase -->
-        <section id="gestures" class="gestures-section">
-            <div class="section-title" style="margin-bottom: 20px;">
-                <h2 id="i18n-gest-heading">Bảng Cử Chỉ Mặc Định</h2>
-                <p id="i18n-gest-sub">Chỉ cần giữ chuột phải và di chuyển nhẹ theo hướng tương ứng</p>
-            </div>
-
-            <div class="gestures-grid">
-                <div class="gesture-item">
-                    <div class="gesture-icon-badge">
-                        <img src="image/L.ico" alt="L">
-                    </div>
-                    <div class="gesture-info">
-                        <h4 id="i18n-g-1-name">Quay lại (Back)</h4>
-                        <span id="i18n-g-1-desc">Sang trái ← (Alt + Left)</span>
-                    </div>
+            <!-- Block 2: Productivity Hotkeys Grid (Key on Top, Description on Bottom) -->
+            <div class="hotkeys-grid-wrap">
+                <div class="section-subtitle-bar">
+                    <h3 id="i18n-hk-sec-title">⚡ Bộ Phím Tắt Năng Suất Tích Hợp</h3>
+                    <p id="i18n-hk-sec-sub">Thao tác tức thời với các phím tắt hệ thống được thiết kế tối ưu</p>
                 </div>
 
-                <div class="gesture-item">
-                    <div class="gesture-icon-badge">
-                        <img src="image/R.ico" alt="R">
+                <div class="hotkeys-cards-grid">
+                    <!-- 1. Auto Lock Screen Timer with Dialog Image (VI/EN Dynamic) -->
+                    <div class="hk-card">
+                        <div class="hk-card-top">
+                            <div class="hk-kbd-pill">
+                                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>
+                            </div>
+                            <div class="hk-icon-mini">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"></path></svg>
+                            </div>
+                        </div>
+                        <div class="hk-card-bottom">
+                            <h4 id="i18n-hk-lock-title">Hẹn Giờ Khóa Màn Hình</h4>
+                            <p id="i18n-hk-lock-desc">Mở hộp thoại đếm ngược số phút để tự động khóa máy (Lock Workstation) khi rời máy tính.</p>
+                            <div class="dialog-img-compact">
+                                <a id="linkLockDialog" href="image/lock_screen_dialog.png" target="_blank" title="Xem ảnh hộp thoại thực tế">
+                                    <img id="imgLockDialog" src="image/lock_screen_dialog.png" alt="Auto Lock Screen Dialog">
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="gesture-info">
-                        <h4 id="i18n-g-2-name">Tiến tới (Forward)</h4>
-                        <span id="i18n-g-2-desc">Sang phải → (Alt + Right)</span>
-                    </div>
-                </div>
 
-                <div class="gesture-item">
-                    <div class="gesture-icon-badge">
-                        <img src="image/LU.ico" alt="LU">
+                    <!-- 2. Mute Audio -->
+                    <div class="hk-card">
+                        <div class="hk-card-top">
+                            <div class="hk-kbd-pill">
+                                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd>
+                            </div>
+                            <div class="hk-icon-mini">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z m11-4l4 4m0-4l-4 4"></path></svg>
+                            </div>
+                        </div>
+                        <div class="hk-card-bottom">
+                            <h4 id="i18n-hk-mute-title">Tắt/Bật Âm Thanh Tức Thì</h4>
+                            <p id="i18n-hk-mute-desc">Ngắt tiếng (Mute) hoặc bật lại âm thanh hệ thống ngay lập tức, cực kỳ hữu dụng trong họp hoặc nghe gọi.</p>
+                        </div>
                     </div>
-                    <div class="gesture-info">
-                        <h4 id="i18n-g-3-name">Tab trước</h4>
-                        <span id="i18n-g-3-desc">Lên rồi sang trái (Ctrl+Shift+Tab)</span>
-                    </div>
-                </div>
 
-                <div class="gesture-item">
-                    <div class="gesture-icon-badge">
-                        <img src="image/LD.ico" alt="LD">
+                    <!-- 3. Volume Adjustment -->
+                    <div class="hk-card">
+                        <div class="hk-card-top">
+                            <div class="hk-kbd-pill">
+                                <kbd>Win</kbd> + <kbd>Lăn chuột</kbd>
+                            </div>
+                            <div class="hk-icon-mini">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                            </div>
+                        </div>
+                        <div class="hk-card-bottom">
+                            <h4 id="i18n-hk-vol-title">Tăng/Giảm Âm Lượng</h4>
+                            <p id="i18n-hk-vol-desc">Giữ phím Windows kết hợp xoay con lăn chuột lên hoặc xuống để thay đổi âm lượng nhanh ở mọi vị trí.</p>
+                        </div>
                     </div>
-                    <div class="gesture-info">
-                        <h4 id="i18n-g-4-name">Tab kế tiếp</h4>
-                        <span id="i18n-g-4-desc">Xuống rồi sang trái (Ctrl+Tab)</span>
-                    </div>
-                </div>
 
-                <div class="gesture-item">
-                    <div class="gesture-icon-badge">
-                        <img src="image/RU.ico" alt="RU">
+                    <!-- 4. Emergency Keyboard & Mouse Lock -->
+                    <div class="hk-card">
+                        <div class="hk-card-top">
+                            <div class="hk-kbd-pill">
+                                <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd>
+                            </div>
+                            <div class="hk-icon-mini">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            </div>
+                        </div>
+                        <div class="hk-card-bottom">
+                            <h4 id="i18n-hk-klock-title">Khóa Chuột &amp; Bàn Phím</h4>
+                            <p id="i18n-hk-klock-desc">Khóa an toàn khi lau chùi bụi bẩn hoặc tránh trẻ em nghịch bấm linh tinh. Gõ từ khóa <em>unlock</em> để mở khóa.</p>
+                        </div>
                     </div>
-                    <div class="gesture-info">
-                        <h4 id="i18n-g-5-name">Đóng tab</h4>
-                        <span id="i18n-g-5-desc">Phải rồi hướng lên (Ctrl+W)</span>
-                    </div>
-                </div>
 
-                <div class="gesture-item">
-                    <div class="gesture-icon-badge">
-                        <img src="image/RD.ico" alt="RD">
+                    <!-- 5. Clean Plain-text Paste -->
+                    <div class="hk-card">
+                        <div class="hk-card-top">
+                            <div class="hk-kbd-pill">
+                                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>
+                            </div>
+                            <div class="hk-icon-mini">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            </div>
+                        </div>
+                        <div class="hk-card-bottom">
+                            <h4 id="i18n-hk-paste-title">Dán Văn Bản Thuần</h4>
+                            <p id="i18n-hk-paste-desc">Tự động loại bỏ toàn bộ định dạng font chữ, màu sắc và cắt tỉa khoảng trắng thừa trước khi dán.</p>
+                        </div>
                     </div>
-                    <div class="gesture-info">
-                        <h4 id="i18n-g-6-name">Tải lại trang</h4>
-                        <span id="i18n-g-6-desc">Phải rồi hướng xuống (F5 / Ctrl+R)</span>
+
+                    <!-- 6. Screen Brightness -->
+                    <div class="hk-card">
+                        <div class="hk-card-top">
+                            <div class="hk-kbd-pill">
+                                <kbd>F9</kbd> / <kbd>F10</kbd>
+                            </div>
+                            <div class="hk-icon-mini">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                            </div>
+                        </div>
+                        <div class="hk-card-bottom">
+                            <h4 id="i18n-hk-bright-title">Độ Sáng Màn Hình</h4>
+                            <p id="i18n-hk-bright-desc">Tăng giảm trực tiếp độ sáng màn hình dịu mắt vào ban đêm mà không cần bấm phím cứng màn hình.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -954,8 +1458,8 @@
             vi: {
                 flag: "🇻🇳",
                 langName: "Tiếng Việt",
-                navFeatures: "Tính năng",
-                navDemos: "Video Demo",
+                navFeatures: "Tiện ích & Cài đặt",
+                navDemos: "Cử chỉ & Demo 60 FPS",
                 demoPill: "Trải nghiệm trực quan • 60 FPS Video Demos",
                 demoHeading: "Trải Nghiệm Thao Tác Thực Tế",
                 demoSub: "Quan sát trực tiếp cử chỉ vẽ chuột, cuộn quán tính tự nhiên và phím tắt thông minh",
@@ -976,34 +1480,38 @@
                 hl1: "Không cần cài đặt (Portable)",
                 hl2: "Tích hợp UIAccess vượt UAC",
                 hl3: "Không thu thập dữ liệu",
-                featHeading: "Tính Năng Đột Phá",
-                featSub: "Thiết kế dành cho dân văn phòng, lập trình viên và người muốn tối ưu hóa từng giây làm việc",
-                card1Title: "Cử Chỉ Chuột Phải (Gestures)",
-                card1Desc: "Giữ chuột phải và lướt nhẹ để Back, Forward, Chuyển tab hoặc Đóng tab trên Chrome, Edge, Cốc Cốc, VS Code và Explorer. Có màn hình HUD trực quan xuất hiện ngay tức thì.",
-                card2Title: "Cuộn Quán Tính (Inertial Scroll)",
-                card2Desc: "Vuốt nhanh chuột rồi thả tay, trang sẽ trượt đi mượt mà và giảm tốc êm ái nhờ thuật toán mô phỏng vật lý như trên màn hình cảm ứng điện thoại.",
-                card3Title: "Âm Lượng & Độ Sáng Siêu Tốc",
-                card3Desc: "Giữ chuột trái + Lăn con lăn chuột ở bất kỳ đâu để tăng/giảm âm lượng tức thì. Phím tắt F9/F10 điều chỉnh độ sáng màn hình dịu mắt vào ban đêm.",
-                card4Title: "Khóa Bàn Phím Khẩn Cấp",
-                card4Desc: "Nhấn Ctrl + Alt + L để khóa an toàn bàn phím và chuột khi cần vệ sinh bụi bẩn hoặc tránh trẻ em nghịch máy. Gõ từ khóa unlock để mở lại.",
-                card5Title: "Dán Văn Bản Thuần Túy",
-                card5Desc: "Nhấn Ctrl + Shift + V để dán văn bản đã tự động lọc sạch định dạng màu mè, font chữ, tự động cắt tỉa khoảng trắng và dòng trống ở đầu/cuối.",
-                card6Title: "UIAccess Thông Minh",
-                card6Desc: "Tự động xử lý đặc quyền UIAccess để điều khiển được cả các cửa sổ đặc biệt như Task Manager mà không bị hộp thoại UAC hỏi phiền phức.",
-                gestHeading: "Bảng Cử Chỉ Mặc Định",
+                featHeading: "Tiện Ích Đi Kèm & Tùy Biến Chuyên Sâu",
+                featSub: "Mọi phím tắt thông minh, phương pháp cuộn tùy biến và khả năng kiểm soát ứng dụng",
+                card1Title: "Tắt/Bật Âm Thanh (Ctrl + Shift + M)",
+                card1Desc: "Ngắt tiếng (Mute) hoặc bật lại âm thanh hệ thống ngay lập tức bằng tổ hợp phím tắt, tiện lợi trong các cuộc họp hoặc khi cần yên tĩnh.",
+                card2Title: "Hẹn Giờ Khóa Màn Hình (Ctrl + Shift + L)",
+                card2Desc: "Bật hộp thoại nhập số phút đếm ngược để tự động khóa máy (Lock Workstation), bảo mật tuyệt đối khi tạm rời máy tính.",
+                card3Title: "Khóa Bàn Phím Khẩn Cấp (Ctrl + Alt + L)",
+                card3Desc: "Khóa an toàn toàn bộ bàn phím và chuột khi lau chùi bụi bẩn hoặc tránh trẻ em nghịch máy. Gõ từ khóa unlock để mở lại.",
+                card4Title: "Dán Văn Bản Thuần Túy (Ctrl + Shift + V)",
+                card4Desc: "Tự động lọc sạch định dạng màu mè, font chữ, tự động cắt tỉa khoảng trắng và dòng trống ở đầu/cuối trước khi dán.",
+                card5Title: "Tùy Chọn 2 Phương Pháp Cuộn",
+                card5Desc: "Tự do lựa chọn: Kéo nội dung lên xuống (tự nhiên như màn hình cảm ứng điện thoại) hoặc Kéo thanh cuộn truyền thống theo thói quen.",
+                card6Title: "Ứng Dụng Loại Trừ (Exclusion List)",
+                card6Desc: "Dễ dàng thêm các phần mềm đồ họa (Photoshop, CAD, Blender) hoặc game FPS vào danh sách loại trừ để giữ nguyên chuột phải gốc.",
+                card7Title: "Độ Sáng Màn Hình Nhanh (F9 / F10)",
+                card7Desc: "Tinh chỉnh trực tiếp độ sáng màn hình dịu mắt vào ban đêm mà không cần bấm phím cứng màn hình hay mở cài đặt Windows.",
+                card8Title: "UIAccess Tương Thích Tuyệt Đối",
+                card8Desc: "Tự động cấu hình đặc quyền UIAccess để điều khiển mượt mà cả Task Manager và CMD Admin mà không bị hộp thoại UAC hỏi phiền phức.",
+                gestHeading: "Bảng Tra Cứu Cử Chỉ Nhanh",
                 gestSub: "Chỉ cần giữ chuột phải và di chuyển nhẹ theo hướng tương ứng",
                 g1Name: "Quay lại (Back)",
                 g1Desc: "Sang trái ← (Alt + Left)",
                 g2Name: "Tiến tới (Forward)",
                 g2Desc: "Sang phải → (Alt + Right)",
                 g3Name: "Tab trước",
-                g3Desc: "Lên rồi sang trái (Ctrl+Shift+Tab)",
+                g3Desc: "Trái rồi lên ← ↑ (Ctrl+Shift+Tab)",
                 g4Name: "Tab kế tiếp",
-                g4Desc: "Xuống rồi sang trái (Ctrl+Tab)",
+                g4Desc: "Trái rồi xuống ← ↓ (Ctrl+Tab)",
                 g5Name: "Đóng tab",
-                g5Desc: "Phải rồi hướng lên (Ctrl+W)",
+                g5Desc: "Phải rồi lên → ↑ (Ctrl+W)",
                 g6Name: "Tải lại trang",
-                g6Desc: "Phải rồi hướng xuống (F5 / Ctrl+R)",
+                g6Desc: "Phải rồi xuống → ↓ (F5 / Ctrl+R)",
                 instHeading: "Bắt Đầu Dùng Thử Sau 10 Giây",
                 instSub: "Không cần cài đặt phức tạp, không rác hệ thống",
                 step1Title: "Tải file .exe",
@@ -1018,8 +1526,8 @@
             en: {
                 flag: "🇺🇸",
                 langName: "English",
-                navFeatures: "Features",
-                navDemos: "Demos",
+                navFeatures: "Utilities & Settings",
+                navDemos: "Gestures & 60 FPS Demos",
                 demoPill: "Interactive Visual Demos • 60 FPS Videos",
                 demoHeading: "Watch GestureMouse in Action",
                 demoSub: "See fluid right-click gestures, touchscreen-like kinetic scrolling, and fast shortcuts live",
@@ -1040,21 +1548,25 @@
                 hl1: "No installation required (Portable)",
                 hl2: "Built-in UIAccess for elevated windows",
                 hl3: "Zero telemetry & privacy-first",
-                featHeading: "Breakthrough Features",
-                featSub: "Engineered for office pros, developers, and power users who value every second",
-                card1Title: "Right-Click Mouse Gestures",
-                card1Desc: "Hold right-click and flick to Back, Forward, Switch tabs, or Close tabs across Chrome, Edge, Firefox, VS Code, and Explorer with an instant HUD overlay.",
-                card2Title: "Physics Inertial Scrolling",
-                card2Desc: "Flick the mouse and release—pages glide smoothly and decelerate with simulated natural friction just like an iPhone or iPad touch screen.",
-                card3Title: "Fast Volume & Brightness",
-                card3Desc: "Hold left-click + scroll mouse wheel anywhere to instantly adjust master volume. Press F9/F10 to adjust screen dimming for eye comfort at night.",
-                card4Title: "Emergency Keyboard Lock",
-                card4Desc: "Press Ctrl + Alt + L to safely lock keyboard and mouse clicks when cleaning off dust or keeping curious kids away. Type 'unlock' to restore.",
-                card5Title: "Clean Plain-Text Paste",
-                card5Desc: "Press Ctrl + Shift + V to paste clipboard text completely stripped of font styles, colors, and excess blank spaces and empty lines.",
-                card6Title: "Smart UIAccess Integration",
-                card6Desc: "Automatically configures UIAccess privileges so mouse gestures work seamlessly even over Task Manager and admin windows without UAC prompts.",
-                gestHeading: "Default Gestures Guide",
+                featHeading: "Built-in Utilities & Deep Customization",
+                featSub: "Smart hotkeys, versatile scroll mechanics, and tailored application controls",
+                card1Title: "Quick Mute Audio (Ctrl + Shift + M)",
+                card1Desc: "Instantly mute or unmute master volume during calls, meetings, or when silence is needed with a single hotkey.",
+                card2Title: "Auto Lock Screen Timer (Ctrl + Shift + L)",
+                card2Desc: "Brings up a countdown dialog to automatically lock your PC after a chosen duration, safeguarding your workstation.",
+                card3Title: "Emergency Keyboard Lock (Ctrl + Alt + L)",
+                card3Desc: "Safely locks keyboard and mouse input while cleaning dust or preventing accidental typing. Type 'unlock' to restore.",
+                card4Title: "Clean Plain-Text Paste (Ctrl + Shift + V)",
+                card4Desc: "Pastes plain text stripped of font styles, colors, and excess blank spaces and empty lines.",
+                card5Title: "Dual Scrolling Modes",
+                card5Desc: "Freely choose between Natural Touch Dragging (moves content like a phone) or Traditional Scrollbar Tracking.",
+                card6Title: "Application Exclusion List",
+                card6Desc: "Easily blacklist apps (Photoshop, AutoCAD, Blender) or FPS games to retain default right-click behavior without gestures.",
+                card7Title: "Instant Screen Dimming (F9 / F10)",
+                card7Desc: "Directly adjust display brightness for eye comfort during night work with dedicated F9/F10 hotkeys.",
+                card8Title: "Seamless UIAccess Privilege",
+                card8Desc: "Automatically leverages UIAccess privileges to interact seamlessly with elevated windows like Task Manager without UAC prompts.",
+                gestHeading: "Quick Reference Cheat Sheet",
                 gestSub: "Just hold right-click and move your mouse in the corresponding direction",
                 g1Name: "Go Back",
                 g1Desc: "Flick Left ← (Alt + Left)",
@@ -1083,92 +1595,97 @@
 
         
         // Demo Metadata
+                        // Interactive Demo Studio Data (7 Items)
         const demoData = {
             back_forward: {
                 video: "image/demo_back_forward.mp4",
-                gif: "image/demo_back_forward.gif",
-                title: "https://www.google.com/search?q=GestureMouse",
-                badge: "Gestures (L / R)",
-                icon: "⮌",
-                captionVi: "Giữ chuột phải quẹt thẳng sang trái ← để Quay lại (Back), quẹt thẳng sang phải → để Tiến tới (Forward).",
-                captionEn: "Hold Right Click and flick straight Left ← to Go Back, straight Right → to Go Forward."
+                title: "Google Search / History Navigation",
+                badge: "Gestures (← / →)",
+                icon: "↔",
+                captionVi: "Giữ chuột phải vẽ thẳng sang trái ← để Quay lại (Back), vẽ thẳng sang phải → để Tiến tới (Forward).",
+                captionEn: "Hold Right Click and flick straight Left ← for Back, flick straight Right → for Forward."
             },
             tab_switch: {
                 video: "image/demo_tab_switch.mp4",
-                gif: "image/demo_tab_switch.gif",
-                title: "https://ngtrian.github.io/GestureMouse/ — Tab Switching",
-                badge: "Gestures (LD / LU)",
-                icon: "⮂",
-                captionVi: "Vẽ sang trái rồi xuống ← ↓ (LD) để Chuyển Tab kế tiếp; vẽ sang trái rồi lên ← ↑ (LU) để về Tab trước.",
-                captionEn: "Flick Left then Down ← ↓ (LD) for Next Tab; flick Left then Up ← ↑ (LU) for Previous Tab."
+                title: "Chrome Tab Switcher (Fast Tabs)",
+                badge: "Gestures (←↑ / ←↓)",
+                icon: "⇄",
+                captionVi: "Giữ chuột phải vẽ sang trái rồi lên ←↑ để về tab trước; vẽ sang trái rồi xuống ←↓ để sang tab kế tiếp.",
+                captionEn: "Hold Right Click and flick Left then Up ←↑ for Previous Tab; Left then Down ←↓ for Next Tab."
             },
             close_refresh: {
                 video: "image/demo_close_refresh.mp4",
-                gif: "image/demo_close_refresh.gif",
-                title: "https://ngtrian.github.io/GestureMouse/ — Close & Reload",
-                badge: "Gestures (RU / RD)",
+                title: "Tab Management & Page Refresh",
+                badge: "Gestures (→↑ / →↓)",
                 icon: "✕",
-                captionVi: "Vẽ sang phải rồi lên → ↑ (RU) đóng ngay tab đang active; vẽ sang phải rồi xuống → ↓ (RD) để tải lại trang.",
-                captionEn: "Flick Right then Up → ↑ (RU) to Close active tab; flick Right then Down → ↓ (RD) to Reload page."
+                captionVi: "Giữ chuột phải vẽ sang phải rồi lên →↑ để đóng tab đang xem; vẽ sang phải rồi xuống →↓ để tải lại trang.",
+                captionEn: "Hold Right Click and flick Right then Up →↑ to Close Tab; Right then Down →↓ to Reload page."
             },
             kinetic_scroll: {
                 video: "image/demo_kinetic_scroll.mp4",
-                gif: "image/demo_kinetic_scroll.gif",
                 title: "GestureMouse Inertial Kinetic Engine (60 FPS)",
                 badge: "Kinetic Fling Physics",
                 icon: "🌊",
-                captionVi: "Giữ chuột phải vuốt mạnh rồi thả tay để tự động cuộn quán tính như iPhone; cử động chuột nhẹ để phanh dừng lập tức.",
-                captionEn: "Hold Right Click and swipe-release to fling with smartphone momentum; move mouse to brake and halt instantly."
+                captionVi: "Giữ chuột phải vuốt nhanh lên hoặc xuống rồi thả ra để cuộn quán tính tự nhiên như màn hình cảm ứng điện thoại.",
+                captionEn: "Hold Right Click, flick up or down and release to scroll with natural momentum like on a touchscreen."
             },
             drag_scroll: {
                 video: "image/demo_drag_scroll.mp4",
-                gif: "image/demo_drag_scroll.gif",
                 title: "Direct Drag Scrolling (1:1 Tracking)",
                 badge: "AutoScroll 1:1",
                 icon: "🖐️",
-                captionVi: "Giữ chuột phải kéo xuống để cuộn xuống, kéo lên để cuộn lên theo tỷ lệ 1:1. Kéo càng nhanh cuộn càng nhanh.",
-                captionEn: "Hold Right Click and drag down to scroll down, drag up to scroll up. Proportional 1:1 hand tracking."
+                captionVi: "Giữ chuột phải rê kéo trang lên xuống trực tiếp theo tỷ lệ 1:1 như thanh cuộn.",
+                captionEn: "Hold Right Click and drag up/down to manually scroll page at 1:1 precision."
             },
             pgup_pgdn: {
                 video: "image/demo_pgup_pgdn.mp4",
-                gif: "image/demo_pgup_pgdn.gif",
-                title: "GestureMouse Documentation — 3-Page Leap",
+                title: "GestureMouse Documentation — Page Jump",
                 badge: "Rapid Navigation",
                 icon: "⮟",
-                captionVi: "Giữ chuột phải + lăn con lăn chuột xuống để nhảy nguyên 1 trang (Page Down); lăn lên để nhảy lên 1 trang (Page Up).",
-                captionEn: "Hold Right Click + scroll wheel down for Page Down; scroll wheel up for Page Up whole-page leaps."
+                captionVi: "Giữ chuột phải + lăn con lăn chuột để nhảy nguyên cả trang màn hình (PgUp/PgDn).",
+                captionEn: "Hold Right Click + scroll mouse wheel to jump full screen pages (PgUp/PgDn)."
             },
             volume: {
                 video: "image/demo_volume.mp4",
-                gif: "image/demo_volume.gif",
-                title: "YouTube Music / Master Audio Controller",
+                title: "Master Audio Controller",
                 badge: "Rocker Gesture",
                 icon: "🔊",
-                captionVi: "Giữ chuột trái + lăn bánh xe cuộn lên/xuống để tinh chỉnh âm lượng tức thì trong 0.5 giây mà không cần mở Taskbar.",
-                captionEn: "Hold Left Click + scroll wheel to adjust master volume in under a second without opening taskbar."
+                captionVi: "Giữ chuột trái + lăn con lăn chuột để tăng giảm âm lượng hệ thống cực nhạy.",
+                captionEn: "Hold Left Click + scroll mouse wheel to smoothly adjust master volume."
             }
         };
 
         let currentDemoKey = "back_forward";
 
         function switchDemo(key, btnElem) {
-            currentDemoKey = key;
             const data = demoData[key];
             if (!data) return;
 
-            // Update active tab buttons
-            document.querySelectorAll(".btn-demo-tab").forEach(btn => btn.classList.remove("active"));
+            const isAlreadyActive = (currentDemoKey === key);
+            currentDemoKey = key;
+
+            // Update active state in left nav list
+            document.querySelectorAll(".demo-nav-item").forEach(btn => {
+                btn.classList.remove("active");
+                if (btn.getAttribute("data-key") === key) {
+                    btn.classList.add("active");
+                }
+            });
             if (btnElem) btnElem.classList.add("active");
 
-            // Update Video Player
+            // Update Video Player smoothly without layout shift
             const video = document.getElementById("mainDemoVideo");
             const source = document.getElementById("mainDemoSource");
-            const gif = document.getElementById("mainDemoGif");
 
-            source.src = data.video;
-            if (gif) gif.src = data.gif;
-            video.load();
-            video.play().catch(() => {});
+            if (!source.src.endsWith(data.video)) {
+                source.src = data.video;
+                video.load();
+                video.play().catch(() => {});
+            } else if (isAlreadyActive) {
+                // If clicked already active video, replay from start smoothly
+                video.currentTime = 0;
+                video.play().catch(() => {});
+            }
 
             // Update Window Header & Caption
             document.getElementById("demoWindowTitle").textContent = data.title;
@@ -1200,16 +1717,8 @@
             if (document.getElementById("i18n-demo-pill")) document.getElementById("i18n-demo-pill").textContent = t.demoPill;
             if (document.getElementById("i18n-demo-heading")) document.getElementById("i18n-demo-heading").textContent = t.demoHeading;
             if (document.getElementById("i18n-demo-sub")) document.getElementById("i18n-demo-sub").textContent = t.demoSub;
-            if (document.getElementById("tab-label-back-forward")) document.getElementById("tab-label-back-forward").textContent = t.tabBackForward;
-            if (document.getElementById("tab-label-tab-switch")) document.getElementById("tab-label-tab-switch").textContent = t.tabTabSwitch;
-            if (document.getElementById("tab-label-close-refresh")) document.getElementById("tab-label-close-refresh").textContent = t.tabCloseRefresh;
-            if (document.getElementById("tab-label-kinetic-scroll")) document.getElementById("tab-label-kinetic-scroll").textContent = t.tabKineticScroll;
-            if (document.getElementById("tab-label-drag-scroll")) document.getElementById("tab-label-drag-scroll").textContent = t.tabDragScroll;
-            if (document.getElementById("tab-label-pgup-pgdn")) document.getElementById("tab-label-pgup-pgdn").textContent = t.tabPgupPgdn;
-            if (document.getElementById("tab-label-volume")) document.getElementById("tab-label-volume").textContent = t.tabVolume;
-            if (typeof updateDemoCaption === "function") updateDemoCaption();
 
-            document.getElementById("i18n-nav-gestures").textContent = t.navGestures;
+            if (document.getElementById("i18n-nav-gestures")) document.getElementById("i18n-nav-gestures").textContent = t.navGestures;
             document.getElementById("i18n-nav-install").textContent = t.navInstall;
             document.getElementById("i18n-hero-pill").textContent = t.heroPill;
             document.getElementById("i18n-hero-title").innerHTML = t.heroTitle;
@@ -1222,45 +1731,122 @@
             document.getElementById("i18n-feat-heading").textContent = t.featHeading;
             document.getElementById("i18n-feat-sub").textContent = t.featSub;
 
-            document.getElementById("i18n-card-1-title").textContent = t.card1Title;
-            document.getElementById("i18n-card-1-desc").textContent = t.card1Desc;
-            document.getElementById("i18n-card-2-title").textContent = t.card2Title;
-            document.getElementById("i18n-card-2-desc").textContent = t.card2Desc;
-            document.getElementById("i18n-card-3-title").textContent = t.card3Title;
-            document.getElementById("i18n-card-3-desc").textContent = t.card3Desc;
-            document.getElementById("i18n-card-4-title").textContent = t.card4Title;
-            document.getElementById("i18n-card-4-desc").textContent = t.card4Desc;
-            document.getElementById("i18n-card-5-title").textContent = t.card5Title;
-            document.getElementById("i18n-card-5-desc").textContent = t.card5Desc;
-            document.getElementById("i18n-card-6-title").textContent = t.card6Title;
-            document.getElementById("i18n-card-6-desc").textContent = t.card6Desc;
+            // Dynamically Swap Settings GUI & Lock Screen Dialog Images (Vietnamese <-> English)
+            const imgSettings = document.getElementById("imgSettingsMain");
+            const guiLink = document.getElementById("guiImgLink");
+            const guiTitle = document.getElementById("guiTitleText");
+            const imgLock = document.getElementById("imgLockDialog");
+            const linkLock = document.getElementById("linkLockDialog");
 
-            document.getElementById("i18n-gest-heading").textContent = t.gestHeading;
-            document.getElementById("i18n-gest-sub").textContent = t.gestSub;
-            document.getElementById("i18n-g-1-name").textContent = t.g1Name;
-            document.getElementById("i18n-g-1-desc").textContent = t.g1Desc;
-            document.getElementById("i18n-g-2-name").textContent = t.g2Name;
-            document.getElementById("i18n-g-2-desc").textContent = t.g2Desc;
-            document.getElementById("i18n-g-3-name").textContent = t.g3Name;
-            document.getElementById("i18n-g-3-desc").textContent = t.g3Desc;
-            document.getElementById("i18n-g-4-name").textContent = t.g4Name;
-            document.getElementById("i18n-g-4-desc").textContent = t.g4Desc;
-            document.getElementById("i18n-g-5-name").textContent = t.g5Name;
-            document.getElementById("i18n-g-5-desc").textContent = t.g5Desc;
-            document.getElementById("i18n-g-6-name").textContent = t.g6Name;
-            document.getElementById("i18n-g-6-desc").textContent = t.g6Desc;
+            if (lang === "vi") {
+                if (imgSettings) imgSettings.src = "image/settings_gui.png";
+                if (guiLink) guiLink.href = "image/settings_gui.png";
+                if (guiTitle) guiTitle.textContent = "⭐ Gesture Mouse - Cài đặt";
+                if (imgLock) imgLock.src = "image/lock_screen_dialog.png";
+                if (linkLock) linkLock.href = "image/lock_screen_dialog.png";
 
-            document.getElementById("i18n-inst-heading").textContent = t.instHeading;
-            document.getElementById("i18n-inst-sub").textContent = t.instSub;
-            document.getElementById("i18n-step-1-title").textContent = t.step1Title;
-            document.getElementById("i18n-step-1-desc").textContent = t.step1Desc;
-            document.getElementById("i18n-step-2-title").textContent = t.step2Title;
-            document.getElementById("i18n-step-2-desc").textContent = t.step2Desc;
-            document.getElementById("i18n-step-3-title").textContent = t.step3Title;
-            document.getElementById("i18n-step-3-desc").textContent = t.step3Desc;
-            document.getElementById("i18n-inst-btn").textContent = t.instBtn;
-            document.getElementById("i18n-footer-author").innerHTML = t.footerAuthor;
+                // 7 Demo Navigation Labels
+                if (document.getElementById("tab-label-back-forward")) document.getElementById("tab-label-back-forward").textContent = "Quay lại & Tiến tới";
+                if (document.getElementById("tab-sub-back-forward")) document.getElementById("tab-sub-back-forward").textContent = "Vẽ thẳng sang trái hoặc sang phải";
+                if (document.getElementById("tab-label-tab-switch")) document.getElementById("tab-label-tab-switch").textContent = "Chuyển Đổi Tab";
+                if (document.getElementById("tab-sub-tab-switch")) document.getElementById("tab-sub-tab-switch").textContent = "Trái rồi lên hoặc Trái rồi xuống";
+                if (document.getElementById("tab-label-close-refresh")) document.getElementById("tab-label-close-refresh").textContent = "Đóng & Tải Lại Tab";
+                if (document.getElementById("tab-sub-close-refresh")) document.getElementById("tab-sub-close-refresh").textContent = "Phải rồi lên hoặc Phải rồi xuống";
+                if (document.getElementById("tab-label-kinetic-scroll")) document.getElementById("tab-label-kinetic-scroll").textContent = "Cuộn Quán Tính Tự Động";
+                if (document.getElementById("tab-sub-kinetic-scroll")) document.getElementById("tab-sub-kinetic-scroll").textContent = "Vuốt nhanh & thả tay mượt mà";
+                if (document.getElementById("tab-label-drag-scroll")) document.getElementById("tab-label-drag-scroll").textContent = "Kéo Cuộn Trực Tiếp 1:1";
+                if (document.getElementById("tab-sub-drag-scroll")) document.getElementById("tab-sub-drag-scroll").textContent = "Giữ chuột phải rê kéo trang lên xuống";
+                if (document.getElementById("tab-label-pgup-pgdn")) document.getElementById("tab-label-pgup-pgdn").textContent = "Cuộn Trang PgUp / PgDn";
+                if (document.getElementById("tab-sub-pgup-pgdn")) document.getElementById("tab-sub-pgup-pgdn").textContent = "Giữ chuột phải + xoay con lăn";
+                if (document.getElementById("tab-label-volume")) document.getElementById("tab-label-volume").textContent = "Chỉnh Âm Lượng Siêu Tốc";
+                if (document.getElementById("tab-sub-volume")) document.getElementById("tab-sub-volume").textContent = "Giữ chuột trái + cuộn con lăn";
 
+                // Settings Spotlight
+                if (document.getElementById("i18n-spot-title")) document.getElementById("i18n-spot-title").textContent = "Trung Tâm Cài Đặt & Tùy Biến Chuyên Sâu";
+                if (document.getElementById("i18n-spot-sub")) document.getElementById("i18n-spot-sub").textContent = "Giao diện đồ họa trực quan • Dễ dàng điều chỉnh phương pháp cuộn và danh sách loại trừ";
+                if (document.getElementById("i18n-spot-f1-title")) document.getElementById("i18n-spot-f1-title").textContent = "Tùy Chọn 2 Phương Pháp Cuộn Chuột";
+                if (document.getElementById("i18n-spot-f1-desc")) document.getElementById("i18n-spot-f1-desc").textContent = "Linh hoạt lựa chọn cơ chế cuộn kéo thủ công và tự động theo thói quen cá nhân:";
+                if (document.getElementById("i18n-mode-1-name")) document.getElementById("i18n-mode-1-name").textContent = "Kéo nội dung lên xuống";
+                if (document.getElementById("i18n-mode-1-desc")) document.getElementById("i18n-mode-1-desc").textContent = "Tự nhiên như màn hình cảm ứng";
+                if (document.getElementById("i18n-mode-2-name")) document.getElementById("i18n-mode-2-name").textContent = "Kéo thanh cuộn";
+                if (document.getElementById("i18n-mode-2-desc")) document.getElementById("i18n-mode-2-desc").textContent = "Chuẩn con lăn Windows";
+
+                if (document.getElementById("i18n-spot-f2-title")) document.getElementById("i18n-spot-f2-title").textContent = "Danh Sách Ứng Dụng Loại Trừ (Exclusion List)";
+                if (document.getElementById("i18n-spot-f2-desc")) document.getElementById("i18n-spot-f2-desc").innerHTML = "Thêm phần mềm đồ họa (Photoshop, CAD, Blender) hoặc game FPS (Valorant, CS:GO). GestureMouse tự động bỏ qua để giữ nguyên 100% chuột phải gốc.";
+                if (document.getElementById("i18n-spot-f3-title")) document.getElementById("i18n-spot-f3-title").textContent = "Khởi Chạy Cùng Windows & UIAccess";
+                if (document.getElementById("i18n-spot-f3-desc")) document.getElementById("i18n-spot-f3-desc").textContent = "Tự khởi động cùng hệ thống và tích hợp UIAccess để điều khiển Task Manager và các cửa sổ Administrator mà không bị UAC chặn.";
+
+                // Hotkeys Section
+                if (document.getElementById("i18n-hk-sec-title")) document.getElementById("i18n-hk-sec-title").textContent = "⚡ Bộ Phím Tắt Năng Suất Tích Hợp";
+                if (document.getElementById("i18n-hk-sec-sub")) document.getElementById("i18n-hk-sec-sub").textContent = "Thao tác tức thời với các phím tắt hệ thống được thiết kế tối ưu";
+                if (document.getElementById("i18n-hk-lock-title")) document.getElementById("i18n-hk-lock-title").textContent = "Hẹn Giờ Khóa Màn Hình";
+                if (document.getElementById("i18n-hk-lock-desc")) document.getElementById("i18n-hk-lock-desc").textContent = "Mở hộp thoại đếm ngược số phút để tự động khóa máy (Lock Workstation) khi rời máy tính.";
+                if (document.getElementById("i18n-hk-mute-title")) document.getElementById("i18n-hk-mute-title").textContent = "Tắt/Bật Âm Thanh Tức Thì";
+                if (document.getElementById("i18n-hk-mute-desc")) document.getElementById("i18n-hk-mute-desc").textContent = "Ngắt tiếng (Mute) hoặc bật lại âm thanh hệ thống ngay lập tức, cực kỳ hữu dụng trong họp hoặc nghe gọi.";
+                if (document.getElementById("i18n-hk-vol-title")) document.getElementById("i18n-hk-vol-title").textContent = "Tăng/Giảm Âm Lượng";
+                if (document.getElementById("i18n-hk-vol-desc")) document.getElementById("i18n-hk-vol-desc").textContent = "Giữ phím Windows kết hợp xoay con lăn chuột lên hoặc xuống để thay đổi âm lượng nhanh ở mọi vị trí.";
+                if (document.getElementById("i18n-hk-klock-title")) document.getElementById("i18n-hk-klock-title").textContent = "Khóa Chuột & Bàn Phím";
+                if (document.getElementById("i18n-hk-klock-desc")) document.getElementById("i18n-hk-klock-desc").innerHTML = "Khóa an toàn khi lau chùi bụi bẩn hoặc tránh trẻ em nghịch bấm linh tinh. Gõ từ khóa <em>unlock</em> để mở khóa.";
+                if (document.getElementById("i18n-hk-paste-title")) document.getElementById("i18n-hk-paste-title").textContent = "Dán Văn Bản Thuần";
+                if (document.getElementById("i18n-hk-paste-desc")) document.getElementById("i18n-hk-paste-desc").textContent = "Tự động loại bỏ toàn bộ định dạng font chữ, màu sắc và cắt tỉa khoảng trắng thừa trước khi dán.";
+                if (document.getElementById("i18n-hk-bright-title")) document.getElementById("i18n-hk-bright-title").textContent = "Độ Sáng Màn Hình";
+                if (document.getElementById("i18n-hk-bright-desc")) document.getElementById("i18n-hk-bright-desc").textContent = "Tăng giảm trực tiếp độ sáng màn hình dịu mắt vào ban đêm mà không cần bấm phím cứng màn hình.";
+            } else {
+                if (imgSettings) imgSettings.src = "image/settings_gui_en.png";
+                if (guiLink) guiLink.href = "image/settings_gui_en.png";
+                if (guiTitle) guiTitle.textContent = "⭐ Gesture Mouse - Settings";
+                if (imgLock) imgLock.src = "image/lock_screen_dialog_en.png";
+                if (linkLock) linkLock.href = "image/lock_screen_dialog_en.png";
+
+                // 7 Demo Navigation Labels
+                if (document.getElementById("tab-label-back-forward")) document.getElementById("tab-label-back-forward").textContent = "Back & Forward";
+                if (document.getElementById("tab-sub-back-forward")) document.getElementById("tab-sub-back-forward").textContent = "Flick straight Left or straight Right";
+                if (document.getElementById("tab-label-tab-switch")) document.getElementById("tab-label-tab-switch").textContent = "Switch Browser Tabs";
+                if (document.getElementById("tab-sub-tab-switch")) document.getElementById("tab-sub-tab-switch").textContent = "Left then Up or Left then Down";
+                if (document.getElementById("tab-label-close-refresh")) document.getElementById("tab-label-close-refresh").textContent = "Close & Reload Tab";
+                if (document.getElementById("tab-sub-close-refresh")) document.getElementById("tab-sub-close-refresh").textContent = "Right then Up or Right then Down";
+                if (document.getElementById("tab-label-kinetic-scroll")) document.getElementById("tab-label-kinetic-scroll").textContent = "Kinetic Auto-Scroll";
+                if (document.getElementById("tab-sub-kinetic-scroll")) document.getElementById("tab-sub-kinetic-scroll").textContent = "Flick fast & release smoothly";
+                if (document.getElementById("tab-label-drag-scroll")) document.getElementById("tab-label-drag-scroll").textContent = "1:1 Direct Hand Drag";
+                if (document.getElementById("tab-sub-drag-scroll")) document.getElementById("tab-sub-drag-scroll").textContent = "Hold right click & drag up/down";
+                if (document.getElementById("tab-label-pgup-pgdn")) document.getElementById("tab-label-pgup-pgdn").textContent = "Page Scroll PgUp / PgDn";
+                if (document.getElementById("tab-sub-pgup-pgdn")) document.getElementById("tab-sub-pgup-pgdn").textContent = "Hold right click + wheel scroll";
+                if (document.getElementById("tab-label-volume")) document.getElementById("tab-label-volume").textContent = "Instant Rocker Volume";
+                if (document.getElementById("tab-sub-volume")) document.getElementById("tab-sub-volume").textContent = "Hold left click + wheel scroll";
+
+                // Settings Spotlight
+                if (document.getElementById("i18n-spot-title")) document.getElementById("i18n-spot-title").textContent = "Intuitive Settings & Customization";
+                if (document.getElementById("i18n-spot-sub")) document.getElementById("i18n-spot-sub").textContent = "Visual GUI Control Center • Tailored to your personal workflow";
+                if (document.getElementById("i18n-spot-f1-title")) document.getElementById("i18n-spot-f1-title").textContent = "Dual Scroll Mechanics";
+                if (document.getElementById("i18n-spot-f1-desc")) document.getElementById("i18n-spot-f1-desc").textContent = "Flexibly choose between hand dragging and scrollbar tracking:";
+                if (document.getElementById("i18n-mode-1-name")) document.getElementById("i18n-mode-1-name").textContent = "Move content directly";
+                if (document.getElementById("i18n-mode-1-desc")) document.getElementById("i18n-mode-1-desc").textContent = "Smartphone-like natural touch";
+                if (document.getElementById("i18n-mode-2-name")) document.getElementById("i18n-mode-2-name").textContent = "Move scrollbar indicator";
+                if (document.getElementById("i18n-mode-2-desc")) document.getElementById("i18n-mode-2-desc").textContent = "Traditional Windows scrollbar";
+
+                if (document.getElementById("i18n-spot-f2-title")) document.getElementById("i18n-spot-f2-title").textContent = "Application Exclusion List";
+                if (document.getElementById("i18n-spot-f2-desc")) document.getElementById("i18n-spot-f2-desc").innerHTML = "Blacklist creative suites (Photoshop, CAD, Blender) or FPS games (Valorant, CS:GO). GestureMouse gracefully steps aside to keep native right-click intact.";
+                if (document.getElementById("i18n-spot-f3-title")) document.getElementById("i18n-spot-f3-title").textContent = "Windows Auto-Start & UIAccess";
+                if (document.getElementById("i18n-spot-f3-desc")) document.getElementById("i18n-spot-f3-desc").textContent = "Starts silently with Windows and leverages UIAccess privileges to control Task Manager and Administrator windows without UAC prompts.";
+
+                // Hotkeys Section
+                if (document.getElementById("i18n-hk-sec-title")) document.getElementById("i18n-hk-sec-title").textContent = "⚡ Built-in Productivity Hotkeys";
+                if (document.getElementById("i18n-hk-sec-sub")) document.getElementById("i18n-hk-sec-sub").textContent = "Instant desktop operations engineered for high efficiency";
+                if (document.getElementById("i18n-hk-lock-title")) document.getElementById("i18n-hk-lock-title").textContent = "Auto Lock Screen Timer";
+                if (document.getElementById("i18n-hk-lock-desc")) document.getElementById("i18n-hk-lock-desc").textContent = "Opens countdown timer dialog to auto-lock workstation when stepping away.";
+                if (document.getElementById("i18n-hk-mute-title")) document.getElementById("i18n-hk-mute-title").textContent = "Instant Audio Mute";
+                if (document.getElementById("i18n-hk-mute-desc")) document.getElementById("i18n-hk-mute-desc").textContent = "Instantly mute or restore master volume with Ctrl + Shift + M during calls or meetings.";
+                if (document.getElementById("i18n-hk-vol-title")) document.getElementById("i18n-hk-vol-title").textContent = "Volume Up / Down";
+                if (document.getElementById("i18n-hk-vol-desc")) document.getElementById("i18n-hk-vol-desc").textContent = "Hold Windows key + scroll mouse wheel up/down to adjust volume anywhere.";
+                if (document.getElementById("i18n-hk-klock-title")) document.getElementById("i18n-hk-klock-title").textContent = "Emergency Lock Input";
+                if (document.getElementById("i18n-hk-klock-desc")) document.getElementById("i18n-hk-klock-desc").innerHTML = "Safely locks keyboard and mouse when cleaning off dust. Type <em>unlock</em> to restore.";
+                if (document.getElementById("i18n-hk-paste-title")) document.getElementById("i18n-hk-paste-title").textContent = "Clean Plain-Text Paste";
+                if (document.getElementById("i18n-hk-paste-desc")) document.getElementById("i18n-hk-paste-desc").textContent = "Pastes clipboard text completely stripped of font styling and trimmed of extra blank lines.";
+                if (document.getElementById("i18n-hk-bright-title")) document.getElementById("i18n-hk-bright-title").textContent = "Screen Brightness Control";
+                if (document.getElementById("i18n-hk-bright-desc")) document.getElementById("i18n-hk-bright-desc").textContent = "Adjust display brightness directly for nighttime comfort with F9 and F10.";
+            }
+
+            updateDemoCaption();
             document.documentElement.lang = lang;
         }
 
