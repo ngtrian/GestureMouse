@@ -594,7 +594,7 @@ return
 CheckUpdates(silentIfLatest := false) {
     global AppVersion, AppGitHubRepo
     repo := AppGitHubRepo ? AppGitHubRepo : "ngtrian/GestureMouse"
-    currVer := AppVersion ? AppVersion : "1.0.0"
+    currVer := AppVersion ? AppVersion : "1.1.0"
     url := "https://api.github.com/repos/" . repo . "/releases/latest"
 
     try {

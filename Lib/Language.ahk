@@ -46,7 +46,7 @@ InitLanguage() {
     v["Update_Available"]       := "Đã có phiên bản mới v{new} (bản hiện tại: v{curr})!`n`nBạn có muốn mở trang GitHub Releases để cập nhật không?"
     v["Update_Latest"]          := "Bạn đang sử dụng phiên bản mới nhất (v{ver})."
     v["Update_Failed"]          := "Không thể kiểm tra bản cập nhật. Vui lòng kiểm tra lại kết nối mạng."
-    v["Tip_Title"]              := "GestureMouse v" . (AppVersion ? AppVersion : "1.0.0") . "`n"
+    v["Tip_Title"]              := "GestureMouse v" . (AppVersion ? AppVersion : "1.1.0") . "`n"
     v["Tip_Gesture"]            := "Cử chỉ & phím tắt: "
     v["Tip_LockKB"]             := "Khóa bàn phím: "
     v["Tip_LockMouse"]          := "Khóa chuột: "
@@ -138,7 +138,7 @@ InitLanguage() {
     ; Giới thiệu - About
     v["About_Title"]            := "Giới thiệu về Gesture Mouse"
     v["About_Headline"]         := "Hỗ trợ thao tác cử chỉ, phím tắt và cuộn tự động"
-    v["About_Version"]          := "Phiên bản: " . (AppVersion ? AppVersion : "1.0.0") . " | Ngày phát hành: " . (AppReleaseDate ? AppReleaseDate : "02/11/2026")
+    v["About_Version"]          := "Phiên bản: " . (AppVersion ? AppVersion : "1.1.0") . " | Ngày phát hành: " . (AppReleaseDate ? AppReleaseDate : "03/11/2026")
     v["About_GuideTitle"]       := "Hướng dẫn sử dụng:"
     v["About_Author"]           := "Tác giả: Nguyễn Tri Ân"
     v["About_Donate"]           := "Donate"
@@ -202,7 +202,7 @@ InitLanguage() {
     e["Update_Available"]       := "A new version v{new} is available (current: v{curr})!`n`nWould you like to open GitHub Releases to download it?"
     e["Update_Latest"]          := "You are using the latest version (v{ver})."
     e["Update_Failed"]          := "Unable to check for updates. Please check your internet connection."
-    e["Tip_Title"]              := "GestureMouse v" . (AppVersion ? AppVersion : "1.0.0") . "`n"
+    e["Tip_Title"]              := "GestureMouse v" . (AppVersion ? AppVersion : "1.1.0") . "`n"
     e["Tip_Gesture"]            := "Gestures & Shortcuts: "
     e["Tip_LockKB"]             := "Lock Keyboard: "
     e["Tip_LockMouse"]          := "Lock Mouse: "
@@ -294,7 +294,7 @@ InitLanguage() {
     ; About
     e["About_Title"]            := "About Gesture Mouse"
     e["About_Headline"]         := "Mouse gestures, shortcuts and auto-scroll utility"
-    e["About_Version"]          := "Version: " . (AppVersion ? AppVersion : "1.0.0") . " | Release Date: " . (AppReleaseDate ? AppReleaseDate : "02/11/2026")
+    e["About_Version"]          := "Version: " . (AppVersion ? AppVersion : "1.1.0") . " | Release Date: " . (AppReleaseDate ? AppReleaseDate : "03/11/2026")
     e["About_GuideTitle"]       := "User Guide:"
     e["About_Author"]           := "Author: Nguyen Tri An"
     e["About_Donate"]           := "Donate"

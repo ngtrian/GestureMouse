@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🖱️ GestureMouse
 
@@ -33,7 +33,7 @@ winget install GestureMouse
 
 ### Option 2: Standalone Executable (.exe / .zip)
 1. Download the latest release from [GitHub Releases](https://github.com/ngtrian/GestureMouse/releases/latest).
-2. Download `GestureMouse.exe` (or `GestureMouse-v1.0.0-Portable.zip` and extract).
+2. Download `GestureMouse.exe` (or `GestureMouse-v1.1.0-Portable.zip` and extract).
 3. Double-click `GestureMouse.exe` to run immediately (Portable, no installation required).
 4. *(Recommended)*: Right-click the system tray icon and select **"Install to System (UIAccess)"** to enable auto-start with Windows and interact with elevated windows (e.g. Task Manager) without annoying UAC prompts.
 

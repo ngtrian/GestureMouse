@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🖱️ GestureMouse
 
@@ -33,7 +33,7 @@ winget install GestureMouse
 
 ### Cách 2: Tải file chạy trực tiếp (.exe / .zip)
 1. Tải bản phát hành mới nhất từ [GitHub Releases](https://github.com/ngtrian/GestureMouse/releases/latest).
-2. Tải về file `GestureMouse.exe` (hoặc `GestureMouse-v1.0.0-Portable.zip` rồi giải nén).
+2. Tải về file `GestureMouse.exe` (hoặc `GestureMouse-v1.1.0-Portable.zip` rồi giải nén).
 3. Nhấp đúp vào `GestureMouse.exe` để bắt đầu trải nghiệm ngay lập tức.
 4. *(Tùy chọn khuyến nghị)*: Nhấp chuột phải vào biểu tượng GestureMouse ở khay hệ thống -> Chọn **"Cài đặt vào hệ thống (UIAccess)"** để kích hoạt tự động khởi động cùng Windows và cho phép thao tác trên các cửa sổ nâng quyền (như Task Manager) mà không bị hộp thoại UAC làm phiền.
 

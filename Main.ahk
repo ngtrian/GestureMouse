@@ -29,7 +29,7 @@ if (A_Args.Length()) {
 ;@Ahk2Exe-SetOrigFilename GestureMouse.exe
 ;@Ahk2Exe-SetDescription Ứng dụng hỗ trợ cử chỉ chuột
 ;@Ahk2Exe-SetCompanyName NGUYENTRIAN
-;@Ahk2Exe-SetVersion 1.0.0
+;@Ahk2Exe-SetVersion 1.1.0
 ;@Ahk2Exe-SetCopyright © 2026 NGUYENTRIAN. All rights reserved.
 ;@Ahk2Exe-Base %A_ScriptDir%\bin\CustomClass.bin
 
@@ -47,8 +47,8 @@ if (A_Args.Length()) {
 
 
 ; Khai báo phiên bản ứng dụng (Nguồn chân lý duy nhất cho toàn bộ hệ thống)
-global AppVersion := "1.0.0"
-global AppReleaseDate := "02/11/2026"
+global AppVersion := "1.1.0"
+global AppReleaseDate := "03/11/2026"
 global AppGitHubRepo := "ngtrian/GestureMouse"
 
 ; Khai báo biến toàn cục
