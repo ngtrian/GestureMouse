@@ -4,7 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GestureMouse - Smart Mouse Gestures & Inertial Scrolling for Windows</title>
-    <meta name="description" content="Tiện ích cử chỉ chuột phải thông minh, cuộn trang quán tính mượt mà và phím tắt đa năng hoàn toàn miễn phí, mã nguồn mở cho Windows.">
+    <meta name="description" id="metaDescription" content="Tiện ích cử chỉ chuột phải thông minh, cuộn trang quán tính mượt mà và phím tắt đa năng hoàn toàn miễn phí, mã nguồn mở cho Windows.">
+    <meta name="theme-color" content="#0b0f19">
+
+    <!-- Open Graph / Facebook / Discord -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ngtrian.github.io/GestureMouse/">
+    <meta property="og:title" id="ogTitle" content="GestureMouse - Smart Mouse Gestures & Inertial Scrolling for Windows">
+    <meta property="og:description" id="ogDesc" content="Cử chỉ chuột phải thông minh, cuộn trang quán tính tự nhiên như điện thoại và bộ phím tắt tăng tốc làm việc trên Windows.">
+    <meta property="og:image" content="image/unnamed.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://ngtrian.github.io/GestureMouse/">
+    <meta name="twitter:title" id="twitterTitle" content="GestureMouse - Smart Mouse Gestures & Inertial Scrolling for Windows">
+    <meta name="twitter:description" id="twitterDesc" content="Free & Open Source: Smart right-click mouse gestures, smartphone-like inertial scrolling, and productivity hotkeys for Windows.">
+    <meta name="twitter:image" content="image/unnamed.png">
+
     <link rel="icon" type="image/png" href="image/unnamed.png">
     <link rel="shortcut icon" type="image/x-icon" href="image/unnamed.ico">
     <link rel="apple-touch-icon" href="image/unnamed.png">
@@ -13,6 +29,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
@@ -341,7 +361,7 @@
             display: grid;
             grid-template-columns: 390px 1fr;
             gap: 24px;
-            align-items: start; /* Khóa cố định mép trên, ngăn nhảy hình khi chuyển đổi */
+            align-items: stretch; /* Căn đều chiều cao danh sách bên trái bằng khung video bên phải */
             margin-top: 24px;
         }
 
@@ -349,9 +369,12 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            height: 100%;
         }
 
         .demo-nav-item {
+            flex: 1;
+            min-height: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -365,7 +388,6 @@
             transition: all 0.2s ease;
             font-family: inherit;
             gap: 10px;
-            min-height: 52px;
             width: 100%;
         }
 
@@ -868,18 +890,36 @@
 
         @media (max-width: 1024px) {
             .demo-split-layout {
-            display: grid;
-            grid-template-columns: 390px 1fr;
-            gap: 24px;
-            align-items: start; /* Khóa cố định mép trên, ngăn nhảy hình khi chuyển đổi */
-            margin-top: 24px;
-        }
+                grid-template-columns: 340px 1fr;
+                gap: 20px;
+            }
             .spotlight-body {
                 grid-template-columns: 1fr;
             }
             .gui-mockup-window {
                 max-width: 300px;
                 margin: 0 auto;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .demo-split-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .demo-player-box {
+                order: 1;
+            }
+            .demo-nav-list {
+                order: 2;
+                height: auto;
+            }
+            .demo-nav-item {
+                flex: initial;
+                min-height: 52px;
+            }
+            .scroll-mode-pills {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -971,9 +1011,9 @@
                     <span>GestureMouse</span>
                 </a>
                 <ul class="nav-links">
-                    <li><a href="#demos" id="i18n-nav-demos">Cử chỉ &amp; Demo 60 FPS</a></li>
-                    <li><a href="#features" id="i18n-nav-features">Tiện ích &amp; Cài đặt</a></li>
-                    <li><a href="#install" id="i18n-nav-install">Cách sử dụng</a></li>
+                    <li><a href="#demos" id="i18n-nav-demos">Demo Cử Chỉ</a></li>
+                    <li><a href="#features" id="i18n-nav-features">Tính Năng</a></li>
+                    <li><a href="#install" id="i18n-nav-install">Tải Về</a></li>
                     <li>
                         <button id="langToggleBtn" class="btn-lang" onclick="toggleLanguage()">
                             <span id="langFlag">🇻🇳</span> <span id="langLabel">Tiếng Việt</span>
@@ -1003,7 +1043,7 @@
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Tải Về Ngay (.exe)
                 </a>
-                <a href="#features" class="btn-secondary" id="i18n-hero-btn-feat">
+                <a href="#demos" class="btn-secondary" id="i18n-hero-btn-feat">
                     Khám phá tính năng
                 </a>
             </div>
@@ -1352,7 +1392,7 @@
                     <div class="hk-card">
                         <div class="hk-card-top">
                             <div class="hk-kbd-pill">
-                                <kbd>Win</kbd> + <kbd>Lăn chuột</kbd>
+                                <kbd>Win</kbd> + <kbd id="i18n-kbd-wheel">Lăn chuột</kbd>
                             </div>
                             <div class="hk-icon-mini">
                                 <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
@@ -1458,8 +1498,8 @@
             vi: {
                 flag: "🇻🇳",
                 langName: "Tiếng Việt",
-                navFeatures: "Tiện ích & Cài đặt",
-                navDemos: "Cử chỉ & Demo 60 FPS",
+                navFeatures: "Tính Năng",
+                navDemos: "Demo Cử Chỉ",
                 demoPill: "Trải nghiệm trực quan • 60 FPS Video Demos",
                 demoHeading: "Trải Nghiệm Thao Tác Thực Tế",
                 demoSub: "Quan sát trực tiếp cử chỉ vẽ chuột, cuộn quán tính tự nhiên và phím tắt thông minh",
@@ -1471,7 +1511,7 @@
                 tabPgupPgdn: "Cuộn Trang PgUp/PgDn",
                 tabVolume: "Chỉnh Âm Lượng",
                 navGestures: "Cử chỉ mẫu",
-                navInstall: "Cách sử dụng",
+                navInstall: "Tải Về",
                 heroPill: "Phiên bản v1.0.0 • 100% Miễn phí & Mã nguồn mở",
                 heroTitle: 'Nâng Tầm Trải Nghiệm Chuột Trên <span class="gradient-text">Windows</span>',
                 heroDesc: "Biến mọi con chuột thành công cụ đa năng với Cử chỉ chuột phải thông minh, Cuộn trang quán tính mượt mà và Phím tắt tăng tốc làm việc.",
@@ -1521,13 +1561,17 @@
                 step3Title: "Cài đặt UIAccess",
                 step3Desc: "Nhấp chuột phải vào icon ở khay hệ thống, chọn Cài đặt vào hệ thống để mở khóa mọi tính năng nâng cao và tự khởi động.",
                 instBtn: "Tải GestureMouse Mới Nhất",
-                footerAuthor: 'Phát triển bởi <strong>Nguyễn Tri Ân</strong> • Mã nguồn mở theo giấy phép <a href="https://github.com/ngtrian/GestureMouse/blob/main/LICENSE" target="_blank">MIT License</a> / Bản quyền © 2026'
+                footerAuthor: 'Phát triển bởi <strong>Nguyễn Tri Ân</strong> • Mã nguồn mở theo giấy phép <a href="https://github.com/ngtrian/GestureMouse/blob/main/LICENSE" target="_blank">MIT License</a> / Bản quyền © 2026',
+                pageTitle: "GestureMouse - Cử Chỉ Chuột Thông Minh & Cuộn Quán Tính cho Windows",
+                metaDesc: "Cử chỉ chuột phải thông minh, cuộn trang quán tính như điện thoại và phím tắt đa năng hoàn toàn miễn phí, mã nguồn mở cho Windows.",
+                featPill: "Cài đặt trực quan • Tùy biến toàn diện",
+                kbdWheel: "Lăn chuột"
             },
             en: {
                 flag: "🇺🇸",
                 langName: "English",
-                navFeatures: "Utilities & Settings",
-                navDemos: "Gestures & 60 FPS Demos",
+                navFeatures: "Features",
+                navDemos: "Gestures & Demo",
                 demoPill: "Interactive Visual Demos • 60 FPS Videos",
                 demoHeading: "Watch GestureMouse in Action",
                 demoSub: "See fluid right-click gestures, touchscreen-like kinetic scrolling, and fast shortcuts live",
@@ -1539,7 +1583,7 @@
                 tabPgupPgdn: "Page Up / Down",
                 tabVolume: "Rocker Volume",
                 navGestures: "Gestures",
-                navInstall: "How to Use",
+                navInstall: "Download",
                 heroPill: "Version v1.0.0 • 100% Free & Open Source",
                 heroTitle: 'Supercharge Your Mouse on <span class="gradient-text">Windows</span>',
                 heroDesc: "Turn any mouse into a productivity powerhouse with smart right-click gestures, physics-based inertial scrolling, and instant desktop shortcuts.",
@@ -1589,7 +1633,11 @@
                 step3Title: "Install UIAccess",
                 step3Desc: "Right-click the system tray icon, select 'Install to System' to enable auto-start and interaction with elevated apps.",
                 instBtn: "Download Latest GestureMouse",
-                footerAuthor: 'Developed by <strong>Nguyen Tri An</strong> • Open source under the <a href="https://github.com/ngtrian/GestureMouse/blob/main/LICENSE" target="_blank">MIT License</a> / © 2026'
+                footerAuthor: 'Developed by <strong>Nguyen Tri An</strong> • Open source under the <a href="https://github.com/ngtrian/GestureMouse/blob/main/LICENSE" target="_blank">MIT License</a> / © 2026',
+                pageTitle: "GestureMouse - Smart Mouse Gestures & Inertial Scrolling for Windows",
+                metaDesc: "Free & open-source smart right-click mouse gestures, smartphone-like inertial scrolling, and productivity hotkeys for Windows.",
+                featPill: "Visual Control Center • Deep Customization",
+                kbdWheel: "Mouse Wheel"
             }
         };
 
@@ -1718,7 +1766,6 @@
             if (document.getElementById("i18n-demo-heading")) document.getElementById("i18n-demo-heading").textContent = t.demoHeading;
             if (document.getElementById("i18n-demo-sub")) document.getElementById("i18n-demo-sub").textContent = t.demoSub;
 
-            if (document.getElementById("i18n-nav-gestures")) document.getElementById("i18n-nav-gestures").textContent = t.navGestures;
             document.getElementById("i18n-nav-install").textContent = t.navInstall;
             document.getElementById("i18n-hero-pill").textContent = t.heroPill;
             document.getElementById("i18n-hero-title").innerHTML = t.heroTitle;
@@ -1730,6 +1777,25 @@
             document.getElementById("i18n-hl-3").textContent = t.hl3;
             document.getElementById("i18n-feat-heading").textContent = t.featHeading;
             document.getElementById("i18n-feat-sub").textContent = t.featSub;
+
+            // Page Title & Meta Description
+            if (t.pageTitle) document.title = t.pageTitle;
+            const metaDesc = document.getElementById("metaDescription");
+            if (metaDesc && t.metaDesc) metaDesc.setAttribute("content", t.metaDesc);
+
+            // Installation Guide & Footer Bilingual Bindings
+            if (document.getElementById("i18n-feat-pill")) document.getElementById("i18n-feat-pill").textContent = t.featPill;
+            if (document.getElementById("i18n-inst-heading")) document.getElementById("i18n-inst-heading").textContent = t.instHeading;
+            if (document.getElementById("i18n-inst-sub")) document.getElementById("i18n-inst-sub").textContent = t.instSub;
+            if (document.getElementById("i18n-step-1-title")) document.getElementById("i18n-step-1-title").textContent = t.step1Title;
+            if (document.getElementById("i18n-step-1-desc")) document.getElementById("i18n-step-1-desc").textContent = t.step1Desc;
+            if (document.getElementById("i18n-step-2-title")) document.getElementById("i18n-step-2-title").textContent = t.step2Title;
+            if (document.getElementById("i18n-step-2-desc")) document.getElementById("i18n-step-2-desc").textContent = t.step2Desc;
+            if (document.getElementById("i18n-step-3-title")) document.getElementById("i18n-step-3-title").textContent = t.step3Title;
+            if (document.getElementById("i18n-step-3-desc")) document.getElementById("i18n-step-3-desc").textContent = t.step3Desc;
+            if (document.getElementById("i18n-inst-btn")) document.getElementById("i18n-inst-btn").textContent = t.instBtn;
+            if (document.getElementById("i18n-footer-author")) document.getElementById("i18n-footer-author").innerHTML = t.footerAuthor;
+            if (document.getElementById("i18n-kbd-wheel")) document.getElementById("i18n-kbd-wheel").textContent = t.kbdWheel;
 
             // Dynamically Swap Settings GUI & Lock Screen Dialog Images (Vietnamese <-> English)
             const imgSettings = document.getElementById("imgSettingsMain");

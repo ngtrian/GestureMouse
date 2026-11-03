@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 GestureMouse Visual Generator v6.0 (HD 720p @ Native 60 FPS)
 - 1280x720 High Definition (Crystal clear, zero blur on Retina/4K displays)
