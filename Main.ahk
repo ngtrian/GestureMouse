@@ -343,7 +343,7 @@ RButton Up::
     EndGestureTracking()
 return
 
-#If GetKeyState("RButton", "P")
+#If (GestureScrollEnabled && GetKeyState("RButton", "P"))
 ; Hotkey cuộn trang khi đang giữ chuột phải (lăn bánh xe -> PgUp/PgDn)
 ; Bắt buộc kiểm tra GetKeyState("RButton", "P") để khi KHÔNG giữ chuột phải, nút cuộn luôn hoạt động 100% bình thường, không bao giờ bị kẹt PgUp/PgDn
 WheelUp::

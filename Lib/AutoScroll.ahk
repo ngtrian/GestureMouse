@@ -148,7 +148,7 @@ StopAutoScroll() {
 
 ; Dừng cuộn tự động khi click bất kỳ nút chuột nào hoặc lăn chuột (chạm để dừng)
 ; Riêng RButton được xử lý ở Main.ahk để làm phanh hãm mà không mở context menu
-#If (AutoScrollActive)
+#If (GestureScrollEnabled && AutoScrollActive)
 ~LButton::
 ~MButton::
 ~XButton1::

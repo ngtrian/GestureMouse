@@ -1,6 +1,7 @@
 ﻿#SingleInstance Force
 #MaxHotkeysPerInterval 200  ; Tăng giới hạn hotkeys để tránh lỗi
 
+#If (GestureScrollEnabled)
 #PgUp::
 #WheelUp::  ; Win + Wheel Up -> Tăng âm lượng
     Send {Blind}{Volume_Up}  ; Giả lập phím tăng âm lượng
@@ -11,7 +12,7 @@
     Send {Blind}{Volume_Down}  ; Giả lập phím giảm âm lượng
     return
 
-#If GetKeyState("LButton", "P")
+#If (GestureScrollEnabled && GetKeyState("LButton", "P"))
 WheelUp::  ; Left Click + Wheel Up -> Tăng âm lượng
     Send {Blind}{Volume_Up}
 return
@@ -19,7 +20,7 @@ return
 WheelDown::  ; Left Click + Wheel Down -> Giảm âm lượng
     Send {Blind}{Volume_Down}
 return
-#If
+#If (GestureScrollEnabled)
 
 #WheelUp Up::
 #WheelDown Up::
@@ -28,3 +29,4 @@ return
 ; Ngăn các phím Win + bất kỳ bị kích hoạt khi cuộn chuột
 ~LWin::return
 ~RWin::return
+#If

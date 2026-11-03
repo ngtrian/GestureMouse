@@ -4,6 +4,7 @@
 #Include *i Language.ahk
 
 ; Hàm chính để khởi tạo GUI khóa màn hình
+#If (GestureScrollEnabled)
 ShowLockScreenGUI:
 ^+L::
     if (!LangTable || !LangTable.HasKey("en")) {
@@ -112,6 +113,8 @@ MuteFunc:
     SoundSet, +1, MASTER, MUTE
     SoundGet, MuteState, MASTER, MUTE
 return
+
+#If
 
 AutoScreenLockGuiEscape:
     Gui, AutoScreenLock:Destroy

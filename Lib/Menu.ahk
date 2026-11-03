@@ -124,10 +124,15 @@ UpdateTrayMenu() {
     try {
         menuGestureText := GestureScrollEnabled ? L("Tray_Enabled") : L("Tray_Disabled")
         Menu, Tray, Rename, 1&, %menuGestureText%
-        if (GestureScrollEnabled)
+        if (GestureScrollEnabled) {
             Menu, Tray, Check, 1&
+            try Menu, Tray, Enable, % L("Tray_Shortcuts")
+        }
         else
+        {
             Menu, Tray, Uncheck, 1&
+            try Menu, Tray, Disable, % L("Tray_Shortcuts")
+        }
         Menu, Tray, Default, 1&
     }
 }

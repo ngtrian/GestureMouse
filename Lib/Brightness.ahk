@@ -9,6 +9,7 @@ WinSet, Transparent, 0, ahk_id %hwndBrightness%  ; Giá trị từ 0 đến 225,
 return 
 
 ; Phím F9: Làm tối hơn (255 là hết trong suốt)
+#If (GestureScrollEnabled)
 F9::
 GuiOn := true
 Gui, BrightnessGui:Show, x0 y0 w%A_ScreenWidth% h%A_ScreenHeight% NoActivate
@@ -33,6 +34,8 @@ WinSet, Transparent, %Brightness%, ahk_id %hwndBrightness%
 UpdateTrayTip()
 Gosub, BrightnessTip
 return
+
+#If
 
 BrightnessTip:
     BrightnessPercent := Round((255 - Brightness) / 255 * 100)

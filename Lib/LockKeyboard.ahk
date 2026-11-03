@@ -7,6 +7,7 @@
 SetBatchLines -1 ; Tăng tốc độ thực thi script
 
 ; Phím tắt Ctrl+Alt+L để khóa/mở khóa bàn phím
+#If (GestureScrollEnabled)
 LockKeyboard:
     ^!l::
     KeyWait, Ctrl ; don't block Ctrl key-up
@@ -14,6 +15,8 @@ LockKeyboard:
     KeyWait, l    ; or l-up
     ToggleLock()
 return
+
+#If
 
 ;tạo 1 hàm hiển thị gui thông báo để dễ dàng gọi lại
 ShowNotification() {
