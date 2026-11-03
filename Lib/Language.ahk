@@ -1,4 +1,4 @@
-﻿; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
+; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
 #NoEnv
 
 global CurrentLang := "en"
@@ -23,7 +23,7 @@ InitLanguage() {
     v := LangTable["vi"]
     v["Tray_Enabled"]           := "Đang bật (Ctrl+Alt)"
     v["Tray_Disabled"]          := "Đang tắt (Ctrl+Alt)"
-    v["Tray_Settings"]          := "Cài đặt..."
+    v["Tray_Settings"]          := "Thiết lập..."
     v["Tray_RunAsAdmin"]        := "Chạy quyền Admin"
     v["Tray_Install"]           := "Cài đặt vào hệ thống (UIAccess)"
     v["Tray_Uninstall"]         := "Gỡ cài đặt khỏi hệ thống"
@@ -39,7 +39,7 @@ InitLanguage() {
     v["Tray_Exit"]              := "Thoát"
     v["Tray_Reload"]            := "Khởi động lại"
     v["Sub_LockKB"]             := "Khóa bàn phím`tCtrl + Alt + L"
-    v["Sub_AutoLock"]           := "Tự động khóa màn hình`tCtrl + Shift + L"
+    v["Sub_AutoLock"]           := "Hẹn giờ khóa màn hình`tCtrl + Shift + L"
     v["Sub_PlainText"]          := "Dán văn bản thuần`tCtrl + Shift + V"
     v["Sub_Mute"]               := "Tắt/Bật âm thanh`tCtrl + Shift + M"
     v["Tray_CheckUpdate"]       := "Kiểm tra cập nhật..."
@@ -62,7 +62,7 @@ InitLanguage() {
     
     ; Cài đặt - Settings
     v["Set_Title"]              := "Cài đặt"
-    v["Set_GroupGesture"]       := "Cử chỉ chuột phải"
+    v["Set_GroupGesture"]       := "Cử chỉ chuột && Cuộn"
     v["Set_ManualScroll"]       := "Cuộn kéo thủ công"
     v["Set_ManualScrollBtn"]    := "Giữ chuột phải + rê chuột lên hoặc xuống"
     v["Set_AutoScroll"]         := "Cuộn tự động"
@@ -77,9 +77,9 @@ InitLanguage() {
     v["Set_NextTab"]            := "Chuyển tab tiếp theo"
     v["Set_CloseTab"]           := "Đóng tab"
     v["Set_Refresh"]            := "Làm mới trang"
-    v["Set_GroupHotkeys"]       := "Phím tắt - Hotkeys"
+    v["Set_GroupHotkeys"]       := "Phím tắt"
     v["Set_Mute"]               := "Tắt/Bật âm thanh"
-    v["Set_AutoLock"]           := "Tự động khóa màn hình"
+    v["Set_AutoLock"]           := "Hẹn giờ khóa màn hình"
     v["Set_Volume"]             := "Tăng/giảm âm lượng"
     v["Set_Brightness"]         := "Độ sáng"
     v["Set_LockKBAndMouse"]     := "Khóa bàn phím và chuột"
@@ -105,7 +105,7 @@ InitLanguage() {
     v["Ex_Remove"]              := "Xóa"
     v["Set_GroupGeneral"]       := "Cài đặt chung"
     v["Set_AutoStart"]          := "Khởi chạy cùng Windows"
-    v["Set_ScrollMethodLabel"]  := "Phương pháp cuộn (cuộn kéo thủ công và cuộn tự động):"
+    v["Set_ScrollMethodLabel"]  := "Phương pháp cuộn (cuộn kéo thủ công và cuộn quán tính):"
     v["Set_ScrollStyle1"]       := "Rê chuột lên xuống để kéo nội dung lên xuống (như trên điện thoại)"
     v["Set_ScrollStyle2"]       := "Rê chuột lên xuống để kéo thanh cuộn lên xuống"
     
@@ -121,7 +121,7 @@ InitLanguage() {
     v["TT_8"]                   := "Đóng tab hiện tại"
     v["TT_9"]                   := "Tải lại trang hiện tại"
     v["TT_10"]                  := "Tắt tiếng âm thanh"
-    v["TT_11"]                  := "Khóa màn hình tự động"
+    v["TT_11"]                  := "Hẹn giờ đếm ngược khóa màn hình"
     v["TT_12"]                  := "Tăng hoặc giảm âm lượng, còn có thể dùng phím tắt Win + PgUp/PgDn"
     v["TT_13"]                  := "Điều chỉnh độ sáng màn hình"
     v["TT_14"]                  := "Khóa bàn phím và chuột (gõ 'unlock' để mở)"
@@ -164,8 +164,8 @@ InitLanguage() {
     v["Lock_HookError"]         := "Không thể cài đặt keyboard hook!"
     
     ; Tự động khóa màn hình - Hotkey
-    v["Hot_LockTitle"]          := "Tự động khóa màn hình"
-    v["Hot_Prompt"]             := "Nhập thời gian (phút) để tự động khóa màn hình:"
+    v["Hot_LockTitle"]          := "Hẹn giờ khóa màn hình"
+    v["Hot_Prompt"]             := "Nhập thời gian (phút) để hẹn giờ khóa màn hình:"
     v["Hot_Start"]              := "Bắt đầu"
     v["Hot_Cancel"]             := "Hủy đếm ngược"
     v["Hot_ErrTitle"]           := "Lỗi"
@@ -195,7 +195,7 @@ InitLanguage() {
     e["Tray_Exit"]              := "Exit"
     e["Tray_Reload"]            := "Restart / Reload"
     e["Sub_LockKB"]             := "Lock Keyboard`tCtrl + Alt + L"
-    e["Sub_AutoLock"]           := "Auto Screen Lock`tCtrl + Shift + L"
+    e["Sub_AutoLock"]           := "Screen Lock Timer`tCtrl + Shift + L"
     e["Sub_PlainText"]          := "Paste as Plain Text`tCtrl + Shift + V"
     e["Sub_Mute"]               := "Mute / Unmute`tCtrl + Shift + M"
     e["Tray_CheckUpdate"]       := "Check for Updates..."
@@ -218,7 +218,7 @@ InitLanguage() {
     
     ; Settings
     e["Set_Title"]              := "Settings"
-    e["Set_GroupGesture"]       := "Right Click Gestures"
+    e["Set_GroupGesture"]       := "Mouse Gestures && Scroll"
     e["Set_ManualScroll"]       := "Manual Drag Scroll"
     e["Set_ManualScrollBtn"]    := "Hold Right Click + drag mouse up or down"
     e["Set_AutoScroll"]         := "Auto Scroll"
@@ -235,7 +235,7 @@ InitLanguage() {
     e["Set_Refresh"]            := "Reload Page"
     e["Set_GroupHotkeys"]       := "Hotkeys"
     e["Set_Mute"]               := "Mute / Unmute"
-    e["Set_AutoLock"]           := "Auto Screen Lock"
+    e["Set_AutoLock"]           := "Screen Lock Timer"
     e["Set_Volume"]             := "Volume up/down"
     e["Set_Brightness"]         := "Brightness"
     e["Set_LockKBAndMouse"]     := "Lock keyboard and mouse"
@@ -261,7 +261,7 @@ InitLanguage() {
     e["Ex_Remove"]              := "Delete"
     e["Set_GroupGeneral"]       := "General Settings"
     e["Set_AutoStart"]          := "Start with Windows"
-    e["Set_ScrollMethodLabel"]  := "Scroll method (manual and auto-scroll):"
+    e["Set_ScrollMethodLabel"]  := "Scroll method (manual drag scroll and kinetic scroll):"
     e["Set_ScrollStyle1"]       := "Drag up/down to scroll content (like on phones)"
     e["Set_ScrollStyle2"]       := "Drag up/down to scroll the scrollbar"
     
@@ -277,7 +277,7 @@ InitLanguage() {
     e["TT_8"]                   := "Close current tab"
     e["TT_9"]                   := "Reload current page"
     e["TT_10"]                  := "Mute / Unmute system sound"
-    e["TT_11"]                  := "Schedule automatic screen lock"
+    e["TT_11"]                  := "Screen lock countdown timer"
     e["TT_12"]                  := "Adjust volume, or use shortcut Win + PgUp/PgDn"
     e["TT_13"]                  := "Adjust screen brightness"
     e["TT_14"]                  := "Lock keyboard and mouse (type 'unlock' to unlock)"
@@ -320,8 +320,8 @@ InitLanguage() {
     e["Lock_HookError"]         := "Cannot install keyboard hook!"
     
     ; Auto Screen Lock - Hotkey
-    e["Hot_LockTitle"]          := "Auto Screen Lock"
-    e["Hot_Prompt"]             := "Enter time (minutes) to auto lock screen:"
+    e["Hot_LockTitle"]          := "Screen Lock Timer"
+    e["Hot_Prompt"]             := "Enter time (minutes) to schedule screen lock:"
     e["Hot_Start"]              := "Start"
     e["Hot_Cancel"]             := "Cancel"
     e["Hot_ErrTitle"]           := "Error"

@@ -1,4 +1,4 @@
-﻿; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
+; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
 #NoEnv
 
 Menu:
@@ -198,7 +198,7 @@ Tooltips["TextPaste"] := L("TT_PastePlain")
 ; Nhóm Gesture Mouse
 Gui, Font, Bold
 Gui, Add, GroupBox, w500 h325, % L("Set_GroupGesture")
-Gui, Add, Picture, x160 yp+1 w14 h14 Icon100, %A_WinDir%\System32\shell32.dll
+
 Gui, Font, Normal
 Gui, Add, Text, x20 y35, % L("Set_ManualScroll")
 Gui, Add, Button, x200 y30 Center gShowTooltip vText1, % L("Set_ManualScrollBtn")
