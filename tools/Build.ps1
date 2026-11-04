@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 # GestureMouse - Build & UIAccess Signing Script
 # ============================================================================
 $ErrorActionPreference = "Stop"
@@ -55,7 +55,29 @@ try {
     Get-Process "GestureMouse", "GestureMouse2" -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Milliseconds 500
 
-    # 4. Bien dich bang Ahk2Exe
+    # 4. Kiem tra va dam bao encoding UTF-8 with BOM cho tat ca file .ahk
+    Write-Host ""
+    Write-Host "[*] Dang kiem tra va dam bao encoding UTF-8 with BOM cho tat ca file .ahk..." -ForegroundColor Cyan
+    $ahkFiles = Get-ChildItem -Path $ScriptDir -Recurse -Filter "*.ahk" | Where-Object { $_.FullName -notmatch '\\(\.git|\.history|\.lh)\\' }
+    $utf8Bom = New-Object System.Text.UTF8Encoding($true)
+    $bomConverted = 0
+    foreach ($file in $ahkFiles) {
+        $bytes = [System.IO.File]::ReadAllBytes($file.FullName)
+        $hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
+        if (-not $hasBom) {
+            $content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+            [System.IO.File]::WriteAllText($file.FullName, $content, $utf8Bom)
+            Write-Host "    [+] Da ap BOM: $($file.Name)" -ForegroundColor Green
+            $bomConverted++
+        }
+    }
+    if ($bomConverted -eq 0) {
+        Write-Host "    [V] Tat ca file .ahk deu da o chuan UTF-8 with BOM." -ForegroundColor Gray
+    } else {
+        Write-Host "    [V] Da cap nhat BOM cho $bomConverted file .ahk!" -ForegroundColor Green
+    }
+
+    # 5. Bien dich bang Ahk2Exe
     Write-Host ""
     Write-Host "[1/2] Dang bien dich Main.ahk thanh $outputExe..." -ForegroundColor Yellow
     $proc = Start-Process -FilePath $ahk2Exe -ArgumentList "/in `"$mainScript`" /base `"$customBase`" /out `"$outputExe`"" -Wait -PassThru -NoNewWindow
@@ -64,7 +86,7 @@ try {
     }
     Write-Host "[+] Bien dich thanh cong: $outputExe" -ForegroundColor Green
 
-    # 5. Kich hoat UIAccess & Ky so
+    # 6. Kich hoat UIAccess & Ky so
     Write-Host ""
     Write-Host "[2/2] Dang kich hoat UIAccess va ky so tu dong..." -ForegroundColor Yellow
     $procSign = Start-Process -FilePath $ahkV2 -ArgumentList "`"$signScript`" `"$outputExe`"" -Wait -PassThru -NoNewWindow
