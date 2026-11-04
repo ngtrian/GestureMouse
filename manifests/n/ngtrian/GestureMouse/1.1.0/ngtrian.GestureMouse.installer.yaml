@@ -7,6 +7,6 @@ InstallerType: portable
 Installers:
 - Architecture: x64
   InstallerUrl: https://github.com/ngtrian/GestureMouse/releases/download/v1.1.0/GestureMouse.exe
-  InstallerSha256: 
+  InstallerSha256: 8A14397CFA71FDFDCE93F142829848E3111186E57A999C2D3E32A7EBDA4F4D52
 ManifestType: installer
 ManifestVersion: 1.6.0
