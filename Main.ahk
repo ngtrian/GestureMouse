@@ -1,4 +1,4 @@
-﻿#Persistent 
+#Persistent 
 #SingleInstance Force
 CoordMode, Mouse, Screen
 #NoEnv
@@ -119,7 +119,8 @@ InitPowerAndSessionWatch() ; Khởi tạo theo dõi sleep, unlock màn hình, ch
 SetTimer, UpdateExplorerSelectionState, 300 ; Timer kiểm tra nền selection của Explorer ngoài hook thread
 
 #Include %A_ScriptDir%\Lib\Language.ahk ; Quản lý đa ngôn ngữ (chỉ gồm các hàm)
-#Include %A_ScriptDir%\Lib\Menu.ahk ; Menu, UpdateTrayTip, Settings, ExitMenu
+#Include %A_ScriptDir%\Lib\Menu.ahk ; Menu, UpdateTrayTip, ExitMenu
+#Include %A_ScriptDir%\Lib\Settings.ahk ; Giao diện Cài đặt (Settings GUI)
 #Include %A_ScriptDir%\Lib\About.ahk ; Giới thiệu và hướng dẫn sử dụng
 #Include %A_ScriptDir%\Lib\ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
 #Include %A_ScriptDir%\Lib\ExcludedApps.ahk ; Quản lý danh sách ứng dụng loại trừ khỏi cử chỉ chuột
