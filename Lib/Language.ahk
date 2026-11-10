@@ -548,9 +548,9 @@ L(key) {
     return key
 }
 
-; Đổi ngôn ngữ và cập nhật toàn bộ Menu & ToolTip
+; Đổi ngôn ngữ và cập nhật toàn bộ Menu, ToolTip và Giao diện Cài đặt
 SetLanguage(newLang) {
-    global CurrentLang
+    global CurrentLang, hSettingsGui
     if (newLang != "vi" && newLang != "en")
         return
     CurrentLang := newLang
@@ -561,4 +561,15 @@ SetLanguage(newLang) {
     fnTip := "UpdateTrayTip"
     if (IsFunc(fnTip))
         %fnTip%()
+
+    ; Đồng bộ giao diện Cài đặt theo ngôn ngữ mới
+    if (hSettingsGui) {
+        DetectHiddenWindows, On
+        isVis := WinExist("ahk_id " . hSettingsGui) && DllCall("IsWindowVisible", "Ptr", hSettingsGui)
+        Gui, Settings:Destroy
+        hSettingsGui := 0
+        DetectHiddenWindows, Off
+        if (isVis)
+            Gosub, Settings
+    }
 }

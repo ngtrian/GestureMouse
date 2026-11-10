@@ -682,18 +682,20 @@ OnLangRadio:
     Gui, Settings:Submit, NoHide
     if (LangVI && CurrentLang != "vi") {
         SetLanguage("vi")
-        Gosub, RefreshSettingsGui
     } else if (LangEN && CurrentLang != "en") {
         SetLanguage("en")
-        Gosub, RefreshSettingsGui
     }
 return
 
 RefreshSettingsGui:
-    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+    if (hSettingsGui) {
+        DetectHiddenWindows, On
+        isVis := WinExist("ahk_id " . hSettingsGui) && DllCall("IsWindowVisible", "Ptr", hSettingsGui)
         Gui, Settings:Destroy
         hSettingsGui := 0
-        Gosub, Settings
+        DetectHiddenWindows, Off
+        if (isVis)
+            Gosub, Settings
     }
 return
 
