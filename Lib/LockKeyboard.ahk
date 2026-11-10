@@ -9,28 +9,30 @@ SetBatchLines -1 ; Tăng tốc độ thực thi script
 ; ========================================================
 ; KHAI BÁO BIẾN TOÀN CỤC CHO HỆ THỐNG KHÓA NÂNG CAO
 ; ========================================================
-global isLocked              := 0         ; Trạng thái khóa (1: Đang khóa, 0: Mở)
-global lockMode              := 0         ; 0: Toàn diện (Full Lock), 1: Focus Lock (Chỉ cửa sổ hiện tại)
-global hFocusWnd             := 0         ; HWND cửa sổ đang được Focus Lock
-global focusWndTitle         := ""        ; Tiêu đề cửa sổ Focus Lock
-global lockKeyboardEnabled   := 1         ; Bật/tắt khóa bàn phím
-global mouseLockEnabled      := 1         ; Bật/tắt khóa chuột tổng quát
-global lockMouseClick        := 1         ; Khóa các click chuột (Trái, Phải, Giữa, XButton)
-global lockMouseWheel        := 0         ; Khóa con lăn chuột
-global lockMouseMove         := 0         ; Khóa cứng / Đóng băng con trỏ chuột
-global allowMouseMove        := 1         ; Cho phép rê chuột khi chỉ chặn click
-global allowSpace            := 0         ; Ngoại lệ: Cho phép phím Space (Xem phim / Pause)
-global allowMedia            := 0         ; Ngoại lệ: Cho phép các phím âm lượng / media
-global allowNav              := 0         ; Ngoại lệ: Cho phép các phím mũi tên, Enter, Esc
-global autoLockMinutes       := 0         ; Tự động khóa khi rảnh (0: Tắt, >0: số phút)
-global unlockMethod          := 0         ; 0: Từ khóa/PIN, 1: Mật khẩu Windows
-global UNLOCK_KEYWORD        := "unlock"  ; Từ khóa mở khóa mặc định
-global KEYWORD_LENGTH        := StrLen(UNLOCK_KEYWORD)
-global disableAutoLockScreen := 1         ; Ngăn tắt màn hình khi đang khóa
-global hKeyboardHook         := 0         ; Handle của Keyboard Hook
-global hMouseHook            := 0         ; Handle của Mouse Hook
-global Buffer                := ""        ; Buffer lưu các ký tự đã nhập khi khóa
-global hAuthGui              := 0         ; HWND hộp thoại xác thực Windows
+global isLocked                 := 0         ; Trạng thái khóa (1: Đang khóa, 0: Mở)
+global lockMode                 := 0         ; 0: Toàn diện (Full Lock), 1: Focus Lock (Chỉ cửa sổ hiện tại)
+global hFocusWnd                := 0         ; HWND cửa sổ đang được Focus Lock
+global focusWndTitle            := ""        ; Tiêu đề cửa sổ Focus Lock
+global lockKeyboardEnabled      := 1         ; Bật/tắt khóa bàn phím
+global mouseLockEnabled         := 1         ; Bật/tắt khóa chuột tổng quát
+global lockMouseClick           := 1         ; Khóa các click chuột (Trái, Phải, Giữa, XButton)
+global lockMouseWheel           := 0         ; Khóa con lăn chuột
+global lockMouseMove            := 0         ; Khóa cứng / Đóng băng con trỏ chuột
+global allowMouseMove           := 1         ; Cho phép rê chuột khi chỉ chặn click
+global allowSpace               := 0         ; Ngoại lệ: Cho phép phím Space (Xem phim / Pause)
+global allowMedia               := 0         ; Ngoại lệ: Cho phép các phím âm lượng / media
+global allowNav                 := 0         ; Ngoại lệ: Cho phép các phím mũi tên, Enter, Esc
+global autoLockIdleMinutes      := 0         ; Tự động khóa khi rảnh rỗi (0: Tắt, >0: số phút)
+global scheduledLockMinutes     := 0         ; Hẹn giờ tự động khóa sau khoảng thời gian chỉ định (0: Tắt)
+global scheduledLockTargetTick  := 0         ; Thời điểm sẽ kích hoạt hẹn giờ khóa
+global requireWindowsPassword   := 0         ; Tùy chọn mở rộng: Yêu cầu thêm xác thực Mật khẩu Windows
+global UNLOCK_KEYWORD           := "unlock"  ; Từ khóa mở khóa cốt lõi mặc định
+global KEYWORD_LENGTH           := StrLen(UNLOCK_KEYWORD)
+global disableAutoLockScreen    := 1         ; Ngăn tắt màn hình khi đang khóa
+global hKeyboardHook            := 0         ; Handle của Keyboard Hook
+global hMouseHook               := 0         ; Handle của Mouse Hook
+global Buffer                   := ""        ; Buffer lưu các ký tự đã nhập khi khóa
+global hAuthGui                 := 0         ; HWND hộp thoại xác thực Windows
 
 ; Tải cấu hình khi nạp file
 LoadLockSettings()
@@ -85,11 +87,24 @@ LoadLockSettings() {
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowNav
     allowNav := (val != "") ? val : 0
 
-    RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AutoLockMinutes
-    autoLockMinutes := (val != "") ? val : 0
+    RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AutoLockIdleMinutes
+    if (val != "")
+        autoLockIdleMinutes := val
+    else {
+        ; Tương thích ngược nếu trước đó lưu AutoLockMinutes
+        RegRead, valOld, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AutoLockMinutes
+        autoLockIdleMinutes := (valOld != "") ? valOld : 0
+    }
 
-    RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, UnlockMethod
-    unlockMethod := (val != "") ? val : 0
+    RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScheduledLockMinutes
+    scheduledLockMinutes := (val != "") ? val : 0
+    if (scheduledLockMinutes > 0)
+        scheduledLockTargetTick := A_TickCount + (scheduledLockMinutes * 60 * 1000)
+    else
+        scheduledLockTargetTick := 0
+
+    RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, RequireWindowsPassword
+    requireWindowsPassword := (val != "") ? val : 0
 
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, UnlockKeyword
     if (val != "")
@@ -103,27 +118,39 @@ LoadLockSettings() {
 }
 
 ; ========================================================
-; HÀM KHỞI TẠO VÀ THEO DÕI TỰ ĐỘNG KHÓA KHI RẢNH RỖI (AUTO LOCK)
+; HÀM KHỞI TẠO VÀ THEO DÕI 2 KIỂU TỰ ĐỘNG KHÓA
 ; ========================================================
 InitAutoLockTimer() {
-    global autoLockMinutes
-    if (autoLockMinutes > 0)
-        SetTimer, CheckAutoLockIdle, 5000
+    global autoLockIdleMinutes, scheduledLockMinutes
+    if (autoLockIdleMinutes > 0 || scheduledLockMinutes > 0)
+        SetTimer, CheckAutoLockDual, 4000
     else
-        SetTimer, CheckAutoLockIdle, Off
+        SetTimer, CheckAutoLockDual, Off
 }
 
-CheckAutoLockIdle:
+CheckAutoLockDual:
     if (isLocked)
         return
-    if (autoLockMinutes <= 0)
-        return
 
-    ; A_TimeIdlePhysical đo thời gian người dùng không tương tác bàn phím/chuột vật lý
-    idleSeconds := A_TimeIdlePhysical // 1000
-    thresholdSec := autoLockMinutes * 60
-    if (idleSeconds >= thresholdSec) {
-        ToggleLock(1) ; Tự động kích hoạt khóa
+    ; Kiểu 1: Hẹn giờ tự động khóa sau khoảng thời gian chỉ định (bất kể có dùng chuột/phím hay không)
+    if (scheduledLockMinutes > 0 && scheduledLockTargetTick > 0) {
+        if (A_TickCount >= scheduledLockTargetTick) {
+            ; Đã tới hạn hẹn giờ -> Kích hoạt khóa
+            ToggleLock(1)
+            ; Đặt lại mốc tiếp theo nếu người dùng muốn duy trì chu kỳ
+            scheduledLockTargetTick := A_TickCount + (scheduledLockMinutes * 60 * 1000)
+            return
+        }
+    }
+
+    ; Kiểu 2: Tự động khóa khi rảnh rỗi (Không tương tác chuột/phím vật lý)
+    if (autoLockIdleMinutes > 0) {
+        idleSeconds := A_TimeIdlePhysical // 1000
+        thresholdSec := autoLockIdleMinutes * 60
+        if (idleSeconds >= thresholdSec) {
+            ToggleLock(1)
+            return
+        }
     }
 return
 
@@ -131,7 +158,7 @@ return
 ; HÀM HIỂN THỊ THÔNG BÁO TRỰC QUAN (TOAST)
 ; ========================================================
 ShowNotification() {
-    global isLocked, lockMode, focusWndTitle, unlockMethod, UNLOCK_KEYWORD
+    global isLocked, lockMode, focusWndTitle, requireWindowsPassword, UNLOCK_KEYWORD
 
     if (isLocked) {
         if (lockMode == 1 && focusWndTitle != "") {
@@ -141,8 +168,8 @@ ShowNotification() {
             msg := L("Lock_NotificationFull")
         }
 
-        if (unlockMethod == 1)
-            msg .= "`n" . L("Lock_HowToUnlockWin")
+        if (requireWindowsPassword)
+            msg .= "`n" . L("Lock_HowToUnlockKey") . " [" . UNLOCK_KEYWORD . "] -> " . L("Lock_PassTitle")
         else
             msg .= "`n" . L("Lock_HowToUnlockKey") . " [" . UNLOCK_KEYWORD . "]"
     } else {
@@ -176,8 +203,7 @@ ShowNotification() {
     if (IsFunc(fnTip))
         %fnTip%()
 
-    ; Nếu là mở khóa thì tự ẩn sau 2.5s; nếu là khóa thì ẩn sau 4s
-    timeout := isLocked ? -4000 : -2500
+    timeout := isLocked ? -4500 : -2500
     SetTimer, HideNotification, %timeout%
     return
 
@@ -213,7 +239,6 @@ ToggleLock(forceState := -1) {
             WinGetTitle, focusWndTitle, ahk_id %hFocusWnd%
             WinGetPos, fX, fY, fW, fH, ahk_id %hFocusWnd%
             if (fW > 0 && fH > 0) {
-                ; Nhốt con trỏ chuột trong cửa sổ Focus Lock
                 VarSetCapacity(rect, 16, 0)
                 NumPut(fX, rect, 0, "Int")
                 NumPut(fY, rect, 4, "Int")
@@ -222,7 +247,7 @@ ToggleLock(forceState := -1) {
                 DllCall("ClipCursor", "Ptr", &rect)
             }
         } else {
-            lockMode := 0 ; Không tìm thấy cửa sổ active thì chuyển về full lock
+            lockMode := 0
         }
     } else {
         hFocusWnd := 0
@@ -252,7 +277,7 @@ ToggleLock(forceState := -1) {
 
     ; Ngăn Windows tự tắt màn hình / sleep khi đang khóa
     if (disableAutoLockScreen)
-        DllCall("SetThreadExecutionState", "UInt", 0x80000003) ; ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+        DllCall("SetThreadExecutionState", "UInt", 0x80000003)
 
     ShowNotification()
 }
@@ -289,7 +314,7 @@ UnlockKeyboard() {
     }
 
     ; Khôi phục trạng thái quản lý nguồn điện của hệ thống
-    DllCall("SetThreadExecutionState", "UInt", 0x80000000) ; ES_CONTINUOUS
+    DllCall("SetThreadExecutionState", "UInt", 0x80000000)
 
     ShowNotification()
 
@@ -302,12 +327,17 @@ UnlockKeyboard() {
 ; XỬ LÝ LOW-LEVEL KEYBOARD HOOK
 ; ========================================================
 KeyboardProc(nCode, wParam, lParam) {
-    global isLocked, Buffer, UNLOCK_KEYWORD, KEYWORD_LENGTH, unlockMethod
+    global isLocked, Buffer, UNLOCK_KEYWORD, KEYWORD_LENGTH, requireWindowsPassword, hAuthGui
     global lockMode, hFocusWnd, lockKeyboardEnabled, allowSpace, allowMedia, allowNav
     Critical
 
     if (nCode < 0 || !isLocked)
         return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+
+    ; ĐẶC BIỆT: Nếu cửa sổ nhập mật khẩu Windows đang hiển thị và active -> CHO PHÉP gõ phím bình thường
+    if (hAuthGui && WinActive("ahk_id " . hAuthGui)) {
+        return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+    }
 
     vkCode   := NumGet(lParam+0, 0, "UInt")
     scanCode := NumGet(lParam+0, 4, "UInt")
@@ -322,16 +352,19 @@ KeyboardProc(nCode, wParam, lParam) {
         if (vkCode = 0x5B || vkCode = 0x5C || (isAltDown && (vkCode = 0x09 || vkCode = 0x1B)) || (vkCode = 0x1B && GetKeyState("Ctrl", "P"))) {
             return 1
         }
-        ; Nếu đang tương tác đúng cửa sổ Focus, cho phép phím hoạt động bình thường
+        ; Nếu đang tương tác đúng cửa sổ Focus
         if (curActive == hFocusWnd) {
-            ; Kiểm tra nếu người dùng bấm Ctrl+Alt+L để mở khóa
+            ; Kiểm tra nếu bấm Ctrl+Alt+L để kích hoạt hành động mở khóa
             if (isKeyDown && vkCode = 0x4C && GetKeyState("Ctrl", "P") && GetKeyState("Alt", "P")) {
-                SetTimer, TriggerUnlockAction, -1
+                static lastFocusUnlock := 0
+                if (A_TickCount - lastFocusUnlock > 700) {
+                    lastFocusUnlock := A_TickCount
+                    SetTimer, TriggerUnlockAction, -1
+                }
                 return 1
             }
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
         } else {
-            ; Đang bị lệch cửa sổ -> Kéo lại cửa sổ mục tiêu
             WinActivate, ahk_id %hFocusWnd%
             return 1
         }
@@ -352,32 +385,26 @@ KeyboardProc(nCode, wParam, lParam) {
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
     }
 
-    ; 3. Tổ hợp phím mở khóa: Ctrl + Alt + L
+    ; 3. Tổ hợp phím mở khóa: Ctrl + Alt + L (Chống chớp giật và lặp phím)
     if (isKeyDown && vkCode = 0x4C && GetKeyState("Ctrl", "P") && GetKeyState("Alt", "P")) {
-        SetTimer, TriggerUnlockAction, -1
+        static lastHotkeyPress := 0
+        if (A_TickCount - lastHotkeyPress > 700) {
+            lastHotkeyPress := A_TickCount
+            SetTimer, TriggerUnlockAction, -1
+        }
         return 1
     }
 
-    ; 4. Nếu phương thức mở khóa là Mật khẩu Windows:
-    if (unlockMethod == 1) {
-        if (isKeyDown && (vkCode = 0x0D || vkCode = 0x20)) { ; Bấm Enter hoặc Space để kích hoạt hộp thoại nhập mật khẩu
-            SetTimer, PromptWindowsAuthAsync, -1
-        }
-        return 1 ; Chặn phím
-    }
-
-    ; 5. Nếu phương thức mở khóa là Keyword / PIN:
+    ; 4. Bắt mã PIN / Từ khóa cốt lõi (luôn luôn hoạt động)
     if (isKeyDown) {
-        ; Đọc ký tự độc lập với bộ gõ Unikey / Telex:
         char := ""
         if (vkCode >= 0x30 && vkCode <= 0x39) { ; Ký tự số 0 - 9
             char := Chr(vkCode)
         } else if (vkCode >= 0x60 && vkCode <= 0x69) { ; Ký tự số Numpad 0 - 9
             char := Chr(vkCode - 0x30)
-        } else if (vkCode >= 0x41 && vkCode <= 0x5A) { ; Ký tự chữ cái A - Z (chuyển sang chữ thường)
+        } else if (vkCode >= 0x41 && vkCode <= 0x5A) { ; Ký tự chữ cái A - Z
             char := Chr(vkCode + 32)
         } else {
-            ; Các ký tự khác dùng ToUnicodeEx
             VarSetCapacity(keyState, 256, 0)
             VarSetCapacity(outBuff, 4, 0)
             DllCall("GetKeyboardState", "Ptr", &keyState)
@@ -392,11 +419,11 @@ KeyboardProc(nCode, wParam, lParam) {
             if (StrLen(Buffer) >= KEYWORD_LENGTH) {
                 lastChars := SubStr(Buffer, -KEYWORD_LENGTH + 1)
                 if (lastChars = UNLOCK_KEYWORD) {
-                    SetTimer, DelayedUnlock, -1
+                    Buffer := ""
+                    SetTimer, TriggerUnlockAction, -1
                     return 1
                 }
             }
-            ; Giới hạn độ dài buffer để tránh tốn bộ nhớ
             if (StrLen(Buffer) > 50)
                 Buffer := SubStr(Buffer, -30)
         }
@@ -410,19 +437,11 @@ KeyboardProc(nCode, wParam, lParam) {
 }
 
 TriggerUnlockAction:
-    if (unlockMethod == 1) {
+    if (requireWindowsPassword) {
         PromptWindowsAuth()
     } else {
         UnlockKeyboard()
     }
-return
-
-PromptWindowsAuthAsync:
-    PromptWindowsAuth()
-return
-
-DelayedUnlock:
-    UnlockKeyboard()
 return
 
 ; ========================================================
@@ -430,24 +449,27 @@ return
 ; ========================================================
 MouseProc(nCode, wParam, lParam) {
     global isLocked, lockMode, hFocusWnd, mouseLockEnabled, lockMouseClick
-    global lockMouseWheel, lockMouseMove, allowMouseMove
+    global lockMouseWheel, lockMouseMove, allowMouseMove, hAuthGui
     Critical
 
     if (nCode < 0 || !isLocked)
         return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+
+    ; ĐẶC BIỆT: Nếu cửa sổ nhập mật khẩu Windows đang hiển thị và active -> CHO PHÉP click chuột bình thường
+    if (hAuthGui && WinActive("ahk_id " . hAuthGui)) {
+        return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+    }
 
     ; 1. Xử lý Focus Lock
     if (lockMode == 1 && hFocusWnd) {
         ptX := NumGet(lParam+0, 0, "Int")
         ptY := NumGet(lParam+0, 4, "Int")
         ptWnd := DllCall("WindowFromPoint", "Int64", (ptY << 32) | (ptX & 0xFFFFFFFF), "Ptr")
-        rootWnd := DllCall("GetAncestor", "Ptr", ptWnd, "UInt", 2, "Ptr") ; GA_ROOT = 2
+        rootWnd := DllCall("GetAncestor", "Ptr", ptWnd, "UInt", 2, "Ptr")
 
-        ; Nếu con trỏ chuột nằm ngoài cửa sổ Focus
         if (ptWnd != hFocusWnd && rootWnd != hFocusWnd) {
-            return 1 ; Chặn toàn bộ thao tác bên ngoài
+            return 1
         }
-        ; Nếu nằm trong cửa sổ Focus, cho phép hoạt động bình thường
         return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
     }
 
@@ -459,17 +481,17 @@ MouseProc(nCode, wParam, lParam) {
     switch wParam {
         case 0x0200: ; WM_MOUSEMOVE
             if (lockMouseMove)
-                return 1 ; Chặn di chuyển chuột
+                return 1
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
 
         case 0x020A, 0x020E: ; WM_MOUSEWHEEL, WM_MOUSEHWHEEL
             if (lockMouseWheel)
-                return 1 ; Chặn lăn chuột
+                return 1
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
 
         default: ; Các sự kiện Click chuột (Trái, Phải, Giữa, XButton)
             if (lockMouseClick)
-                return 1 ; Chặn click
+                return 1
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
     }
 
@@ -484,24 +506,27 @@ PromptWindowsAuth() {
 
     if (hAuthGui && WinExist("ahk_id " . hAuthGui)) {
         WinActivate, ahk_id %hAuthGui%
+        GuiControl, Focus, WinAuthPassInput
         return
     }
 
-    ; Tạm thời mở chuột để người dùng có thể click nhập mật khẩu
+    ; Tạm thời mở chuột để người dùng có thể thao tác với hộp thoại
     DllCall("ClipCursor", "Ptr", 0)
 
     promptMsg := StrReplace(L("Lock_PassPrompt"), "{user}", A_UserName)
 
+    Gui, WinAuthPrompt:Destroy
     Gui, WinAuthPrompt:New, +AlwaysOnTop -MaximizeBox -MinimizeBox +HwndhAuthGui, % L("Lock_PassTitle")
     SetGuiYellowIcon(hAuthGui)
     Gui, Font, s10, Segoe UI
-    Gui, Add, Picture, x20 y20 w36 h36 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Text, x68 y20 w320, %promptMsg%
-    Gui, Add, Edit, x68 y60 w320 h26 Password vWinAuthPassInput
-    Gui, Add, Button, x198 y100 w90 h28 Default gSubmitWinAuth, % L("Lock_PassSubmit")
-    Gui, Add, Button, x298 y100 w90 h28 gCancelWinAuth, % L("Lock_PassCancel")
-    Gui, Show, w410 h144 Center, % L("Lock_PassTitle")
+    Gui, Add, Picture, x22 y22 w36 h36 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Text, x70 y20 w335, %promptMsg%
+    Gui, Add, Edit, x70 y62 w335 h26 Password vWinAuthPassInput
+    Gui, Add, Button, x215 y104 w90 h28 Default gSubmitWinAuth, % L("Lock_PassSubmit")
+    Gui, Add, Button, x315 y104 w90 h28 gCancelWinAuth, % L("Lock_PassCancel")
+    Gui, Show, w430 h152 Center, % L("Lock_PassTitle")
     SetGuiYellowIcon(hAuthGui)
+    WinActivate, ahk_id %hAuthGui%
     GuiControl, Focus, WinAuthPassInput
 }
 
@@ -521,7 +546,6 @@ SubmitWinAuth:
         , "Ptr*", hToken)
 
     if (!authSuccess || !hToken) {
-        ; Thử phương thức thứ 2 (đối với tài khoản Microsoft / local account không kèm Domain)
         authSuccess := DllCall("Advapi32.dll\LogonUserW"
             , "WStr", A_UserName
             , "WStr", "."
@@ -539,7 +563,10 @@ SubmitWinAuth:
     } else {
         MsgBox, 48, % L("Lock_PassTitle"), % L("Lock_PassError")
         GuiControl,, WinAuthPassInput,
-        GuiControl, Focus, WinAuthPassInput
+        if (hAuthGui && WinExist("ahk_id " . hAuthGui)) {
+            WinActivate, ahk_id %hAuthGui%
+            GuiControl, Focus, WinAuthPassInput
+        }
     }
 return
 
