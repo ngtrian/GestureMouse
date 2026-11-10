@@ -22,10 +22,12 @@ global allowMouseMove           := 1         ; Cho phép rê chuột khi chỉ c
 global allowSpace               := 0         ; Ngoại lệ: Cho phép phím Space (Xem phim / Pause)
 global allowMedia               := 0         ; Ngoại lệ: Cho phép các phím âm lượng / media
 global allowNav                 := 0         ; Ngoại lệ: Cho phép các phím mũi tên, Enter, Esc
-global autoLockIdleMinutes      := 0         ; Tự động khóa khi rảnh rỗi (0: Tắt, >0: số phút)
-global scheduledLockMinutes     := 0         ; Hẹn giờ tự động khóa sau khoảng thời gian chỉ định (0: Tắt)
+global autoLockIdleEnabled      := 1         ; Tự động khóa khi không dùng máy (Thiết lập sẵn, 1: Bật, 0: Tắt)
+global autoLockIdleMinutes      := 5         ; Số phút rảnh rỗi trước khi tự động khóa
+global scheduledLockEnabled     := 0         ; Hẹn giờ tự động khóa (Hoạt động độc lập)
+global scheduledLockMinutes     := 0         ; Khoảng thời gian hẹn giờ khóa (0: Tắt)
 global scheduledLockTargetTick  := 0         ; Thời điểm sẽ kích hoạt hẹn giờ khóa
-global requireWindowsPassword   := 0         ; Tùy chọn mở rộng: Yêu cầu thêm xác thực Mật khẩu Windows
+global requireWindowsPassword   := 0         ; Cho phép mở khóa bằng xác thực tài khoản Windows (Ctrl + Alt + L)
 global UNLOCK_KEYWORD           := "unlock"  ; Từ khóa mở khóa cốt lõi mặc định
 global KEYWORD_LENGTH           := StrLen(UNLOCK_KEYWORD)
 global disableAutoLockScreen    := 1         ; Ngăn tắt màn hình khi đang khóa
@@ -87,24 +89,35 @@ LoadLockSettings() {
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowNav
     allowNav := (val != "") ? val : 0
 
+    RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AutoLockIdleEnabled
+    autoLockIdleEnabled := (val != "") ? val : 1
+
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AutoLockIdleMinutes
     if (val != "")
         autoLockIdleMinutes := val
     else {
         ; Tương thích ngược nếu trước đó lưu AutoLockMinutes
         RegRead, valOld, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AutoLockMinutes
-        autoLockIdleMinutes := (valOld != "") ? valOld : 0
+        autoLockIdleMinutes := (valOld != "") ? valOld : 5
     }
+
+    RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScheduledLockEnabled
+    scheduledLockEnabled := (val != "") ? val : 0
 
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScheduledLockMinutes
     scheduledLockMinutes := (val != "") ? val : 0
-    if (scheduledLockMinutes > 0)
+    if (scheduledLockEnabled && scheduledLockMinutes > 0)
         scheduledLockTargetTick := A_TickCount + (scheduledLockMinutes * 60 * 1000)
     else
         scheduledLockTargetTick := 0
 
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, RequireWindowsPassword
-    requireWindowsPassword := (val != "") ? val : 0
+    if (val != "")
+        requireWindowsPassword := val
+    else {
+        RegRead, valW, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, EnableWindowsAuth
+        requireWindowsPassword := (valW != "") ? valW : 0
+    }
 
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, UnlockKeyword
     if (val != "")
@@ -121,8 +134,8 @@ LoadLockSettings() {
 ; HÀM KHỞI TẠO VÀ THEO DÕI 2 KIỂU TỰ ĐỘNG KHÓA
 ; ========================================================
 InitAutoLockTimer() {
-    global autoLockIdleMinutes, scheduledLockMinutes
-    if (autoLockIdleMinutes > 0 || scheduledLockMinutes > 0)
+    global autoLockIdleEnabled, autoLockIdleMinutes, scheduledLockEnabled, scheduledLockMinutes
+    if ((autoLockIdleEnabled && autoLockIdleMinutes > 0) || (scheduledLockEnabled && scheduledLockMinutes > 0))
         SetTimer, CheckAutoLockDual, 4000
     else
         SetTimer, CheckAutoLockDual, Off
@@ -132,8 +145,8 @@ CheckAutoLockDual:
     if (isLocked)
         return
 
-    ; Kiểu 1: Hẹn giờ tự động khóa sau khoảng thời gian chỉ định (bất kể có dùng chuột/phím hay không)
-    if (scheduledLockMinutes > 0 && scheduledLockTargetTick > 0) {
+    ; Kiểu 1: Hẹn giờ tự động khóa sau khoảng thời gian chỉ định (hoạt động độc lập)
+    if (scheduledLockEnabled && scheduledLockMinutes > 0 && scheduledLockTargetTick > 0) {
         if (A_TickCount >= scheduledLockTargetTick) {
             ; Đã tới hạn hẹn giờ -> Kích hoạt khóa
             ToggleLock(1)
@@ -143,8 +156,8 @@ CheckAutoLockDual:
         }
     }
 
-    ; Kiểu 2: Tự động khóa khi rảnh rỗi (Không tương tác chuột/phím vật lý)
-    if (autoLockIdleMinutes > 0) {
+    ; Kiểu 2: Tự động khóa khi rảnh rỗi không dùng máy (thiết lập sẵn, hoạt động độc lập)
+    if (autoLockIdleEnabled && autoLockIdleMinutes > 0) {
         idleSeconds := A_TimeIdlePhysical // 1000
         thresholdSec := autoLockIdleMinutes * 60
         if (idleSeconds >= thresholdSec) {
@@ -168,10 +181,12 @@ ShowNotification() {
             msg := L("Lock_NotificationFull")
         }
 
-        if (requireWindowsPassword)
-            msg .= "`n" . L("Lock_HowToUnlockKey") . " [" . UNLOCK_KEYWORD . "] -> " . L("Lock_PassTitle")
-        else
+        if (requireWindowsPassword) {
+            msgUnlockBoth := StrReplace(L("Lock_HowToUnlockBoth"), "{key}", UNLOCK_KEYWORD)
+            msg .= "`n" . msgUnlockBoth
+        } else {
             msg .= "`n" . L("Lock_HowToUnlockKey") . " [" . UNLOCK_KEYWORD . "]"
+        }
     } else {
         msg := L("Lock_Unlocked")
     }
@@ -359,7 +374,10 @@ KeyboardProc(nCode, wParam, lParam) {
                 static lastFocusUnlock := 0
                 if (A_TickCount - lastFocusUnlock > 700) {
                     lastFocusUnlock := A_TickCount
-                    SetTimer, TriggerUnlockAction, -1
+                    if (requireWindowsPassword)
+                        SetTimer, TriggerWindowsAuthPrompt, -1
+                    else
+                        SetTimer, TriggerDirectUnlock, -1
                 }
                 return 1
             }
@@ -390,12 +408,15 @@ KeyboardProc(nCode, wParam, lParam) {
         static lastHotkeyPress := 0
         if (A_TickCount - lastHotkeyPress > 700) {
             lastHotkeyPress := A_TickCount
-            SetTimer, TriggerUnlockAction, -1
+            if (requireWindowsPassword)
+                SetTimer, TriggerWindowsAuthPrompt, -1
+            else
+                SetTimer, TriggerDirectUnlock, -1
         }
         return 1
     }
 
-    ; 4. Bắt mã PIN / Từ khóa cốt lõi (luôn luôn hoạt động)
+    ; 4. Bắt mã PIN / Từ khóa cốt lõi (luôn luôn mở khóa trực tiếp, không hỏi 2 lần)
     if (isKeyDown) {
         char := ""
         if (vkCode >= 0x30 && vkCode <= 0x39) { ; Ký tự số 0 - 9
@@ -420,7 +441,7 @@ KeyboardProc(nCode, wParam, lParam) {
                 lastChars := SubStr(Buffer, -KEYWORD_LENGTH + 1)
                 if (lastChars = UNLOCK_KEYWORD) {
                     Buffer := ""
-                    SetTimer, TriggerUnlockAction, -1
+                    SetTimer, TriggerDirectUnlock, -1
                     return 1
                 }
             }
@@ -435,6 +456,14 @@ KeyboardProc(nCode, wParam, lParam) {
 
     return 1 ; Chặn phím
 }
+
+TriggerDirectUnlock:
+    UnlockKeyboard()
+return
+
+TriggerWindowsAuthPrompt:
+    PromptWindowsAuth()
+return
 
 TriggerUnlockAction:
     if (requireWindowsPassword) {
