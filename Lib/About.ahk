@@ -150,35 +150,35 @@ ShowAbout:
     Gui, Font, s9.5 Norm c000000, Segoe UI
 
     Gui, Add, Picture, x24 y115 w22 h22 Icon3, %A_WinDir%\System32\SndVol.exe
-    Gui, Add, Text, x54 y117 w150, % L("Set_Mute")
-    Gui, Add, Button, x210 y113 w190 h26 Center gActionMute vText10, Ctrl + Shift + M
+    Gui, Add, Text, x54 y117 w180, % L("Set_Mute")
+    Gui, Add, Button, x240 y113 w180 h26 Center gActionMute vText10, Ctrl + Shift + M
 
     Gui, Add, Picture, x24 y145 w22 h22 Icon48, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Text, x54 y147 w150, % L("Set_AutoLock")
-    Gui, Add, Button, x210 y143 w190 h26 Center gActionAutoLock vText11, Ctrl + Shift + L
+    Gui, Add, Text, x54 y147 w180, % L("Set_AutoLock")
+    Gui, Add, Button, x240 y143 w180 h26 Center gActionAutoLock vText11, Ctrl + Shift + L
 
     Gui, Add, Picture, x24 y175 w22 h22 Icon2, %A_WinDir%\System32\SndVol.exe
-    Gui, Add, Text, x54 y177 w150, % L("Set_Volume")
-    Gui, Add, Button, x210 y173 w115 h26 Center gActionVolUp vTextVolUp, % (CurrentLang = "en" ? "Win + Scroll ↑" : "Win + Cuộn ↑")
-    Gui, Add, Button, x335 y173 w115 h26 Center gActionVolDown vTextVolDown, % (CurrentLang = "en" ? "Win + Scroll ↓" : "Win + Cuộn ↓")
+    Gui, Add, Text, x54 y177 w180, % L("Set_Volume")
+    Gui, Add, Button, x240 y173 w115 h26 Center gActionVolUp vTextVolUp, % (CurrentLang = "en" ? "Win + Scroll ↑" : "Win + Cuộn ↑")
+    Gui, Add, Button, x360 y173 w115 h26 Center gActionVolDown vTextVolDown, % (CurrentLang = "en" ? "Win + Scroll ↓" : "Win + Cuộn ↓")
 
     Gui, Add, Picture, x24 y205 w22 h22 Icon26, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Text, x54 y207 w150, % L("Set_Brightness")
-    Gui, Add, Button, x210 y203 w115 h26 Center gActionBrightDown vTextBrightDown, % (CurrentLang = "en" ? "F9 (Darker)" : "F9 (Tối hơn)")
-    Gui, Add, Button, x335 y203 w115 h26 Center gActionBrightUp vTextBrightUp, % (CurrentLang = "en" ? "F10 (Brighter)" : "F10 (Sáng hơn)")
+    Gui, Add, Text, x54 y207 w180, % L("Set_Brightness")
+    Gui, Add, Button, x240 y203 w115 h26 Center gActionBrightDown vTextBrightDown, % (CurrentLang = "en" ? "F9 (Darker)" : "F9 (Tối hơn)")
+    Gui, Add, Button, x360 y203 w115 h26 Center gActionBrightUp vTextBrightUp, % (CurrentLang = "en" ? "F10 (Brighter)" : "F10 (Sáng hơn)")
 
     Gui, Add, Picture, x24 y235 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Text, x54 y237 w150, % L("Set_LockKBAndMouse")
-    Gui, Add, Button, x210 y233 w190 h26 Center gActionLockKeyboard vText14, Ctrl + Alt + L
-    Gui, Add, Picture, x410 y239 w14 h14 gShowAboutTooltip vTextInfo Icon-200, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Text, x54 y237 w180, % L("Set_LockKBAndMouse")
+    Gui, Add, Button, x240 y233 w180 h26 Center gActionLockKeyboard vText14, Ctrl + Alt + L
+    Gui, Add, Picture, x428 y239 w14 h14 gShowAboutTooltip vTextInfo Icon-200, %A_WinDir%\System32\shell32.dll
 
     Gui, Add, Picture, x24 y265 w22 h22 Icon261, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Text, x54 y267 w150, % L("Set_PastePlain")
-    Gui, Add, Button, x210 y263 w190 h26 Center gActionPastePlain vTextPaste, Ctrl + Shift + V
+    Gui, Add, Text, x54 y267 w180, % L("Set_PastePlain")
+    Gui, Add, Button, x240 y263 w180 h26 Center gActionPastePlain vTextPaste, Ctrl + Shift + V
 
     Gui, Add, Picture, x24 y295 w22 h22 Icon1, %aboutIcon%
-    Gui, Add, Text, x54 y297 w150, % (CurrentLang = "en" ? "Toggle Gestures & Scroll" : "Bật / Tắt Cử chỉ & Cuộn")
-    Gui, Add, Button, x210 y293 w190 h26 Center gActionToggleGestures vTextToggle, Ctrl + Alt
+    Gui, Add, Text, x54 y297 w180, % (CurrentLang = "en" ? "Toggle Gestures & Scroll" : "Bật / Tắt Cử chỉ & Cuộn")
+    Gui, Add, Button, x240 y293 w180 h26 Center gActionToggleGestures vTextToggle, Ctrl + Alt
 
     ; ========================================================
     ; TAB 3: HỆ THỐNG & MẸO
