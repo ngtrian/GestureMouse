@@ -1,4 +1,4 @@
-﻿; About.ahk - Quản lý cửa sổ Giới thiệu và Hướng dẫn sử dụng
+; About.ahk - Quản lý cửa sổ Giới thiệu và Hướng dẫn sử dụng
 #NoEnv
 
 global DonateURL := "https://paypal.me/nguyentrian87"
@@ -52,8 +52,10 @@ ShowAbout:
     AboutTooltips["Text9"] := L("TT_9")
     AboutTooltips["Text10"] := L("TT_10") . tipClickSuffix
     AboutTooltips["Text11"] := L("TT_11") . tipClickSuffix
-    AboutTooltips["Text12"] := L("TT_12") . tipClickSuffix
-    AboutTooltips["Text13"] := L("TT_13") . tipClickSuffix
+    AboutTooltips["TextVolUp"] := L("TT_VolUp") . tipClickSuffix
+    AboutTooltips["TextVolDown"] := L("TT_VolDown") . tipClickSuffix
+    AboutTooltips["TextBrightDown"] := L("TT_BrightDown") . tipClickSuffix
+    AboutTooltips["TextBrightUp"] := L("TT_BrightUp") . tipClickSuffix
     AboutTooltips["Text14"] := L("TT_14") . tipClickSuffix
     AboutTooltips["TextInfo"] := L("TT_Info")
     AboutTooltips["TextPaste"] := L("TT_PastePlain") . tipClickSuffix
@@ -157,11 +159,13 @@ ShowAbout:
 
     Gui, Add, Picture, x24 y175 w22 h22 Icon2, %A_WinDir%\System32\SndVol.exe
     Gui, Add, Text, x54 y177 w150, % L("Set_Volume")
-    Gui, Add, Button, x210 y173 w235 h26 Center gActionVolumeTest vText12, Win + Lăn chuột / PgUp/Dn
+    Gui, Add, Button, x210 y173 w115 h26 Center gActionVolUp vTextVolUp, % (CurrentLang = "en" ? "Win + Scroll ↑" : "Win + Cuộn ↑")
+    Gui, Add, Button, x335 y173 w115 h26 Center gActionVolDown vTextVolDown, % (CurrentLang = "en" ? "Win + Scroll ↓" : "Win + Cuộn ↓")
 
     Gui, Add, Picture, x24 y205 w22 h22 Icon26, %A_WinDir%\System32\shell32.dll
     Gui, Add, Text, x54 y207 w150, % L("Set_Brightness")
-    Gui, Add, Button, x210 y203 w190 h26 Center gActionBrightnessTest vText13, F9 / F10
+    Gui, Add, Button, x210 y203 w115 h26 Center gActionBrightDown vTextBrightDown, % (CurrentLang = "en" ? "F9 (Darker)" : "F9 (Tối hơn)")
+    Gui, Add, Button, x335 y203 w115 h26 Center gActionBrightUp vTextBrightUp, % (CurrentLang = "en" ? "F10 (Brighter)" : "F10 (Sáng hơn)")
 
     Gui, Add, Picture, x24 y235 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
     Gui, Add, Text, x54 y237 w150, % L("Set_LockKBAndMouse")
@@ -290,13 +294,26 @@ ActionAutoLock:
         Gosub, ShowLockScreenGUI
 return
 
-ActionVolumeTest:
+ActionVolUp:
     Send, {Blind}{Volume_Up}
-    ToolTip, % (CurrentLang = "en" ? "Tested: Volume Up" : "Thử nghiệm: Tăng âm lượng")
+    ToolTip, % (CurrentLang = "en" ? "Tested: Volume Up (+)" : "Thử nghiệm: Tăng âm lượng (+)")
     SetTimer, ClearAboutTip, -1500
 return
 
-ActionBrightnessTest:
+ActionVolDown:
+    Send, {Blind}{Volume_Down}
+    ToolTip, % (CurrentLang = "en" ? "Tested: Volume Down (-)" : "Thử nghiệm: Giảm âm lượng (-)")
+    SetTimer, ClearAboutTip, -1500
+return
+
+ActionBrightDown:
+    if (IsLabel("F9"))
+        Gosub, F9
+    else if (IsLabel("BrightnessTip"))
+        Gosub, BrightnessTip
+return
+
+ActionBrightUp:
     if (IsLabel("F10"))
         Gosub, F10
     else if (IsLabel("BrightnessTip"))

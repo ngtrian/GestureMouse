@@ -2,12 +2,10 @@
 #MaxHotkeysPerInterval 200  ; Tăng giới hạn hotkeys để tránh lỗi
 
 #If (GestureScrollEnabled)
-#PgUp::
 #WheelUp::  ; Win + Wheel Up -> Tăng âm lượng
     Send {Blind}{Volume_Up}  ; Giả lập phím tăng âm lượng
     return
 
-#PgDn::
 #WheelDown::  ; Win + Wheel Down -> Giảm âm lượng
     Send {Blind}{Volume_Down}  ; Giả lập phím giảm âm lượng
     return

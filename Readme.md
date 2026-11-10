@@ -74,7 +74,7 @@ Applies universally to any scrollable application (Browsers, VS Code, Word, Exce
 - **Super-Fast Mouse Control**:
   - `Hold Left Click + Scroll Wheel`: Instantly adjust system volume anywhere without clicking the Windows taskbar.
 - **Volume Hotkeys**:
-  - `Win + Wheel` or `Win + PgUp / PgDn`: Increase / Decrease master system volume.
+  - `Win + Wheel`: Increase / Decrease master system volume.
   - `Ctrl + Shift + M`: Mute / Unmute system sound.
 - **Display Brightness Overlay**:
   - `F9`: Dim screen brightness with a dark overlay to protect your eyes at night.

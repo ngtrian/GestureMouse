@@ -74,7 +74,7 @@ Giữ phím chuột phải và di chuyển chuột theo các hướng để thao
 - **Thao tác chuột siêu tốc**:
   - `Giữ chuột trái + Lăn bánh xe`: Tăng / Giảm âm lượng nhanh chóng ở bất kỳ đâu mà không cần click vào thanh Taskbar.
 - **Phím tắt âm lượng**:
-  - `Win + Lăn chuột` hoặc `Win + PgUp / PgDn`: Tăng / Giảm âm lượng hệ thống.
+  - `Win + Lăn chuột`: Tăng / Giảm âm lượng hệ thống.
   - `Ctrl + Shift + M`: Bật / Tắt âm thanh hệ thống (Mute / Unmute).
 - **Điều chỉnh độ sáng màn hình**:
   - `F9`: Giảm độ sáng màn hình (làm dịu mắt với lớp phủ màn hình mờ).
