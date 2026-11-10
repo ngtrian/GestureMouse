@@ -1,9 +1,11 @@
-; Settings.ahk - Quản lý Giao diện Cài đặt (Settings GUI) phong cách Windows 11 Fluent Cards
+﻿; Settings.ahk - Quản lý Giao diện Cài đặt (Settings GUI) phong cách Windows 11 Fluent Cards
 #NoEnv
 
 #Include *i Language.ahk
 
 global currentSettingsTab := 1
+global isCodeRevealed     := 0
+global hChangeCodeGui     := 0
 
 ; Tạo GUI cài đặt - Settings (Giao diện Fluent Cards hiện đại)
 Settings:
@@ -233,7 +235,7 @@ Settings:
     Gui, Add, Checkbox, x248 y150 vGestureEnabled gOnToggleGestureCheckbox Checked%GestureScrollEnabled%, % L("Set_EnableGesture")
     Gui, Add, Button, x248 y171 w230 h24 gOpenExcludedAppsGui, % L("Set_ExcludedAppsBtn")
 
-    ; Card 3: Minh họa cử chỉ chuột (Đã mở rộng cột 1 w155, không bị rớt dòng)
+    ; Card 3: Minh họa cử chỉ chuột (Cột 1 rộng 145px, không bị rớt dòng)
     Gui, Font, Bold
     Gui, Add, GroupBox, x228 y206 w535 h258, % "  " . ((CurrentLang = "en") ? "Mouse Gestures & Navigation (Hold Right Mouse Button)" : "Minh họa cử chỉ chuột && Thao tác kéo (Giữ chuột phải)")
     Gui, Font, s8.5 Norm c333333, Segoe UI
@@ -280,7 +282,7 @@ Settings:
     Gui, Add, Button, x535 y425 w45 h22 Center, ¯¯↓
 
     ; --------------------------------------------------------
-    ; TAB 3: KHÓA BÀN PHÍM && CHUỘT (THIẾT KẾ ĐỘC LẬP & TỐI ƯU)
+    ; TAB 3: KHÓA BÀN PHÍM && CHUỘT (TỐI ƯU 2 CARD LỚN GỌN GÀNG)
     ; --------------------------------------------------------
     Gui, Tab, TabLock
 
@@ -291,70 +293,68 @@ Settings:
     Gui, Font, s8 Norm c666666, Segoe UI
     Gui, Add, Text, x264 y32 w500, % (CurrentLang = "en" ? "Customizable locking, idle/timer auto-lock, and instant unlocking." : "Tùy chỉnh khóa thiết bị, tự động khóa độc lập và mở khóa trực tiếp.")
 
-    ; CARD 1: "1. Khóa thiết bị gì"
+    ; ========================================================
+    ; CARD 1: THIẾT LẬP KHÓA (LOCKING SETUP)
+    ; ========================================================
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y50 w535 h58, % "  1. " . ((CurrentLang = "en") ? "What to lock" : "Khóa thiết bị gì")
+    Gui, Add, GroupBox, x228 y50 w535 h166, % "  " . L("Lock_Card1Title")
     Gui, Font, s9 Norm c222222, Segoe UI
 
-    Gui, Add, Picture, x243 y68 w18 h18 Icon74, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Checkbox, x266 y68 w110 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % (CurrentLang = "en" ? "Keyboard" : "Bàn phím")
+    ; Hàng 1: Thiết bị khóa + Nút Ngoại lệ
+    Gui, Add, Picture, x243 y72 w18 h18 Icon74, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Checkbox, x266 y72 w115 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
 
-    Gui, Add, Picture, x393 y68 w18 h18 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x416 y68 w115 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % (CurrentLang = "en" ? "Mouse clicks" : "Nhấp chuột")
+    Gui, Add, Picture, x390 y72 w18 h18 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x413 y72 w105 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
 
-    Gui, Add, Picture, x543 y68 w18 h18 Icon24, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Checkbox, x566 y68 w90 vlockMouseMove gSaveSettings Checked%lockMouseMove%, % (CurrentLang = "en" ? "Cursor" : "Rê chuột")
+    Gui, Add, Button, x528 y67 w222 h27 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
 
-    ; CARD 2: "2. Tự động khóa (Thiết lập sẵn & Hoạt động độc lập)"
+    Gui, Add, Text, x243 y101 w505 h1 0x10
+
+    ; Hàng 2: Tự động khóa khi rảnh rỗi (Thiết lập sẵn mặc định)
+    Gui, Add, Picture, x243 y112 w18 h18 Icon48, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Checkbox, x266 y112 w250 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
+    Gui, Add, DropDownList, x520 y109 w230 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+
+    ; Hàng 3: Hẹn giờ khóa sau khoảng thời gian (Hoạt động độc lập)
+    Gui, Add, Picture, x243 y146 w18 h18 Icon240, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Checkbox, x266 y146 w250 vscheduledLockEnabled gOnToggleTimerCheck Checked%scheduledLockEnabled%, % L("Lock_AutoTimerCheck")
+    Gui, Add, DropDownList, x520 y143 w230 vscheduledLockMinutesChoice gSaveSettings Choose%selTimerIdx%, %timerMinutesList%
+
+    ; Hàng 4: Giữ màn hình sáng khi khóa
+    Gui, Add, Picture, x243 y180 w18 h18 Icon16, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Checkbox, x266 y179 w485 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
+
+    ; ========================================================
+    ; CARD 2: MỞ KHÓA && THAO TÁC KÍCH HOẠT (UNLOCKING & ACTIONS)
+    ; ========================================================
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y114 w535 h104, % "  2. " . ((CurrentLang = "en") ? "Auto Lock (Independent options)" : "Tự động khóa (Thiết lập sẵn && Độc lập)")
+    Gui, Add, GroupBox, x228 y224 w535 h238, % "  " . L("Lock_Card2Title")
     Gui, Font, s9 Norm c222222, Segoe UI
 
-    ; Hàng 1: Tự động khóa khi rảnh rỗi (Thiết lập sẵn mặc định)
-    Gui, Add, Picture, x243 y136 w18 h18 Icon48, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Checkbox, x266 y136 w250 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
-    Gui, Add, DropDownList, x520 y133 w230 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+    ; Hàng 1: Mã mở khóa bảo mật (Mask Password + Xem/Ẩn + Đổi mã)
+    Gui, Add, Picture, x243 y248 w18 h18 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Text, x266 y250 w90, % L("Lock_KeyPrompt")
+    Gui, Add, Edit, x360 y247 w115 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
+    Gui, Add, Button, x480 y246 w36 h25 gToggleRevealCode vBtnToggleReveal Center, 👁️
+    Gui, Add, Button, x522 y246 w110 h25 gOpenChangeCodeGui, % L("Lock_ChangeCodeBtn")
 
-    ; Hàng 2: Hẹn giờ khóa sau khoảng thời gian (Hoạt động độc lập)
-    Gui, Add, Picture, x243 y174 w18 h18 Icon240, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Checkbox, x266 y174 w250 vscheduledLockEnabled gOnToggleTimerCheck Checked%scheduledLockEnabled%, % L("Lock_AutoTimerCheck")
-    Gui, Add, DropDownList, x520 y171 w230 vscheduledLockMinutesChoice gSaveSettings Choose%selTimerIdx%, %timerMinutesList%
-
-    ; CARD 3: "3. Phương thức mở khóa"
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y224 w535 h108, % "  3. " . ((CurrentLang = "en") ? "Unlock methods" : "Phương thức mở khóa")
-    Gui, Font, s9 Norm c222222, Segoe UI
-
-    ; Hàng 1: Mã mở khóa mặc định (có thể thay đổi)
-    Gui, Add, Picture, x243 y246 w18 h18 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Text, x266 y247 w155, % ((CurrentLang = "en") ? "Default unlock code:" : "Mã mở khóa mặc định:")
-    Gui, Add, Edit, x426 y244 w100 h22 vUNLOCK_KEYWORD gSaveSettings, %UNLOCK_KEYWORD%
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x536 y247 w215, % ((CurrentLang = "en") ? "(Type code to unlock)" : "(Gõ mã để mở khóa tức thì)")
-
-    ; Hàng 2: Xác thực Windows (mở khóa trực tiếp, không yêu cầu 2 lần)
-    Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Picture, x243 y278 w18 h18 Icon77, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Checkbox, x266 y277 w480 vrequireWindowsPassword gSaveSettings Checked%requireWindowsPassword%, % L("Lock_ReqWinPass")
+    ; Hàng 2: Xác thực tài khoản Windows
+    Gui, Add, Picture, x243 y284 w18 h18 Icon77, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Checkbox, x266 y283 w480 vrequireWindowsPassword gSaveSettings Checked%requireWindowsPassword%, % L("Lock_ReqWinPass")
     Gui, Font, s8 Norm c666666, Segoe UI
-    Gui, Add, Text, x286 y300 w460, % ("• " . L("Lock_MethodHint"))
+    Gui, Add, Text, x286 y306 w460, % ("• " . L("Lock_MethodHint"))
 
-    ; CARD 4: "4. Nâng cao && Thao tác" (Nút Thử Khóa nằm ở đây)
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y338 w535 h126, % "  4. " . ((CurrentLang = "en") ? "Advanced & Actions" : "Nâng cao && Thao tác")
-    Gui, Font, s9 Norm c222222, Segoe UI
+    Gui, Add, Text, x243 y332 w505 h1 0x10
 
-    ; Hàng 1: Focus Lock & Giữ sáng màn hình
-    Gui, Add, Picture, x243 y360 w18 h18 Icon22, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Checkbox, x266 y359 w225 vlockModeFocus gSaveSettings Checked%chkModeFocus%, % L("Lock_ModeFocus")
-
-    Gui, Add, Picture, x500 y360 w18 h18 Icon16, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Checkbox, x523 y359 w230 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
-
-    ; Hàng 2: Nút Whitelist và Nút Thử Khóa (Chỉ nằm trong tab này)
-    Gui, Add, Button, x243 y395 w185 h32 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
+    ; Hàng 3: Các nút hành động kích hoạt (Focus Lock & Khóa toàn diện)
     Gui, Font, s9.5 Bold c004499, Segoe UI
-    Gui, Add, Button, x440 y395 w310 h32 gActionLockKeyboard, % "▷  " . L("Lock_TestBtn")
+    Gui, Add, Button, x243 y348 w245 h36 gActionFocusLockFromSettings, % L("Lock_FocusBtn")
+    Gui, Add, Button, x500 y348 w250 h36 gActionLockKeyboard, % L("Lock_FullBtn")
+
+    Gui, Font, s8 Norm c777777, Segoe UI
+    lockActionTip := (CurrentLang = "en") ? "• Tip: You can unlock anytime by typing your secret code or pressing Ctrl+Alt+L." : "• Mẹo: Có thể mở khóa bất kỳ lúc nào bằng cách gõ mã bí mật hoặc bấm Ctrl+Alt+L."
+    Gui, Add, Text, x243 y394 w505 Center, %lockActionTip%
 
     ; --------------------------------------------------------
     ; TAB 4: PHÍM TẮT && TIỆN ÍCH
@@ -499,6 +499,101 @@ SwitchSettingsTab(tabNum) {
     }
 }
 
+; ========================================================
+; THAO TÁC XEM/ẨN MÃ MỞ KHÓA (REVEAL / HIDE CODE)
+; ========================================================
+ToggleRevealCode:
+    isCodeRevealed := !isCodeRevealed
+    if (isCodeRevealed) {
+        GuiControl, -Password, UnlockCodeDisplay
+        GuiControl,, BtnToggleReveal, 🔒
+    } else {
+        GuiControl, +Password, UnlockCodeDisplay
+        GuiControl,, BtnToggleReveal, 👁️
+    }
+    GuiControl,, UnlockCodeDisplay, %UNLOCK_KEYWORD%
+return
+
+; ========================================================
+; DIALOG ĐỔI MÃ MỞ KHÓA (POPUP CHUYÊN DỤNG XÁC THỰC 2 LẦN)
+; ========================================================
+OpenChangeCodeGui:
+    if (hChangeCodeGui && WinExist("ahk_id " . hChangeCodeGui)) {
+        WinActivate, ahk_id %hChangeCodeGui%
+        return
+    }
+
+    Gui, Settings:-Disabled
+    Gui, ChangeCodeGui:New, +Owner%hSettingsGui% +AlwaysOnTop -MaximizeBox -MinimizeBox +HwndhChangeCodeGui, % L("Lock_ChangeCodeTitle")
+    SetGuiYellowIcon(hChangeCodeGui)
+    Gui, Font, s9.5 Norm c222222, Segoe UI
+
+    Gui, Add, GroupBox, x15 y12 w350 h125, % "  🔑 " . L("Lock_ChangeCodeTitle")
+    Gui, Add, Text, x30 y40 w130, % L("Lock_NewCode")
+    Gui, Add, Edit, x165 y37 w180 h24 Password vNewUnlockCodeInput
+    Gui, Add, Text, x30 y78 w130, % L("Lock_ConfirmCode")
+    Gui, Add, Edit, x165 y75 w180 h24 Password vConfirmUnlockCodeInput
+
+    Gui, Font, s9.5 Norm, Segoe UI
+    Gui, Add, Button, x145 y150 w105 h32 gSubmitChangeCode Default, % "✔ " . L("Set_Apply")
+    Gui, Add, Button, x260 y150 w105 h32 gCloseChangeCodeGui, % L("Lock_PassCancel")
+
+    Gui, Show, w380 h195 Center, % L("Lock_ChangeCodeTitle")
+return
+
+SubmitChangeCode:
+    Gui, ChangeCodeGui:Submit, NoHide
+    if (NewUnlockCodeInput = "") {
+        MsgBox, 48, GestureMouse, % L("Lock_CodeEmpty")
+        GuiControl, Focus, NewUnlockCodeInput
+        return
+    }
+    if (NewUnlockCodeInput != ConfirmUnlockCodeInput) {
+        MsgBox, 48, GestureMouse, % L("Lock_CodeMismatch")
+        GuiControl,, ConfirmUnlockCodeInput,
+        GuiControl, Focus, ConfirmUnlockCodeInput
+        return
+    }
+
+    ; Cập nhật mã mở khóa thành công
+    UNLOCK_KEYWORD := NewUnlockCodeInput
+    KEYWORD_LENGTH := StrLen(UNLOCK_KEYWORD)
+    RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, UnlockKeyword, %UNLOCK_KEYWORD%
+
+    ; Cập nhật hiển thị trên GUI Settings
+    GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
+
+    MsgBox, 64, GestureMouse, % L("Lock_CodeSuccess"), 1.2
+    Gosub, CloseChangeCodeGui
+return
+
+CloseChangeCodeGui:
+ChangeCodeGuiClose:
+ChangeCodeGuiEscape:
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
+        Gui, Settings:-Disabled
+    if (hChangeCodeGui && WinExist("ahk_id " . hChangeCodeGui)) {
+        Gui, ChangeCodeGui:Destroy
+        hChangeCodeGui := 0
+    }
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
+        WinActivate, ahk_id %hSettingsGui%
+return
+
+; ========================================================
+; KÍCH HOẠT FOCUS LOCK TỪ NÚT BẤM TRÊN SETTINGS
+; ========================================================
+ActionFocusLockFromSettings:
+    ; Tạm ẩn cửa sổ Settings để xác định cửa sổ làm việc mục tiêu
+    Gui, Settings:Hide
+    Sleep, 150
+    ; Kích hoạt Focus Lock trên cửa sổ active kế tiếp
+    if (IsFunc("TriggerFocusLockDirect")) {
+        fnFocus := "TriggerFocusLockDirect"
+        %fnFocus%(WinExist("A"))
+    }
+return
+
 OnToggleIdleCheck:
     Gui, Settings:Submit, NoHide
     GuiControl, Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
@@ -560,16 +655,14 @@ Save:
     ScrollStyle := ScrollStyle1 ? 1 : 2 
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScrollStyle, %ScrollStyle%
 
-    ; Lưu trạng thái chế độ khóa (LockMode: 0 = Full, 1 = Focus)
-    lockMode := lockModeFocus ? 1 : 0
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, LockMode, %lockMode%
-
     ; Lưu trạng thái thiết bị khóa
-    lockMouseClick := mouseLockEnabled
+    lockKeyboardEnabled := lockKeyboardEnabled ? 1 : 0
+    mouseLockEnabled    := mouseLockEnabled ? 1 : 0
+    lockMouseClick      := mouseLockEnabled
+
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, LockKeyboard, %lockKeyboardEnabled%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, mouseLockEnabled, %mouseLockEnabled%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, LockMouseClick, %lockMouseClick%
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, LockMouseMove, %lockMouseMove%
 
     ; Lưu Tự động khóa khi không dùng máy (Idle)
     autoLockIdleEnabled := autoLockIdleEnabled ? 1 : 0
@@ -605,12 +698,6 @@ Save:
     disableAutoLockScreen := disableAutoLockScreen ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, DisableAutoLockScreen, %disableAutoLockScreen%
 
-    ; Lưu mã mở khóa cốt lõi (PIN / Từ khóa)
-    if (UNLOCK_KEYWORD != "") {
-        KEYWORD_LENGTH := StrLen(UNLOCK_KEYWORD)
-        RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, UnlockKeyword, %UNLOCK_KEYWORD%
-    }
-
     ; Cập nhật tray tip
     fnTip := "UpdateTrayTip"
     if (IsFunc(fnTip))
@@ -626,12 +713,11 @@ SettingsGuiClose:
 SettingsGuiEscape:
     ; Tự động lưu tất cả thiết lập trước khi đóng
     Gosub, SaveSettings
-    if (UNLOCK_KEYWORD = "") {
-        UNLOCK_KEYWORD := "unlock"
-        KEYWORD_LENGTH := StrLen(UNLOCK_KEYWORD)
-        RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, UnlockKeyword, %UNLOCK_KEYWORD%
-    }
 
+    if (hChangeCodeGui && WinExist("ahk_id " . hChangeCodeGui)) {
+        Gui, ChangeCodeGui:Destroy
+        hChangeCodeGui := 0
+    }
     if (hExcludedGui && WinExist("ahk_id " . hExcludedGui) && IsFunc("CloseExcludedGui")) {
         fnCloseEx := "CloseExcludedGui"
         %fnCloseEx%()
@@ -649,7 +735,7 @@ SettingsGuiEscape:
 return
 
 ; ========================================================
-; DIALOG CẤU HÌNH WHITELIST (NGOẠI LỆ KHI ĐANG KHÓA)
+; DIALOG CẤU HÌNH NGOẠI LỆ (WHITELIST - CÓ THÊM CUỘN CHUỘT)
 ; ========================================================
 OpenWhitelistGui:
     if (hWhitelistGui && WinExist("ahk_id " . hWhitelistGui)) {
@@ -657,48 +743,54 @@ OpenWhitelistGui:
         return
     }
 
-    Gui, Settings:+Disabled
+    Gui, Settings:-Disabled
     Gui, WhitelistGui:New, +Owner%hSettingsGui% +AlwaysOnTop -MaximizeBox -MinimizeBox +HwndhWhitelistGui, % L("Lock_WhitelistTitle")
     SetGuiYellowIcon(hWhitelistGui)
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
-    Gui, Add, GroupBox, x15 y12 w430 h185, % "  🛡️ " . L("Lock_AllowGroup")
-    Gui, Add, Checkbox, x30 y40 w400 vwl_allowMouseMove Checked%allowMouseMove%, % L("Lock_AllowMouseMove")
-    Gui, Add, Checkbox, x30 y75 w400 vwl_allowSpace Checked%allowSpace%, % L("Lock_AllowSpace")
-    Gui, Add, Checkbox, x30 y110 w400 vwl_allowMedia Checked%allowMedia%, % L("Lock_AllowMedia")
-    Gui, Add, Checkbox, x30 y145 w400 vwl_allowNav Checked%allowNav%, % L("Lock_AllowNav")
+    Gui, Add, GroupBox, x15 y12 w430 h215, % "  🛡️ " . L("Lock_AllowGroup")
+    Gui, Add, Checkbox, x30 y38 w400 vwl_allowMouseMove Checked%allowMouseMove%, % L("Lock_AllowMouseMove")
+    Gui, Add, Checkbox, x30 y70 w400 vwl_allowMouseWheel Checked%allowMouseWheel%, % L("Lock_AllowMouseWheel")
+    Gui, Add, Checkbox, x30 y102 w400 vwl_allowSpace Checked%allowSpace%, % L("Lock_AllowSpace")
+    Gui, Add, Checkbox, x30 y134 w400 vwl_allowMedia Checked%allowMedia%, % L("Lock_AllowMedia")
+    Gui, Add, Checkbox, x30 y166 w400 vwl_allowNav Checked%allowNav%, % L("Lock_AllowNav")
 
     Gui, Font, s8.5 Norm c777777, Segoe UI
-    Gui, Add, Text, x15 y205 w430, % L("Lock_WhitelistTip")
+    Gui, Add, Text, x15 y235 w430, % L("Lock_WhitelistTip")
 
     Gui, Font, s9.5 Norm, Segoe UI
-    Gui, Add, Button, x225 y235 w110 h32 gApplyWhitelist Default, % "✔ " . L("Set_Apply")
-    Gui, Add, Button, x345 y235 w100 h32 gCloseWhitelistGui, % L("Set_Close")
+    Gui, Add, Button, x225 y265 w110 h32 gApplyWhitelist Default, % "✔ " . L("Set_Apply")
+    Gui, Add, Button, x345 y265 w100 h32 gCloseWhitelistGui, % L("Set_Close")
 
-    Gui, Show, w460 h280 Center, % L("Lock_WhitelistTitle")
+    Gui, Show, w460 h310 Center, % L("Lock_WhitelistTitle")
 return
 
 ApplyWhitelist:
     Gui, WhitelistGui:Submit, NoHide
-    allowMouseMove := wl_allowMouseMove
-    allowSpace     := wl_allowSpace
-    allowMedia     := wl_allowMedia
-    allowNav       := wl_allowNav
+    allowMouseMove  := wl_allowMouseMove ? 1 : 0
+    allowMouseWheel := wl_allowMouseWheel ? 1 : 0
+    allowSpace      := wl_allowSpace ? 1 : 0
+    allowMedia      := wl_allowMedia ? 1 : 0
+    allowNav        := wl_allowNav ? 1 : 0
 
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowMouseMove, %allowMouseMove%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowMouseWheel, %allowMouseWheel%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowSpace, %allowSpace%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowMedia, %allowMedia%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowNav, %allowNav%
 
+    Gosub, CloseWhitelistGui
+return
+
 CloseWhitelistGui:
 WhitelistGuiClose:
 WhitelistGuiEscape:
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
+        Gui, Settings:-Disabled
     if (hWhitelistGui && WinExist("ahk_id " . hWhitelistGui)) {
         Gui, WhitelistGui:Destroy
         hWhitelistGui := 0
     }
-    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
-        Gui, Settings:-Disabled
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
         WinActivate, ahk_id %hSettingsGui%
-    }
 return

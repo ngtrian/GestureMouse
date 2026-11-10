@@ -19,6 +19,7 @@ global lockMouseClick           := 1         ; Khóa các click chuột (Trái, 
 global lockMouseWheel           := 0         ; Khóa con lăn chuột
 global lockMouseMove            := 0         ; Khóa cứng / Đóng băng con trỏ chuột
 global allowMouseMove           := 1         ; Cho phép rê chuột khi chỉ chặn click
+global allowMouseWheel          := 0         ; Cho phép cuộn con lăn chuột khi chuột bị khóa
 global allowSpace               := 0         ; Ngoại lệ: Cho phép phím Space (Xem phim / Pause)
 global allowMedia               := 0         ; Ngoại lệ: Cho phép các phím âm lượng / media
 global allowNav                 := 0         ; Ngoại lệ: Cho phép các phím mũi tên, Enter, Esc
@@ -79,6 +80,9 @@ LoadLockSettings() {
 
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowMouseMove
     allowMouseMove := (val != "") ? val : 1
+
+    RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowMouseWheel
+    allowMouseWheel := (val != "") ? val : 0
 
     RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AllowSpace
     allowSpace := (val != "") ? val : 0
@@ -171,24 +175,17 @@ return
 ; HÀM HIỂN THỊ THÔNG BÁO TRỰC QUAN (TOAST)
 ; ========================================================
 ShowNotification() {
-    global isLocked, lockMode, focusWndTitle, requireWindowsPassword, UNLOCK_KEYWORD
+    global isLocked, lockMode, focusWndTitle
 
     if (isLocked) {
         if (lockMode == 1 && focusWndTitle != "") {
             shortTitle := SubStr(focusWndTitle, 1, 35) . (StrLen(focusWndTitle) > 35 ? "..." : "")
-            msg := L("Lock_NotificationFocus") . shortTitle
+            msg := "🎯  " . L("Lock_NotificationFocus") . shortTitle
         } else {
-            msg := L("Lock_NotificationFull")
-        }
-
-        if (requireWindowsPassword) {
-            msgUnlockBoth := StrReplace(L("Lock_HowToUnlockBoth"), "{key}", UNLOCK_KEYWORD)
-            msg .= "`n" . msgUnlockBoth
-        } else {
-            msg .= "`n" . L("Lock_HowToUnlockKey") . " [" . UNLOCK_KEYWORD . "]"
+            msg := "🔒  " . L("Lock_NotificationFull")
         }
     } else {
-        msg := L("Lock_Unlocked")
+        msg := "✔  " . L("Lock_Unlocked")
     }
 
     ; Lấy chiều cao taskbar để căn vị trí
@@ -200,9 +197,9 @@ ShowNotification() {
     Gui, Notification:Destroy
 
     Gui, Notification:New, +AlwaysOnTop +ToolWindow -Caption +LastFound
-    Gui, Font, s10, Segoe UI
-    Gui, Color, 1F2421, FFFFFF ; Nền tối sang trọng
-    Gui, Font, cF0F0F0
+    Gui, Font, s10.5 Bold, Segoe UI
+    Gui, Color, FFF9C4, 2B1E00 ; Nền vàng nhạt nổi bật, chữ nâu sẫm dễ đọc
+    Gui, Font, c2B1E00
     Gui, Add, Text, Center, %msg%
     Gui, Show, Hide
     WinGetPos, , , GuiWidth, GuiHeight
@@ -211,15 +208,18 @@ ShowNotification() {
     posY := A_ScreenHeight - GuiHeight - hTaskbar - 16
 
     Gui, Show, x%posX% y%posY% NoActivate
-    WinSet, Transparent, 235
+    WinSet, Transparent, 240
     WinSet, Region, 0-0 w%GuiWidth% h%GuiHeight% R12-12
 
     fnTip := "UpdateTrayTip"
     if (IsFunc(fnTip))
         %fnTip%()
 
-    timeout := isLocked ? -4500 : -2500
-    SetTimer, HideNotification, %timeout%
+    ; Khi đang khóa: LUÔN HIỆN để người dùng biết máy đang khóa
+    ; Khi mở khóa: tự tắt sau 2.5 giây
+    if (!isLocked) {
+        SetTimer, HideNotification, -2500
+    }
     return
 
 HideNotification:
@@ -478,7 +478,7 @@ return
 ; ========================================================
 MouseProc(nCode, wParam, lParam) {
     global isLocked, lockMode, hFocusWnd, mouseLockEnabled, lockMouseClick
-    global lockMouseWheel, lockMouseMove, allowMouseMove, hAuthGui
+    global lockMouseWheel, lockMouseMove, allowMouseMove, allowMouseWheel, hAuthGui
     Critical
 
     if (nCode < 0 || !isLocked)
@@ -509,22 +509,36 @@ MouseProc(nCode, wParam, lParam) {
     ; 3. Xử lý Full Lock theo từng loại sự kiện chuột
     switch wParam {
         case 0x0200: ; WM_MOUSEMOVE
+            if (allowMouseMove)
+                return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
             if (lockMouseMove)
                 return 1
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
 
         case 0x020A, 0x020E: ; WM_MOUSEWHEEL, WM_MOUSEHWHEEL
-            if (lockMouseWheel)
+            if (allowMouseWheel)
+                return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+            if (lockMouseWheel || mouseLockEnabled)
                 return 1
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
 
         default: ; Các sự kiện Click chuột (Trái, Phải, Giữa, XButton)
-            if (lockMouseClick)
+            if (lockMouseClick || mouseLockEnabled)
                 return 1
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
     }
 
     return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+}
+
+; Kích hoạt Focus Lock trực tiếp lên cửa sổ chỉ định (hoặc cửa sổ active)
+TriggerFocusLockDirect(targetHwnd := 0) {
+    global lockMode
+    lockMode := 1
+    if (targetHwnd && WinExist("ahk_id " . targetHwnd)) {
+        WinActivate, ahk_id %targetHwnd%
+    }
+    ToggleLock(1)
 }
 
 ; ========================================================

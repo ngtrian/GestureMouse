@@ -62,6 +62,7 @@ RebuildTrayMenu() {
 
     ; Sub-menu Phím tắt
     Menu, PhimTat, Add, % L("Sub_LockKB"), LockKeyboard
+    Menu, PhimTat, Add, % L("Sub_FocusLock"), MenuActionFocusLock
     Menu, PhimTat, Add, % L("Sub_AutoLock"), ShowLockScreenGUI
     Menu, PhimTat, Add, % L("Sub_PlainText"), PastePlainText
     Menu, PhimTat, Add, % L("Sub_Mute"), MuteFunc
@@ -515,6 +516,14 @@ SetGuiYellowIcon(guiHwnd) {
         DllCall(fnSetClass, "Ptr", guiHwnd, "Int", -14, "Ptr", hBig, "Ptr")  ; GCLP_HICON
     }
 }
+
+MenuActionFocusLock:
+    Sleep, 200
+    if (IsFunc("TriggerFocusLockDirect")) {
+        fnFocus := "TriggerFocusLockDirect"
+        %fnFocus%(WinExist("A"))
+    }
+return
 
 ; Giữ icon chính của ứng dụng và các cửa sổ GUI LUÔN là màu vàng
 SetScriptYellowIcon() {
