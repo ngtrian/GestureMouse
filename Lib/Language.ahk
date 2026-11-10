@@ -1,4 +1,4 @@
-﻿; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
+; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
 #NoEnv
 
 global CurrentLang := "en"
@@ -62,7 +62,30 @@ InitLanguage() {
     
     ; Cài đặt - Settings
     v["Set_Title"]              := "Cài đặt"
-    v["Set_GroupGesture"]       := "Cử chỉ chuột && Cuộn"
+    v["Set_HeaderSub"]          := "Tùy chỉnh hành vi cuộn chuột, cử chỉ và hệ thống"
+    v["Set_Privilege"]          := "Đặc quyền hệ thống:"
+    v["Set_PrivAdmin"]          := "Quyền Quản trị (Administrator)"
+    v["Set_PrivUIA"]            := "Đặc quyền UIAccess (Tích hợp hệ thống)"
+    v["Set_PrivStandard"]       := "Quyền Tiêu chuẩn (Standard User)"
+    v["Set_PrivSubAdmin"]       := "Toàn quyền tương tác mọi cửa sổ và Task Manager."
+    v["Set_PrivSubUIA"]         := "Đã cấp phép UIAccess, cuộn mượt mà trên Task Manager."
+    v["Set_PrivSubStandard"]    := "Bị giới hạn trên Task Manager và cửa sổ Admin."
+    v["Set_RunAdminBtn"]        := "⚡ Cấp quyền Admin"
+    v["Set_GroupGeneral"]       := "Cài đặt chung"
+    v["Set_AutoStart"]          := "Khởi chạy cùng Windows"
+    v["Set_Language"]           := "Ngôn ngữ:"
+    v["Set_GroupScroll"]        := "Phương pháp cuộn chuột"
+    v["Set_ScrollMethodLabel"]  := "Áp dụng cho cuộn kéo chuột phải và cuộn quán tính:"
+    v["Set_ScrollStyle1"]       := "Rê chuột để kéo nội dung (như trên màn hình cảm ứng)"
+    v["Set_ScrollStyle2"]       := "Rê chuột để kéo thanh cuộn (truyền thống)"
+    v["Set_GroupGesture"]       := "Cử chỉ chuột && Danh sách loại trừ"
+    v["Set_EnableGesture"]      := "Bật tính năng Cử chỉ chuột && Cuộn nâng cao (Ctrl + Alt)"
+    v["Set_ExcludedAppsBtn"]    := "Danh sách ứng dụng loại trừ..."
+    v["Set_GroupLock"]          := "Khóa bàn phím && Chuột (Ctrl + Alt + L)"
+    v["Set_LockMouse"]          := "Khóa cả nhấp chuột khi khóa bàn phím (gõ 'unlock' để mở)"
+    v["Set_PreventAutoLock"]    := "Ngăn màn hình tự động tắt/khóa khi đang ở chế độ khóa"
+    v["Set_ViewGuide"]          := "📖 Hướng dẫn && Phím tắt..."
+    v["Set_Close"]              := "Đóng"
     v["Set_ManualScroll"]       := "Cuộn kéo thủ công"
     v["Set_ManualScrollBtn"]    := "Giữ chuột phải + rê chuột lên hoặc xuống"
     v["Set_AutoScroll"]         := "Cuộn tự động"
@@ -85,7 +108,6 @@ InitLanguage() {
     v["Set_LockKBAndMouse"]     := "Khóa bàn phím && chuột"
     v["Set_PastePlain"]         := "Dán văn bản thuần"
     v["Set_OptionsBtn"]         := "Tùy chọn.."
-    v["Set_ExcludedAppsBtn"]    := "Ứng dụng loại trừ..."
     v["TT_ExApps"]              := "Quản lý danh sách ứng dụng không áp dụng cử chỉ chuột và cuộn chuột"
     
     ; Ứng dụng loại trừ - Excluded Apps
@@ -218,7 +240,30 @@ InitLanguage() {
     
     ; Settings
     e["Set_Title"]              := "Settings"
-    e["Set_GroupGesture"]       := "Mouse Gestures && Scroll"
+    e["Set_HeaderSub"]          := "Customize mouse scrolling, gestures, and system behavior"
+    e["Set_Privilege"]          := "System Privilege:"
+    e["Set_PrivAdmin"]          := "Administrator Rights"
+    e["Set_PrivUIA"]            := "UIAccess Privilege"
+    e["Set_PrivStandard"]       := "Standard User"
+    e["Set_PrivSubAdmin"]       := "Full privileges across all windows and Task Manager."
+    e["Set_PrivSubUIA"]         := "UIAccess granted: smooth interaction with Task Manager."
+    e["Set_PrivSubStandard"]    := "Limited on Task Manager and Admin windows."
+    e["Set_RunAdminBtn"]        := "⚡ Run as Admin"
+    e["Set_GroupGeneral"]       := "General Settings"
+    e["Set_AutoStart"]          := "Start with Windows"
+    e["Set_Language"]           := "Language:"
+    e["Set_GroupScroll"]        := "Scroll Method"
+    e["Set_ScrollMethodLabel"]  := "Applies to right-click drag-scroll and kinetic inertia:"
+    e["Set_ScrollStyle1"]       := "Drag content up/down (touchscreen style)"
+    e["Set_ScrollStyle2"]       := "Drag scrollbar up/down (classic style)"
+    e["Set_GroupGesture"]       := "Mouse Gestures && Excluded Apps"
+    e["Set_EnableGesture"]      := "Enable Mouse Gestures & Advanced Scroll (Ctrl + Alt)"
+    e["Set_ExcludedAppsBtn"]    := "Excluded Applications..."
+    e["Set_GroupLock"]          := "Lock Keyboard && Mouse (Ctrl + Alt + L)"
+    e["Set_LockMouse"]          := "Lock mouse clicks as well (type 'unlock' to restore)"
+    e["Set_PreventAutoLock"]    := "Prevent screen from turning off/auto-locking while locked"
+    e["Set_ViewGuide"]          := "📖 Guide & Shortcuts..."
+    e["Set_Close"]              := "Close"
     e["Set_ManualScroll"]       := "Manual Drag Scroll"
     e["Set_ManualScrollBtn"]    := "Hold Right Click + drag mouse up or down"
     e["Set_AutoScroll"]         := "Auto Scroll"
@@ -241,7 +286,6 @@ InitLanguage() {
     e["Set_LockKBAndMouse"]     := "Lock keyboard and mouse"
     e["Set_PastePlain"]         := "Paste Plain Text"
     e["Set_OptionsBtn"]         := "Options.."
-    e["Set_ExcludedAppsBtn"]    := "Excluded Apps..."
     e["TT_ExApps"]              := "Manage applications excluded from mouse gestures and right-click scroll"
     
     ; Excluded Apps

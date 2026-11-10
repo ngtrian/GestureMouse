@@ -1,4 +1,4 @@
-﻿; About.ahk - Quản lý cửa sổ Giới thiệu và Hướng dẫn sử dụng
+; About.ahk - Quản lý cửa sổ Giới thiệu và Hướng dẫn sử dụng
 #NoEnv
 
 global DonateURL := "https://paypal.me/nguyentrian87"
@@ -12,64 +12,53 @@ ShowAbout:
     Gui, About:New, -MaximizeBox -MinimizeBox +HwndhAboutGui, % L("About_Title")
     SetGuiYellowIcon(hAboutGui)
 
-    ; Header: Luôn hiển thị (Icon liên kết email, Tên ứng dụng, Slogan và Phiên bản)
+    ; Header: Luôn hiển thị (Logo, Tên ứng dụng, Slogan, Phiên bản, Tác giả và Nút Donate)
     aboutIcon := A_IsCompiled ? A_ScriptFullPath : (A_ScriptDir . "\image\unnamed.ico")
-    Gui, Add, Picture, x20 y16 w38 h38 Icon1, %aboutIcon%
+    iconManual := A_ScriptDir . "\image\scroll_manual.ico"
+    iconAuto   := A_ScriptDir . "\image\scroll_auto.ico"
+    iconPage   := A_ScriptDir . "\image\scroll_page.ico"
+    iconVol    := A_ScriptDir . "\image\mouse_volume.ico"
+
+    Gui, Add, Picture, x20 y15 w40 h40 Icon1, %aboutIcon%
     
-    Gui, Font, s15 Bold c004499, Segoe UI
-    Gui, Add, Text, x68 y12 w435, Gesture Mouse
-    Gui, Font, s10 Norm c222222, Segoe UI
-    Gui, Add, Text, x68 y36 w435, % L("About_Headline")
-    Gui, Font, s9 Norm c555555, Segoe UI
-    Gui, Add, Text, x68 y57 w435, % L("About_Version")
+    Gui, Font, s14 Bold c004499, Segoe UI
+    Gui, Add, Text, x68 y10 w380, Gesture Mouse
+    Gui, Font, s9 Norm c222222, Segoe UI
+    Gui, Add, Text, x68 y32 w380, % L("About_Headline")
+    Gui, Font, s8.5 Norm c666666, Segoe UI
+    Gui, Add, Text, x68 y52, % L("About_Version") . "  •  " . L("About_Author")
+    Gui, Add, Picture, x+6 yp w15 h15 Icon157 gOpenEmailLink +Cursor, %A_WinDir%\System32\shell32.dll
+
+    ; Nút Donate góc trên bên phải
+    Gui, Font, s9.5 Norm, Segoe UI
+    Gui, Add, Button, x470 y16 w90 h28 gOpenDonateLink, % "❤ " . L("About_Donate")
 
     ; Tab Control: Tab headers chữ thường (không in đậm), tên ngắn gọn
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Tab2, x15 y85 w490 h250 vAboutTab gOnAboutTabChange, % L("About_TabGestures") . "|" . L("About_TabShortcuts") . "|" . L("About_TabSystem")
+    Gui, Add, Tab2, x15 y76 w545 h270 vAboutTab gOnAboutTabChange, % L("About_TabGestures") . "|" . L("About_TabShortcuts") . "|" . L("About_TabSystem")
+
+    ; Tạo mảng liên kết cho tooltip đa ngôn ngữ trên trang About
+    AboutTooltips := {}
+    AboutTooltips["Text1"] := L("TT_1")
+    AboutTooltips["Text2"] := L("TT_2")
+    AboutTooltips["Text3"] := L("TT_3")
+    AboutTooltips["TextVol"] := L("TT_MouseVolume")
+    AboutTooltips["Text4"] := L("TT_4")
+    AboutTooltips["Text5"] := L("TT_5")
+    AboutTooltips["Text6"] := L("TT_6")
+    AboutTooltips["Text7"] := L("TT_7")
+    AboutTooltips["Text8"] := L("TT_8")
+    AboutTooltips["Text9"] := L("TT_9")
+    AboutTooltips["Text10"] := L("TT_10")
+    AboutTooltips["Text11"] := L("TT_11")
+    AboutTooltips["Text12"] := L("TT_12")
+    AboutTooltips["Text13"] := L("TT_13")
+    AboutTooltips["Text14"] := L("TT_14")
+    AboutTooltips["TextInfo"] := L("TT_Info")
+    AboutTooltips["TextPaste"] := L("TT_PastePlain")
+    AboutTooltips["TextToggle"] := (CurrentLang = "en") ? "Toggle gestures and advanced scroll on/off" : "Bật hoặc tắt nhanh toàn bộ cử chỉ và cuộn chuột (hoặc nhấp chuột vào icon khay)"
 
     if (CurrentLang = "en") {
-        TabGesturesText =
-        ( LTrim Join`n
-        [ RIGHT MOUSE GESTURES (BROWSERS & FILE EXPLORER) ]
-        Hold Right Mouse Button (RButton) and move in direction:
-          • Left (←)                : Go back to previous page (Back)
-          • Right (→)               : Go forward to next page (Forward)
-          • Left then Up (↑__ )     : Switch to previous tab
-          • Left then Down (↓¯¯)    : Switch to next tab
-          • Right then Up (__↑)     : Close current tab
-          • Right then Down (¯¯↓)   : Reload / Refresh page
-
-        * Supported on Chrome, Edge, Firefox, CocCoc, Brave, Opera... and File Explorer (when no files are selected).
-
-        [ MOUSE SCROLLING (ALL WINDOWS) ]
-          • Hold Right Click + drag Up / Down:
-            Smooth scrolling (scroll content or scrollbar, configurable in Settings).
-          • Hold Right Click + flick Up / Down and release:
-            Inertial Auto-Scroll. Click mouse or move slightly to stop.
-          • Hold Right Click + scroll mouse wheel:
-            Fast page navigation (Page Up / Page Down).
-        )
-
-        TabShortcutsText =
-        ( LTrim Join`n
-        [ VOLUME & BRIGHTNESS CONTROL ]
-          • Hold Left Click + scroll wheel  : Quickly adjust volume up / down
-          • Win + Scroll wheel (or PgUp/Dn) : Increase / Decrease system volume
-          • Ctrl + Shift + M               : Mute / Unmute system audio
-          • F9 / F10                       : Decrease / Increase screen brightness
-
-        [ HANDY SHORTCUTS & UTILITIES ]
-          • Ctrl + Alt (or click tray icon):
-            Toggle Gestures & Scrolling on/off (Colored icon: On | Gray icon: Off).
-          • Ctrl + Alt + L:
-            Lock keyboard (and optional mouse clicks configured in Settings).
-            => Type "unlock" on keyboard to unlock.
-          • Ctrl + Shift + L:
-            Schedule auto screen lock countdown timer.
-          • Ctrl + Shift + V:
-            Paste plain text (automatically trims leading/trailing whitespace & empty lines).
-        )
-
         TabSystemText =
         ( LTrim Join`n
         [ SYSTEM PERMISSIONS & ELEVATED APPS (UIPI) ]
@@ -86,48 +75,6 @@ ShowAbout:
           • Press Ctrl + Alt to quickly toggle gestures off while gaming.
         )
     } else {
-        TabGesturesText =
-        ( LTrim Join`n
-        [ CỬ CHỈ CHUỘT PHẢI (TRÌNH DUYỆT & FILE EXPLORER) ]
-        Giữ chuột phải (RButton) và di chuyển theo hướng:
-          • Sang Trái (←)           : Quay lại trang trước (Back)
-          • Sang Phải (→)           : Tiến tới trang tiếp theo (Forward)
-          • Trái rồi Lên (↑__ )      : Chuyển sang tab trước đó
-          • Trái rồi Xuống (↓¯¯)     : Chuyển sang tab tiếp theo
-          • Phải rồi Lên (__↑)       : Đóng tab hiện tại
-          • Phải rồi Xuống (¯¯↓)     : Tải lại / Làm mới trang (Reload)
-
-        * Áp dụng trên: Chrome, Edge, Firefox, Cốc Cốc, Brave, Opera... và File Explorer (khi không chọn file).
-
-        [ THAO TÁC CUỘN NÂNG CAO (MỌI CỬA SỔ) ]
-          • Giữ chuột phải + rê Lên / Xuống:
-            Cuộn trang mượt mà (chế độ kéo nội dung hoặc kéo thanh cuộn theo Cài đặt).
-          • Giữ chuột phải + vuốt Lên / Xuống rồi thả:
-            Cuộn tự động theo quán tính (Auto-Scroll). Nhấp chuột hoặc rê nhẹ để dừng.
-          • Giữ chuột phải + lăn bánh xe:
-            Cuộn nhanh từng trang (Page Up / Page Down).
-        )
-
-        TabShortcutsText =
-        ( LTrim Join`n
-        [ ĐIỀU KHIỂN ÂM LƯỢNG & ĐỘ SÁNG ]
-          • Giữ chuột trái + lăn bánh xe   : Tăng / Giảm âm lượng nhanh chóng
-          • Win + Lăn chuột (hoặc PgUp/Dn) : Tăng / Giảm âm lượng hệ thống
-          • Ctrl + Shift + M               : Bật / Tắt âm thanh hệ thống (Mute)
-          • F9 / F10                       : Giảm / Tăng độ sáng màn hình
-
-        [ CÁC CÔNG CỤ TIỆN ÍCH ]
-        • Ctrl + Alt (hoặc click icon khay):
-          Bật / Tắt nhanh cử chỉ & cuộn chuột (Icon màu: Bật | Icon xám: Tắt).
-        • Ctrl + Alt + L:
-          Khóa bàn phím (và khóa click chuột nếu bật trong Cài đặt).
-          => Gõ chữ "unlock" trên bàn phím để mở khóa.
-        • Ctrl + Shift + L:
-          Mở giao diện hẹn giờ tự động khóa màn hình máy tính.
-        • Ctrl + Shift + V:
-          Dán văn bản thuần túy (Plain Text), tự động cắt bỏ khoảng trắng và dòng thừa ở đầu/cuối.
-        )
-
         TabSystemText =
         ( LTrim Join`n
         [ QUYỀN HỆ THỐNG & ỨNG DỤNG QUẢN TRỊ (UIPI) ]
@@ -145,48 +92,162 @@ ShowAbout:
         )
     }
 
-    ; Nội dung các Tab: Chữ màu đen sắc nét (c000000, Segoe UI s9.5)
+    ; ========================================================
+    ; TAB 1: CỬ CHỈ CHUỘT & CUỘN (Kèm Icon thao tác chuột riêng)
+    ; ========================================================
+    Gui, Tab, 1
     Gui, Font, s9.5 Norm c000000, Segoe UI
 
-    ; Tab 1: Cử chỉ
-    Gui, Tab, 1
-    Gui, Add, Edit, x23 y118 w474 h208 ReadOnly +Border +VScroll HwndhEdit1, %TabGesturesText%
+    ; 4 thao tác cuộn chuột & âm lượng (Kèm icon chuột minh họa thao tác rõ ràng)
+    if FileExist(iconManual)
+        Gui, Add, Picture, x28 y116 w24 h24, %iconManual%
+    Gui, Add, Text, x58 y118 w145, % L("Set_ManualScroll")
+    Gui, Add, Button, x210 y115 w335 h25 Center gShowAboutTooltip vText1, % L("Set_ManualScrollBtn")
 
-    ; Tab 2: Phím tắt
+    if FileExist(iconAuto)
+        Gui, Add, Picture, x28 y146 w24 h24, %iconAuto%
+    Gui, Add, Text, x58 y148 w145, % L("Set_AutoScroll")
+    Gui, Add, Button, x210 y145 w335 h25 Center gShowAboutTooltip vText2, % L("Set_AutoScrollBtn")
+
+    if FileExist(iconPage)
+        Gui, Add, Picture, x28 y176 w24 h24, %iconPage%
+    Gui, Add, Text, x58 y178 w145, % L("Set_PgScroll")
+    Gui, Add, Button, x210 y175 w335 h25 Center gShowAboutTooltip vText3, % L("Set_PgScrollBtn")
+
+    if FileExist(iconVol)
+        Gui, Add, Picture, x28 y206 w24 h24, %iconVol%
+    Gui, Add, Text, x58 y208 w145, % L("Set_MouseVolume")
+    Gui, Add, Button, x210 y205 w335 h25 Center gShowAboutTooltip vTextVol, % L("Set_MouseVolumeBtn")
+
+    ; Dòng tiêu đề cử chỉ trình duyệt
+    Gui, Font, s9.5 Bold c004499, Segoe UI
+    Gui, Add, Text, x28 y244, % (CurrentLang = "en" ? "Browser & File Explorer Gestures (Hold Right Mouse Button):" : "Cử chỉ trình duyệt & File Explorer (Giữ chuột phải):")
+    Gui, Font, s9.5 Norm c000000, Segoe UI
+
+    ; 6 cử chỉ trình duyệt chia 2 cột đối xứng
+    Gui, Add, Text, x28 y274 w145, % L("Set_Back")
+    Gui, Add, Button, x178 y270 w44 h25 Center gShowAboutTooltip vText4, ←
+    Gui, Add, Text, x285 y274 w145, % L("Set_Forward")
+    Gui, Add, Button, x501 y270 w44 h25 Center gShowAboutTooltip vText5, →
+
+    Gui, Add, Text, x28 y304 w145, % L("Set_PrevTab")
+    Gui, Add, Button, x178 y300 w44 h25 Center gShowAboutTooltip vText6, ↑__
+    Gui, Add, Text, x285 y304 w145, % L("Set_NextTab")
+    Gui, Add, Button, x501 y300 w44 h25 Center gShowAboutTooltip vText7, ↓¯¯
+
+    Gui, Add, Text, x28 y334 w145, % L("Set_CloseTab")
+    Gui, Add, Button, x178 y330 w44 h25 Center gShowAboutTooltip vText8, __↑
+    Gui, Add, Text, x285 y334 w145, % L("Set_Refresh")
+    Gui, Add, Button, x501 y330 w44 h25 Center gShowAboutTooltip vText9, ¯¯↓
+
+    ; ========================================================
+    ; TAB 2: PHÍM TẮT & TIỆN ÍCH (Kèm Icon hệ thống Windows)
+    ; ========================================================
     Gui, Tab, 2
-    Gui, Add, Edit, x23 y118 w474 h208 ReadOnly +Border +VScroll HwndhEdit2, %TabShortcutsText%
+    Gui, Font, s9.5 Norm c000000, Segoe UI
 
-    ; Tab 3: Hệ thống
+    Gui, Add, Picture, x28 y116 w22 h22 Icon3, %A_WinDir%\System32\SndVol.exe
+    Gui, Add, Text, x58 y118 w150, % L("Set_Mute")
+    Gui, Add, Button, x218 y115 w185 h25 Center gShowAboutTooltip vText10, Ctrl + Shift + M
+
+    Gui, Add, Picture, x28 y146 w22 h22 Icon48, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Text, x58 y148 w150, % L("Set_AutoLock")
+    Gui, Add, Button, x218 y145 w185 h25 Center gShowAboutTooltip vText11, Ctrl + Shift + L
+
+    Gui, Add, Picture, x28 y176 w22 h22 Icon2, %A_WinDir%\System32\SndVol.exe
+    Gui, Add, Text, x58 y178 w150, % L("Set_Volume")
+    Gui, Add, Button, x218 y175 w220 h25 Center gShowAboutTooltip vText12, Win + Lăn chuột / PgUp/Dn
+
+    Gui, Add, Picture, x28 y206 w22 h22 Icon26, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Text, x58 y208 w150, % L("Set_Brightness")
+    Gui, Add, Button, x218 y205 w185 h25 Center gShowAboutTooltip vText13, F9 / F10
+
+    Gui, Add, Picture, x28 y236 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Text, x58 y238 w150, % L("Set_LockKBAndMouse")
+    Gui, Add, Button, x218 y235 w185 h25 Center gShowAboutTooltip vText14, Ctrl + Alt + L
+    Gui, Add, Picture, x410 y241 w14 h14 gShowAboutTooltip vTextInfo Icon-200, %A_WinDir%\System32\shell32.dll
+
+    Gui, Add, Picture, x28 y266 w22 h22 Icon261, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Text, x58 y268 w150, % L("Set_PastePlain")
+    Gui, Add, Button, x218 y265 w185 h25 Center gShowAboutTooltip vTextPaste, Ctrl + Shift + V
+
+    Gui, Add, Picture, x28 y296 w22 h22 Icon1, %aboutIcon%
+    Gui, Add, Text, x58 y298 w150, % (CurrentLang = "en" ? "Toggle Gestures & Scroll" : "Bật / Tắt Cử chỉ & Cuộn")
+    Gui, Add, Button, x218 y295 w185 h25 Center gShowAboutTooltip vTextToggle, Ctrl + Alt
+
+    ; ========================================================
+    ; TAB 3: HỆ THỐNG & MẸO
+    ; ========================================================
     Gui, Tab, 3
-    Gui, Add, Edit, x23 y118 w474 h208 ReadOnly +Border +VScroll HwndhEdit3, %TabSystemText%
+    Gui, Font, s9.5 Norm c000000, Segoe UI
+    Gui, Add, Edit, x23 y115 w528 h245 ReadOnly +Border +VScroll HwndhEdit3, %TabSystemText%
 
-    ; Footer: Tác giả ngắn gọn, Icon Email & Nút Donate / Đóng (Luôn hiển thị)
-    Gui, Tab
-    Gui, Font, s9.5 Norm c555555, Segoe UI
-    Gui, Add, Text, x18 y347, % L("About_Author")
+    ; Đăng ký sự kiện theo dõi chuột để hiển thị tooltip trên các nút
+    OnMessage(0x200, "WM_MOUSEMOVE_ABOUT")
 
-    ; Icon email phong bì thư tích hợp sẵn của hệ thống Windows
-    Gui, Add, Picture, x+8 yp-1 w18 h18 Icon157 gOpenEmailLink +Cursor, %A_WinDir%\System32\shell32.dll
-
-    Gui, Add, Button, x330 y343 w90 h26 gOpenDonateLink, % "❤ " . L("About_Donate")
-    Gui, Add, Button, x428 y343 w77 h26 vAboutCloseBtn gAboutGuiClose Default, % L("About_Close")
-
-    ; Hiển thị GUI
-    Gui, Show, w520 h380 Center, % L("About_Title")
+    ; Hiển thị GUI thu gọn (không cần thanh chân trang)
+    Gui, Show, w575 h365 Center, % L("About_Title")
     SetGuiYellowIcon(hAboutGui)
 
-    ; Bỏ chọn toàn bộ text và chuyển focus sang nút Đóng (tránh tự động select all)
-    PostMessage, 0x00B1, -1, 0,, ahk_id %hEdit1%
-    PostMessage, 0x00B1, -1, 0,, ahk_id %hEdit2%
-    PostMessage, 0x00B1, -1, 0,, ahk_id %hEdit3%
-    GuiControl, About:Focus, AboutCloseBtn
+    ; Bỏ chọn toàn bộ text trong Tab 3 và focus vào Tab
+    if (hEdit3 && WinExist("ahk_id " . hEdit3))
+        PostMessage, 0x00B1, -1, 0,, ahk_id %hEdit3%
+    GuiControl, About:Focus, AboutTab
+return
+
+; Xử lý di chuyển chuột trên GUI About để hiện Tooltip
+global LastHoveredAboutHwnd := ""
+global LastHoveredAboutControl := ""
+
+WM_MOUSEMOVE_ABOUT() {
+    global LastHoveredAboutHwnd, LastHoveredAboutControl, AboutTooltips, hAboutGui
+    if (!hAboutGui || !WinExist("ahk_id " . hAboutGui))
+        return
+
+    MouseGetPos, , , idUnderMouse, CtrlUnderMouse, 2
+    if (idUnderMouse != hAboutGui) {
+        if (LastHoveredAboutHwnd) {
+            ToolTip
+            LastHoveredAboutHwnd := ""
+            LastHoveredAboutControl := ""
+        }
+        return
+    }
+
+    if (CtrlUnderMouse != LastHoveredAboutHwnd) {
+        LastHoveredAboutHwnd := ""
+        LastHoveredAboutControl := ""
+    }
+
+    Gosub, ShowAboutTooltip
+}
+
+ShowAboutTooltip:
+    MouseGetPos, , , , CtrlUnderMouse, 2
+    GuiControlGet, CtrlName, About:Name, %CtrlUnderMouse%
+    if (!CtrlName)
+        GuiControlGet, CtrlName, Name, %CtrlUnderMouse%
+
+    if (CtrlUnderMouse && AboutTooltips[CtrlName]) {
+        if (LastHoveredAboutHwnd != CtrlUnderMouse) {
+            ToolTip, % AboutTooltips[CtrlName]
+            LastHoveredAboutControl := CtrlName
+            LastHoveredAboutHwnd := CtrlUnderMouse
+        }
+    } else {
+        ToolTip
+        LastHoveredAboutControl := ""
+        LastHoveredAboutHwnd := ""
+    }
 return
 
 OnAboutTabChange:
-    PostMessage, 0x00B1, -1, 0,, ahk_id %hEdit1%
-    PostMessage, 0x00B1, -1, 0,, ahk_id %hEdit2%
-    PostMessage, 0x00B1, -1, 0,, ahk_id %hEdit3%
-    GuiControl, About:Focus, AboutCloseBtn
+    ToolTip
+    LastHoveredAboutHwnd := ""
+    LastHoveredAboutControl := ""
+    if (hEdit3 && WinExist("ahk_id " . hEdit3))
+        PostMessage, 0x00B1, -1, 0,, ahk_id %hEdit3%
+    GuiControl, About:Focus, AboutTab
 return
 
 OpenEmailLink:
@@ -203,6 +264,10 @@ return
 
 AboutGuiClose:
 AboutGuiEscape:
+    ToolTip
+    LastHoveredAboutHwnd := ""
+    LastHoveredAboutControl := ""
     Gui, About:Destroy
     hAboutGui := 0
+    hEdit3 := 0
 return

@@ -1,4 +1,4 @@
-﻿; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
+; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
 #NoEnv
 
 Menu:
@@ -120,7 +120,7 @@ RebuildTrayMenu() {
 
 ; Cập nhật trạng thái và tên menu trên Menu Tray
 UpdateTrayMenu() {
-    global GestureScrollEnabled
+    global GestureScrollEnabled, hSettingsGui
     try {
         menuGestureText := GestureScrollEnabled ? L("Tray_Enabled") : L("Tray_Disabled")
         Menu, Tray, Rename, 1&, %menuGestureText%
@@ -134,6 +134,10 @@ UpdateTrayMenu() {
             try Menu, Tray, Disable, % L("Tray_Shortcuts")
         }
         Menu, Tray, Default, 1&
+
+        if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+            GuiControl, Settings:, GestureEnabled, %GestureScrollEnabled%
+        }
     }
 }
 
@@ -158,160 +162,175 @@ return
 
 ; Tạo GUI cài đặt - Settings
 Settings:
-Gui, Settings:New, +HwndhSettingsGui,, % L("Set_Title")
-SetGuiYellowIcon(hSettingsGui)
-Gui, Font, s10, Arial
-
-; Tải trạng thái cài đặt từ registry, Autostart là giá trị, AutoStart là tên giá trị trong registry
-RegRead, AutoStart, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run, GestureMouse
-AutoStart := (AutoStart != "") ? 1 : 0 
-
-; Đọc từ registry để thiết lập radio
-RegRead, ScrollStyle, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScrollStyle
-if (ErrorLevel || ScrollStyle = "" || ScrollStyle < 1 || ScrollStyle > 2) {
-    ScrollStyle := 1  ; Mặc định chọn radio 1
-    ; Ghi giá trị mặc định vào registry nếu không tồn tại hoặc không hợp lệ
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScrollStyle, %ScrollStyle%
-}
-; Tạo mảng liên kết cho tooltip đa ngôn ngữ
-Tooltips := {}
-Tooltips["Text1"] := L("TT_1")
-Tooltips["Text2"] := L("TT_2")
-Tooltips["Text3"] := L("TT_3")
-Tooltips["Text4"] := L("TT_4")
-Tooltips["Text5"] := L("TT_5")
-Tooltips["Text6"] := L("TT_6")
-Tooltips["Text7"] := L("TT_7")
-Tooltips["Text8"] := L("TT_8")
-Tooltips["Text9"] := L("TT_9")
-Tooltips["Text10"] := L("TT_10")
-Tooltips["Text11"] := L("TT_11")
-Tooltips["Text12"] := L("TT_12")
-Tooltips["Text13"] := L("TT_13")
-Tooltips["Text14"] := L("TT_14")
-Tooltips["Text15"] := L("TT_15")
-Tooltips["TextInfo"] := L("TT_Info")
-Tooltips["TextVol"] := L("TT_MouseVolume")
-Tooltips["ExAppsBtn"] := L("TT_ExApps")
-Tooltips["TextPaste"] := L("TT_PastePlain")
-
-; Nhóm Gesture Mouse
-Gui, Font, Bold
-Gui, Add, GroupBox, w500 h325, % L("Set_GroupGesture")
-
-Gui, Font, Normal
-Gui, Add, Text, x20 y35, % L("Set_ManualScroll")
-Gui, Add, Button, x200 y30 Center gShowTooltip vText1, % L("Set_ManualScrollBtn")
-Gui, Add, Text, x20 y60, % L("Set_AutoScroll")
-Gui, Add, Button, x200 y55 Center gShowTooltip vText2, % L("Set_AutoScrollBtn")
-Gui, Add, Text, x20 y85, % L("Set_PgScroll")
-Gui, Add, Button, x200 y80 Center gShowTooltip vText3, % L("Set_PgScrollBtn")
-Gui, Add, Text, x20 y110, % L("Set_MouseVolume")
-Gui, Add, Button, x200 y105 Center gShowTooltip vTextVol, % L("Set_MouseVolumeBtn")
-Gui, Add, Text, x20 y135, % L("Set_Back")
-Gui, Add, Button, x200 y130 w38 Center gShowTooltip vText4,  ←
-Gui, Add, Text, x20 y160, % L("Set_Forward")
-Gui, Add, Button, x200 y155 w38 Center gShowTooltip vText5,  →
-Gui, Add, Text, x20 y185, % L("Set_PrevTab")
-Gui, Add, Button, x200 y180 w38 Center gShowTooltip vText6,  ↑__
-Gui, Add, Text, x20 y210, % L("Set_NextTab")
-Gui, Add, Button, x200 y205 w38 Center gShowTooltip vText7,  ↓¯¯
-Gui, Add, Text, x20 y235, % L("Set_CloseTab")
-Gui, Add, Button, x200 y230 w38 Center gShowTooltip vText8,  __↑
-Gui, Add, Text, x20 y260, % L("Set_Refresh")
-Gui, Add, Button, x200 y255 w38 Center gShowTooltip vText9,  ¯¯↓
-Gui, Add, Button, x20 y288 w160 h26 gOpenExcludedAppsGui vExAppsBtn, % L("Set_ExcludedAppsBtn")
-
-; Nhóm Hotkeys
-Gui, Font, Bold
-Gui, Add, GroupBox, xs w500 h195, % L("Set_GroupHotkeys")
-Gui, Font, Normal
-
-Gui, Add, Text, x38 y370, % L("Set_Mute")
-Gui, Add, Picture, x18 yp+1 w14 h14 Icon3, %A_WinDir%\System32\SndVol.exe
-Gui, Add, Button, x200 y365 w130 Center gShowTooltip vText10, Ctrl + Shift + M
-
-Gui, Add, Text, x38 y395, % L("Set_AutoLock")
-Gui, Add, Picture, x15 yp+1 w14 h14 Icon48, %A_WinDir%\System32\shell32.dll
-Gui, Add, Button, x200 y390 w130 Center gShowTooltip vText11, Ctrl + Shift + L
-
-Gui, Add, Text, x38 y420, % L("Set_Volume")
-Gui, Add, Picture, x18 yp+1 w14 h14 Icon2, %A_WinDir%\System32\SndVol.exe
-Gui, Add, Button, x200 y415 w155 Center gShowTooltip vText12, Win + Scroll Up/Down
-
-Gui, Add, Text, x38 y445, % L("Set_Brightness")
-Gui, Add, Picture, x18 yp+1 w14 h14 Icon26, %A_WinDir%\System32\shell32.dll
-Gui, Add, Button, x200 y440 w130 Center gShowTooltip vText13, F9/F10
-
-Gui, Add, Text, x38 y470, % L("Set_LockKBAndMouse")
-Gui, Add, Picture, x18 yp+1 w14 h14 Icon28, %A_WinDir%\System32\ddores.dll
-Gui, Add, Button, x200 y465 w130 Center gShowTooltip vText14, Ctrl + Alt + L
-Gui, Add, Picture, x335 yp+5 w14 h14 gShowTooltip vTextInfo Icon-200, %A_WinDir%\System32\shell32.dll
-
-; Thêm sự kiện nhấn nút để chạy hàm CreateOption()
-Gui, Add, Button, x355 y465 w80 Center gCreateOption, % L("Set_OptionsBtn")
-
-Gui, Add, Text, x38 y495, % L("Set_PastePlain")
-Gui, Add, Picture, x18 yp+1 w14 h14 Icon261, %A_WinDir%\System32\shell32.dll
-Gui, Add, Button, x200 y490 w130 Center gShowTooltip vTextPaste, Ctrl + Shift + V
-
-; Nhóm Cài đặt chung
-Gui, Font, Bold
-Gui, Add, GroupBox, xs w500 h115, % L("Set_GroupGeneral")
-Gui, Font, Normal
-Gui, Add, Checkbox, x30 y565 vAutoStart gSave Checked%AutoStart%, % L("Set_AutoStart")
-Gui, Add, Text, x20 y590, % L("Set_ScrollMethodLabel")
-Gui, Add, Radio, x30 y615 vScrollStyle1 gSave Group Checked%ScrollStyle1%, % L("Set_ScrollStyle1")
-Gui, Add, Radio, x30 y635 vScrollStyle2 gSave Checked%ScrollStyle2%, % L("Set_ScrollStyle2")
-
-; Checked radio theo giá trị từ registry
-GuiControl,, ScrollStyle1, % (ScrollStyle = 1)
-GuiControl,, ScrollStyle2, % (ScrollStyle = 2)
-; Theo dõi sự kiện chuột
-Gui, +LastFound
-OnMessage(0x200, "WM_MOUSEMOVE")  ; Theo dõi di chuyển chuột cho tooltip
-
-; Hiển thị giao diện
-Gui, Show, AutoSize Center, % "Gesture Mouse - " . L("Set_Title")
-SetGuiYellowIcon(hSettingsGui)
-return
-
-; Biến toàn cục để theo dõi trạng thái chuột
-global LastHoveredControl := ""
-global LastHoveredHwnd := ""
-
-; Xử lý di chuyển chuột – cập nhật tooltip
-WM_MOUSEMOVE() {
-    global LastHoveredHwnd, LastHoveredControl
-    MouseGetPos,,, , CtrlUnderMouse
-
-    ; Nếu di chuyển sang control khác => reset
-    if (CtrlUnderMouse != LastHoveredHwnd) {
-        LastHoveredHwnd := ""      ; reset để ShowTooltip xử lý lại
-        LastHoveredControl := ""
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+        WinActivate, ahk_id %hSettingsGui%
+        return
     }
 
-    Gosub, ShowTooltip
-}
+    Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "Gesture Mouse - " . L("Set_Title")
+    SetGuiYellowIcon(hSettingsGui)
+    Gui, Font, s9.5 Norm c222222, Segoe UI
 
-; Hiển thị tooltip nếu có control hợp lệ
-ShowTooltip:
-    MouseGetPos, , , , CtrlUnderMouse, A
-    GuiControlGet, CtrlName, Name, %CtrlUnderMouse%
+    aboutIcon := A_IsCompiled ? A_ScriptFullPath : (A_ScriptDir . "\image\unnamed.ico")
+    iconManual := A_ScriptDir . "\image\scroll_manual.ico"
+    flagVnFile := A_IsCompiled ? A_ScriptFullPath : (A_ScriptDir . "\image\flag_vn.ico")
+    flagEnFile := A_IsCompiled ? A_ScriptFullPath : (A_ScriptDir . "\image\flag_en.ico")
 
-    if (CtrlUnderMouse && Tooltips[CtrlName]) {
-        if (LastHoveredHwnd != CtrlUnderMouse) {
-            ToolTip, % Tooltips[CtrlName]
-            LastHoveredControl := CtrlName
-            LastHoveredHwnd := CtrlUnderMouse
-        }
+    ; Đọc trạng thái khởi động cùng Windows
+    RegRead, AutoStart, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run, GestureMouse
+    AutoStart := (AutoStart != "") ? 1 : 0 
+
+    ; Đọc phương pháp cuộn chuột
+    RegRead, ScrollStyle, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScrollStyle
+    if (ErrorLevel || ScrollStyle = "" || ScrollStyle < 1 || ScrollStyle > 2) {
+        ScrollStyle := 1
+        RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScrollStyle, %ScrollStyle%
+    }
+    chkS1 := (ScrollStyle = 1) ? 1 : 0
+    chkS2 := (ScrollStyle = 2) ? 1 : 0
+
+    ; Đọc trạng thái khóa chuột & chống tắt màn hình
+    RegRead, valMouseLock, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, mouseLockEnabled
+    if (valMouseLock != "")
+        mouseLockEnabled := valMouseLock
+
+    RegRead, valDisableAutoLock, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, disableAutoLockScreen
+    if (valDisableAutoLock != "")
+        disableAutoLockScreen := valDisableAutoLock
+
+    ; Xác định đặc quyền hệ thống (Admin / UIAccess / Standard)
+    hasPriv := A_IsAdmin ? "Admin" : (IsFunc("HasUIAccessOrAdmin") && HasUIAccessOrAdmin() ? "UIAccess" : "Standard")
+
+    ; ========================================================
+    ; HEADER: Logo, Tiêu đề và Mô tả
+    ; ========================================================
+    Gui, Add, Picture, x20 y15 w36 h36 Icon1, %aboutIcon%
+    Gui, Font, s14 Bold c004499, Segoe UI
+    Gui, Add, Text, x66 y12 w440, % "Gesture Mouse - " . L("Set_Title")
+    Gui, Font, s9 Norm c666666, Segoe UI
+    Gui, Add, Text, x66 y36 w440, % L("Set_HeaderSub")
+
+    ; ========================================================
+    ; THẺ TRẠNG THÁI: Huy hiệu đặc quyền hệ thống (Privilege Badge)
+    ; ========================================================
+    Gui, Add, GroupBox, x18 y58 w494 h52
+    Gui, Add, Picture, x28 y72 w22 h22 Icon77, %A_WinDir%\System32\shell32.dll
+
+    if (hasPriv = "Admin") {
+        Gui, Font, s9.5 Bold c007A00, Segoe UI
+        Gui, Add, Text, x58 y70 w430, % L("Set_PrivAdmin")
+        Gui, Font, s8.5 Norm c555555, Segoe UI
+        Gui, Add, Text, x58 y88 w430, % L("Set_PrivSubAdmin")
+    } else if (hasPriv = "UIAccess") {
+        Gui, Font, s9.5 Bold c0078D7, Segoe UI
+        Gui, Add, Text, x58 y70 w430, % L("Set_PrivUIA")
+        Gui, Font, s8.5 Norm c555555, Segoe UI
+        Gui, Add, Text, x58 y88 w430, % L("Set_PrivSubUIA")
     } else {
-        ToolTip
-        LastHoveredControl := ""
-        LastHoveredHwnd := ""
+        Gui, Font, s9.5 Bold cC0392B, Segoe UI
+        Gui, Add, Text, x58 y68 w285, % L("Set_PrivStandard")
+        Gui, Font, s8.5 Norm c555555, Segoe UI
+        Gui, Add, Text, x58 y86 w285, % L("Set_PrivSubStandard")
+        Gui, Font, s9 Norm, Segoe UI
+        Gui, Add, Button, x360 y70 w136 h26 gRunAsAdmin, % L("Set_RunAdminBtn")
+    }
+
+    ; ========================================================
+    ; NHÓM 1: Cài đặt chung & Ngôn ngữ (Kèm Icon bánh răng & Cờ)
+    ; ========================================================
+    Gui, Font, Bold
+    Gui, Add, GroupBox, x18 y116 w494 h72, % "       " . L("Set_GroupGeneral")
+    Gui, Add, Picture, x26 y114 w18 h18 Icon22, %A_WinDir%\System32\shell32.dll
+    Gui, Font, Normal
+
+    Gui, Add, Checkbox, x36 y135 vAutoStart gSaveSettings Checked%AutoStart%, % L("Set_AutoStart")
+
+    Gui, Add, Text, x36 y159, % L("Set_Language")
+    chkVI := (CurrentLang = "vi") ? 1 : 0
+    chkEN := (CurrentLang = "en") ? 1 : 0
+    if (A_IsCompiled || FileExist(flagVnFile))
+        Gui, Add, Picture, x118 y159 w16 h16, %flagVnFile%
+    Gui, Add, Radio, x138 y158 vLangVI gOnLangRadio Group Checked%chkVI%, Tiếng Việt
+    if (A_IsCompiled || FileExist(flagEnFile))
+        Gui, Add, Picture, x235 y159 w16 h16, %flagEnFile%
+    Gui, Add, Radio, x255 y158 vLangEN gOnLangRadio Checked%chkEN%, English
+
+    ; ========================================================
+    ; NHÓM 2: Phương pháp cuộn chuột (Kèm Icon chuột cuộn)
+    ; ========================================================
+    Gui, Font, Bold
+    Gui, Add, GroupBox, x18 y194 w494 h78, % "       " . L("Set_GroupScroll")
+    if FileExist(iconManual)
+        Gui, Add, Picture, x26 y192 w18 h18, %iconManual%
+    Gui, Font, Normal
+
+    Gui, Add, Radio, x36 y216 vScrollStyle1 gSaveSettings Group Checked%chkS1%, % L("Set_ScrollStyle1")
+    Gui, Add, Radio, x36 y242 vScrollStyle2 gSaveSettings Checked%chkS2%, % L("Set_ScrollStyle2")
+
+    ; ========================================================
+    ; NHÓM 3: Cử chỉ chuột & Ứng dụng loại trừ (Kèm Icon chuột)
+    ; ========================================================
+    Gui, Font, Bold
+    Gui, Add, GroupBox, x18 y278 w494 h78, % "       " . L("Set_GroupGesture")
+    Gui, Add, Picture, x26 y276 w18 h18 Icon24, %A_WinDir%\System32\shell32.dll
+    Gui, Font, Normal
+
+    Gui, Add, Checkbox, x36 y298 vGestureEnabled gOnToggleGestureCheckbox Checked%GestureScrollEnabled%, % L("Set_EnableGesture")
+    Gui, Add, Button, x36 y322 w210 h26 gOpenExcludedAppsGui, % L("Set_ExcludedAppsBtn")
+
+    ; ========================================================
+    ; NHÓM 4: Khóa bàn phím & chuột (Kèm Icon ổ khóa vàng)
+    ; ========================================================
+    Gui, Font, Bold
+    Gui, Add, GroupBox, x18 y362 w494 h78, % "       " . L("Set_GroupLock")
+    Gui, Add, Picture, x26 y360 w18 h18 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Font, Normal
+
+    Gui, Add, Checkbox, x36 y384 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Set_LockMouse")
+    Gui, Add, Checkbox, x36 y408 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen% Disabled, % L("Set_PreventAutoLock")
+
+    ; ========================================================
+    ; CHÂN TRANG: Nút Hướng dẫn & Nút Đóng
+    ; ========================================================
+    Gui, Add, Button, x18 y450 w210 h28 gOpenAboutFromSettings, % L("Set_ViewGuide")
+    Gui, Add, Button, x422 y450 w90 h28 gSettingsCloseBtn Default, % L("Set_Close")
+
+    ; Hiển thị giao diện
+    Gui, Show, w530 h490 Center, % "Gesture Mouse - " . L("Set_Title")
+    SetGuiYellowIcon(hSettingsGui)
+return
+
+OnLangRadio:
+    Gui, Settings:Submit, NoHide
+    if (LangVI && CurrentLang != "vi") {
+        SetLanguage("vi")
+        Gosub, RefreshSettingsGui
+    } else if (LangEN && CurrentLang != "en") {
+        SetLanguage("en")
+        Gosub, RefreshSettingsGui
     }
 return
 
+RefreshSettingsGui:
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+        Gui, Settings:Destroy
+        hSettingsGui := 0
+        Gosub, Settings
+    }
+return
+
+OnToggleGestureCheckbox:
+    Gui, Settings:Submit, NoHide
+    if (GestureEnabled != GestureScrollEnabled) {
+        ToggleGestureScroll()
+    }
+return
+
+OpenAboutFromSettings:
+    Gosub, ShowAbout
+return
+
+SaveSettings:
 Save:
     ; Lấy giá trị hiện tại từ GUI mà không đóng GUI
     Gui, Submit, NoHide
@@ -325,10 +344,28 @@ Save:
 
     ; Xác định và lưu ScrollStyle
     ScrollStyle := ScrollStyle1 ? 1 : 2 
-    
-    ; Lưu cài đặt phong cách cuộn vào registry TRIAN\GestureMouse
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScrollStyle, %ScrollStyle%
+
+    ; Lưu trạng thái khóa chuột & ngăn tắt màn hình
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, mouseLockEnabled, %mouseLockEnabled%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, disableAutoLockScreen, %disableAutoLockScreen%
 return
+
+SettingsCloseBtn:
+SettingsGuiClose:
+SettingsGuiEscape:
+    if (hExcludedGui && WinExist("ahk_id " . hExcludedGui) && IsFunc("CloseExcludedGui")) {
+        fnCloseEx := "CloseExcludedGui"
+        %fnCloseEx%()
+    }
+    if (hLockOpt && WinExist("ahk_id " . hLockOpt)) {
+        Gui, LockOptions:Destroy
+        hLockOpt := 0
+    }
+    Gui, Settings:Destroy
+    hSettingsGui := 0
+return
+
 
 CreateOption() {
     global mouseLockEnabled, disableAutoLockScreen, hSettingsGui, hLockOpt
@@ -386,19 +423,7 @@ RunAsAdmin:
     }
 return
 
-SettingsGuiClose:
-SettingsGuiEscape:
-    if (hExcludedGui && WinExist("ahk_id " . hExcludedGui) && IsFunc("CloseExcludedGui")) {
-        fnCloseEx := "CloseExcludedGui"
-        %fnCloseEx%()
-    }
-    if (hLockOpt && WinExist("ahk_id " . hLockOpt)) {
-        Gui, LockOptions:Destroy
-        hLockOpt := 0
-    }
-    Gui, Settings:Destroy
-    hSettingsGui := 0
-return
+
 
 LockOptionsGuiClose:
 LockOptionsGuiEscape:
