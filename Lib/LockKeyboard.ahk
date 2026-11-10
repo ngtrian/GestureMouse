@@ -44,7 +44,6 @@ InitAutoLockTimer()
 ; ========================================================
 ; PHÍM TẮT KHÓA / MỞ KHÓA
 ; ========================================================
-#If (GestureScrollEnabled)
 LockKeyboard:
     ^!l::
     KeyWait, Ctrl ; Tránh kẹt trạng thái nhả phím
@@ -52,7 +51,6 @@ LockKeyboard:
     KeyWait, l
     ToggleLock()
 return
-#If
 
 ; ========================================================
 ; HÀM TẢI CẤU HÌNH TỪ REGISTRY
@@ -180,12 +178,13 @@ ShowNotification() {
     if (isLocked) {
         if (lockMode == 1 && focusWndTitle != "") {
             shortTitle := SubStr(focusWndTitle, 1, 35) . (StrLen(focusWndTitle) > 35 ? "..." : "")
-            msg := "🎯  " . L("Lock_NotificationFocus") . shortTitle
+            msg := "🎯 " . L("Lock_NotificationFocus") . shortTitle
         } else {
-            msg := "🔒  " . L("Lock_NotificationFull")
+            msg := "🔒 " . L("Lock_NotificationFull")
         }
+        msg .= "`n" . L("Lock_ToastHint")
     } else {
-        msg := "✔  " . L("Lock_Unlocked")
+        msg := "✔ " . L("Lock_Unlocked")
     }
 
     ; Lấy chiều cao taskbar để căn vị trí
@@ -197,7 +196,8 @@ ShowNotification() {
     Gui, Notification:Destroy
 
     Gui, Notification:New, +AlwaysOnTop +ToolWindow -Caption +LastFound
-    Gui, Font, s10.5 Bold, Segoe UI
+    Gui, Margin, 16, 10
+    Gui, Font, s9.5 Norm, Segoe UI
     Gui, Color, FFF9C4, 2B1E00 ; Nền vàng nhạt nổi bật, chữ nâu sẫm dễ đọc
     Gui, Font, c2B1E00
     Gui, Add, Text, Center, %msg%
@@ -331,6 +331,11 @@ UnlockKeyboard() {
     ; Khôi phục trạng thái quản lý nguồn điện của hệ thống
     DllCall("SetThreadExecutionState", "UInt", 0x80000000)
 
+    ; Đảm bảo nhả sạch trạng thái phím Ctrl và Alt trên hệ thống
+    SendLevel, 1
+    SendInput, {Ctrl Up}{Alt Up}
+    SendLevel, 0
+
     ShowNotification()
 
     fnTip := "UpdateTrayTip"
@@ -344,10 +349,15 @@ UnlockKeyboard() {
 KeyboardProc(nCode, wParam, lParam) {
     global isLocked, Buffer, UNLOCK_KEYWORD, KEYWORD_LENGTH, requireWindowsPassword, hAuthGui
     global lockMode, hFocusWnd, lockKeyboardEnabled, allowSpace, allowMedia, allowNav
+    static ctrlState := 0
+    static altState := 0
     Critical
 
-    if (nCode < 0 || !isLocked)
+    if (nCode < 0 || !isLocked) {
+        ctrlState := 0
+        altState := 0
         return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+    }
 
     ; ĐẶC BIỆT: Nếu cửa sổ nhập mật khẩu Windows đang hiển thị và active -> CHO PHÉP gõ phím bình thường
     if (hAuthGui && WinActive("ahk_id " . hAuthGui)) {
@@ -358,29 +368,43 @@ KeyboardProc(nCode, wParam, lParam) {
     scanCode := NumGet(lParam+0, 4, "UInt")
     flags    := NumGet(lParam+0, 8, "UInt")
     isKeyDown := (wParam = 0x100 || wParam = 0x104) ; WM_KEYDOWN hoặc WM_SYSKEYDOWN
-    isAltDown := (flags & 0x20)
+    isAltDown := (flags & 0x20) != 0
 
-    ; 1. Xử lý Focus Lock
+    ; Cập nhật trạng thái các phím modifier (Ctrl, Alt)
+    if (vkCode = 0x11 || vkCode = 0xA2 || vkCode = 0xA3)
+        ctrlState := isKeyDown
+    if (vkCode = 0x12 || vkCode = 0xA4 || vkCode = 0xA5)
+        altState := isKeyDown
+
+    ; Kiểm tra chắc chắn trạng thái thực tế của Ctrl và Alt qua nhiều kênh độc lập
+    isCtrl := ctrlState || ((DllCall("GetAsyncKeyState", "Int", 0x11) & 0x8000) != 0) || GetKeyState("Ctrl", "P")
+    isAlt  := altState || isAltDown || ((DllCall("GetAsyncKeyState", "Int", 0x12) & 0x8000) != 0) || GetKeyState("Alt", "P")
+
+    ; 1. ƯU TIÊN SỐ 1: Bắt tổ hợp phím mở khóa Ctrl + Alt + L (Áp dụng cho cả Full Lock và Focus Lock)
+    if (isKeyDown && vkCode = 0x4C && isCtrl && isAlt) {
+        static lastHotkeyPress := 0
+        if (A_TickCount - lastHotkeyPress > 700) {
+            lastHotkeyPress := A_TickCount
+            ctrlState := 0
+            altState := 0
+            Buffer := ""
+            if (requireWindowsPassword)
+                SetTimer, TriggerWindowsAuthPrompt, -1
+            else
+                SetTimer, TriggerDirectUnlock, -1
+        }
+        return 1
+    }
+
+    ; 2. Xử lý Focus Lock
     if (lockMode == 1 && hFocusWnd) {
         curActive := WinExist("A")
         ; Chặn các tổ hợp phím thoát cửa sổ: Win, Alt+Tab, Alt+Esc, Ctrl+Esc
-        if (vkCode = 0x5B || vkCode = 0x5C || (isAltDown && (vkCode = 0x09 || vkCode = 0x1B)) || (vkCode = 0x1B && GetKeyState("Ctrl", "P"))) {
+        if (vkCode = 0x5B || vkCode = 0x5C || (isAlt && (vkCode = 0x09 || vkCode = 0x1B)) || (vkCode = 0x1B && isCtrl)) {
             return 1
         }
         ; Nếu đang tương tác đúng cửa sổ Focus
         if (curActive == hFocusWnd) {
-            ; Kiểm tra nếu bấm Ctrl+Alt+L để kích hoạt hành động mở khóa
-            if (isKeyDown && vkCode = 0x4C && GetKeyState("Ctrl", "P") && GetKeyState("Alt", "P")) {
-                static lastFocusUnlock := 0
-                if (A_TickCount - lastFocusUnlock > 700) {
-                    lastFocusUnlock := A_TickCount
-                    if (requireWindowsPassword)
-                        SetTimer, TriggerWindowsAuthPrompt, -1
-                    else
-                        SetTimer, TriggerDirectUnlock, -1
-                }
-                return 1
-            }
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
         } else {
             WinActivate, ahk_id %hFocusWnd%
@@ -388,7 +412,7 @@ KeyboardProc(nCode, wParam, lParam) {
         }
     }
 
-    ; 2. Kiểm tra Whitelist (Cho phép phím cụ thể)
+    ; 3. Kiểm tra Whitelist (Cho phép phím cụ thể)
     if (isKeyDown) {
         ; Phím Space
         if (allowSpace && vkCode = 0x20)
@@ -401,19 +425,6 @@ KeyboardProc(nCode, wParam, lParam) {
         ; Phím Điều hướng (Left, Up, Right, Down, Enter, Esc)
         if (allowNav && (vkCode >= 0x25 && vkCode <= 0x28 || vkCode = 0x0D || vkCode = 0x1B))
             return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
-    }
-
-    ; 3. Tổ hợp phím mở khóa: Ctrl + Alt + L (Chống chớp giật và lặp phím)
-    if (isKeyDown && vkCode = 0x4C && GetKeyState("Ctrl", "P") && GetKeyState("Alt", "P")) {
-        static lastHotkeyPress := 0
-        if (A_TickCount - lastHotkeyPress > 700) {
-            lastHotkeyPress := A_TickCount
-            if (requireWindowsPassword)
-                SetTimer, TriggerWindowsAuthPrompt, -1
-            else
-                SetTimer, TriggerDirectUnlock, -1
-        }
-        return 1
     }
 
     ; 4. Bắt mã PIN / Từ khóa cốt lõi (luôn luôn mở khóa trực tiếp, không hỏi 2 lần)
@@ -462,12 +473,31 @@ TriggerDirectUnlock:
 return
 
 TriggerWindowsAuthPrompt:
-    PromptWindowsAuth()
+    ; Gỡ bỏ hook ngay trước khi gọi LockWorkStation để người dùng nhập được PIN / mật khẩu tại màn hình đăng nhập
+    if (hKeyboardHook) {
+        DllCall("UnhookWindowsHookEx", "Ptr", hKeyboardHook)
+        hKeyboardHook := 0
+    }
+    if (hMouseHook) {
+        DllCall("UnhookWindowsHookEx", "Ptr", hMouseHook)
+        hMouseHook := 0
+    }
+    DllCall("ClipCursor", "Ptr", 0)
+    DllCall("user32.dll\LockWorkStation")
 return
 
 TriggerUnlockAction:
     if (requireWindowsPassword) {
-        PromptWindowsAuth()
+        if (hKeyboardHook) {
+            DllCall("UnhookWindowsHookEx", "Ptr", hKeyboardHook)
+            hKeyboardHook := 0
+        }
+        if (hMouseHook) {
+            DllCall("UnhookWindowsHookEx", "Ptr", hMouseHook)
+            hMouseHook := 0
+        }
+        DllCall("ClipCursor", "Ptr", 0)
+        DllCall("user32.dll\LockWorkStation")
     } else {
         UnlockKeyboard()
     }

@@ -842,8 +842,27 @@ OnPowerBroadcast(wParam, lParam) {
 
 ; Xử lý thông điệp phiên làm việc WM_WTSSESSION_CHANGE (0x02B1)
 OnSessionChange(wParam, lParam) {
+    global isLocked, hKeyboardHook, hMouseHook
+
+    ; 0x7 = WTS_SESSION_LOCK (Khi màn hình Windows bị khóa)
+    if (wParam = 0x7) {
+        ; Tạm thời tháo hook để người dùng gõ được PIN / mật khẩu tại màn hình đăng nhập Windows
+        if (hKeyboardHook) {
+            DllCall("UnhookWindowsHookEx", "Ptr", hKeyboardHook)
+            hKeyboardHook := 0
+        }
+        if (hMouseHook) {
+            DllCall("UnhookWindowsHookEx", "Ptr", hMouseHook)
+            hMouseHook := 0
+        }
+        DllCall("ClipCursor", "Ptr", 0)
+    }
+
     ; 0x8 = WTS_SESSION_UNLOCK (Chỉ kích hoạt khi người dùng mở khóa màn hình Windows)
     if (wParam = 0x8) {
+        if (isLocked) {
+            UnlockKeyboard()
+        }
         SetTimer, RecoverFromSleep, -1000
     }
 }

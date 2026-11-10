@@ -242,23 +242,23 @@ Settings:
 
     if FileExist(iconManual)
         Gui, Add, Picture, x244 y228 w18 h18, %iconManual%
-    Gui, Add, Text, x268 y230 w145, % L("Set_ManualScroll")
-    Gui, Add, Text, x418 y230 w335 c666666, % "→ " . L("Set_ManualScrollBtn")
+    Gui, Add, Text, x268 y230 w165, % L("Set_ManualScroll")
+    Gui, Add, Text, x438 y230 w315 c666666, % "→ " . L("Set_ManualScrollBtn")
 
     if FileExist(iconAuto)
         Gui, Add, Picture, x244 y254 w18 h18, %iconAuto%
-    Gui, Add, Text, x268 y256 w145, % L("Set_AutoScroll")
-    Gui, Add, Text, x418 y256 w335 c666666, % "→ " . L("Set_AutoScrollBtn")
+    Gui, Add, Text, x268 y256 w165, % L("Set_AutoScroll")
+    Gui, Add, Text, x438 y256 w315 c666666, % "→ " . L("Set_AutoScrollBtn")
 
     if FileExist(iconPage)
         Gui, Add, Picture, x244 y280 w18 h18, %iconPage%
-    Gui, Add, Text, x268 y282 w145, % L("Set_PgScroll")
-    Gui, Add, Text, x418 y282 w335 c666666, % "→ " . L("Set_PgScrollBtn")
+    Gui, Add, Text, x268 y282 w165, % L("Set_PgScroll")
+    Gui, Add, Text, x438 y282 w315 c666666, % "→ " . L("Set_PgScrollBtn")
 
     if FileExist(iconVol)
         Gui, Add, Picture, x244 y306 w18 h18, %iconVol%
-    Gui, Add, Text, x268 y308 w145, % L("Set_MouseVolume")
-    Gui, Add, Text, x418 y308 w335 c666666, % "→ " . L("Set_MouseVolumeBtn")
+    Gui, Add, Text, x268 y308 w165, % L("Set_MouseVolume")
+    Gui, Add, Text, x438 y308 w315 c666666, % "→ " . L("Set_MouseVolumeBtn")
 
     Gui, Add, Text, x244 y334 w505 h1 0x10
 
