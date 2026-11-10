@@ -22,7 +22,6 @@ Menu:
     UpdateTrayIcon()
     UpdateTrayTip()  
     Gosub, BrightnessGui  ; Tạo GUI độ sáng
-    SetTimer, PreloadSettingsGui, -200  ; Nạp trước ngầm giao diện Cài đặt trong bộ nhớ (mở tức thì)
 
 ; Cập nhật tray tip tổng hợp
 UpdateTrayTip() {
@@ -157,23 +156,19 @@ UpdateTrayMenu() {
 }
 
 ; Xử lý sự kiện chuột trên icon khay:
-; - Click 1 lần: Bật/Tắt (trì hoãn 200ms để bắt chính xác nhấp đúp)
-; - Double-click: Hủy ngay lệnh click đơn và Mở ngay Cài đặt tức thì
+; - Click 1 lần: Bật/Tắt ngay lập tức không cần chờ delay
+; - Double-click: Mở ngay cửa sổ Cài đặt
 AHK_NOTIFYICON(wParam, lParam) {
-    if (lParam = 0x202) { ; WM_LBUTTONUP: Nhấp chuột trái
-        SetTimer, TraySingleClickToggle, -200
+    if (lParam = 0x202) { ; WM_LBUTTONUP: Nhấp chuột trái -> Bật/Tắt ngay lập tức
+        ToggleGestureScroll()
         return 0
-    } else if (lParam = 0x203) { ; WM_LBUTTONDBLCLK: Nhấp đúp -> Mở ngay Cài đặt
-        SetTimer, TraySingleClickToggle, Off
-        ToolTip ; Tắt thông báo tooltip nếu có
+    } else if (lParam = 0x203) { ; WM_LBUTTONDBLCLK: Nhấp đúp -> Hoàn lại trạng thái ban đầu và mở Cài đặt
+        ToggleGestureScroll() ; Đảo trạng thái lần 2 để sau 2 lần nhấp vẫn giữ nguyên trạng thái ban đầu
+        ToolTip ; Tắt thông báo tooltip bật/tắt
         Gosub, Settings
         return 0
     }
 }
-
-TraySingleClickToggle:
-    ToggleGestureScroll()
-return
 
 ; khởi tạo ban đầu gồm menu, icon tray, script dừng ở đây và chờ sự kiện từ menu khay hệ thống, "return" ngăn không cho các label khác tự động chạy
 return
@@ -490,8 +485,6 @@ ReloadApp:
     Reload
 return
 
-
-; Đặt icon màu vàng mặc định cho mọi cửa sổ GUI (Taskbar, Titlebar, Alt+Tab luôn là màu vàng)
 ; Đặt icon màu vàng mặc định cho mọi cửa sổ GUI (Taskbar, Titlebar, Alt+Tab luôn là màu vàng)
 SetGuiYellowIcon(guiHwnd) {
     if (!guiHwnd)

@@ -3,19 +3,9 @@
 
 #Include *i Language.ahk
 
-global currentSettingsTab   := 1
-global isCodeRevealed       := 0
-global hChangeCodeGui       := 0
-global isSettingsPreloading := 0
-
-; Nhãn nạp trước ngầm giao diện Cài đặt khi khởi động ứng dụng
-PreloadSettingsGui:
-    if (!hSettingsGui) {
-        isSettingsPreloading := 1
-        Gosub, Settings
-        isSettingsPreloading := 0
-    }
-return
+global currentSettingsTab := 1
+global isCodeRevealed     := 0
+global hChangeCodeGui     := 0
 
 ; Tạo GUI cài đặt - Settings (Giao diện Fluent Cards hiện đại, Singleton pattern)
 Settings:
@@ -460,11 +450,8 @@ Settings:
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
     SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1)
 
-    ; Hiển thị giao diện kích thước nhỏ gọn (Ẩn nếu đang nạp trước)
-    if (isSettingsPreloading)
-        Gui, Show, Hide w780 h515 Center, % "Gesture Mouse - " . L("Set_Title")
-    else
-        Gui, Show, w780 h515 Center, % "Gesture Mouse - " . L("Set_Title")
+    ; Hiển thị giao diện kích thước nhỏ gọn (w780 h515)
+    Gui, Show, w780 h515 Center, % "Gesture Mouse - " . L("Set_Title")
     SetGuiYellowIcon(hSettingsGui)
 return
 
