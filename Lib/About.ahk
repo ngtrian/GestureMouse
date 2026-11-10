@@ -6,7 +6,10 @@ global DonateURL := "https://paypal.me/nguyentrian87"
 ShowAbout:
     Gosub, Settings
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
-        GuiControl, Choose, SettingsTabNav, 5
+        if (IsFunc("SwitchSettingsTab"))
+            SwitchSettingsTab(5)
+        else
+            GuiControl, Choose, SettingsTabNav, 5
         WinActivate, ahk_id %hSettingsGui%
     }
 return
