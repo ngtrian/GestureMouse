@@ -1,4 +1,4 @@
-; About.ahk - Quản lý cửa sổ Giới thiệu và Hướng dẫn sử dụng
+﻿; About.ahk - Quản lý cửa sổ Giới thiệu và Hướng dẫn sử dụng
 #NoEnv
 
 global DonateURL := "https://paypal.me/nguyentrian87"
