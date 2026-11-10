@@ -1,4 +1,4 @@
-; About.ahk - Quản lý cửa sổ Giới thiệu và Hướng dẫn sử dụng
+﻿; About.ahk - Quản lý cửa sổ Giới thiệu và Hướng dẫn sử dụng
 #NoEnv
 
 global DonateURL := "https://paypal.me/nguyentrian87"
@@ -33,12 +33,13 @@ ShowAbout:
     Gui, Font, s9.5 Norm, Segoe UI
     Gui, Add, Button, x470 y16 w90 h28 gOpenDonateLink, % "❤ " . L("About_Donate")
 
-    ; Tab Control: Tab headers chữ thường (không in đậm), tên ngắn gọn
+    ; Tab Control: Đặt chiều cao h28 để chỉ hiển thị thanh tiêu đề Tab, loại bỏ hoàn toàn khung viền bao quanh nội dung
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Tab2, x15 y76 w545 h270 vAboutTab gOnAboutTabChange, % L("About_TabGestures") . "|" . L("About_TabShortcuts") . "|" . L("About_TabSystem")
+    Gui, Add, Tab2, x15 y76 w545 h28 vAboutTab gOnAboutTabChange, % L("About_TabGestures") . "|" . L("About_TabShortcuts") . "|" . L("About_TabSystem")
 
     ; Tạo mảng liên kết cho tooltip đa ngôn ngữ trên trang About
     AboutTooltips := {}
+    tipClickSuffix := (CurrentLang = "en") ? "`n[ Click to test / execute now ]" : "`n[ Nhấp chuột để thử / thực thi ngay ]"
     AboutTooltips["Text1"] := L("TT_1")
     AboutTooltips["Text2"] := L("TT_2")
     AboutTooltips["Text3"] := L("TT_3")
@@ -49,14 +50,14 @@ ShowAbout:
     AboutTooltips["Text7"] := L("TT_7")
     AboutTooltips["Text8"] := L("TT_8")
     AboutTooltips["Text9"] := L("TT_9")
-    AboutTooltips["Text10"] := L("TT_10")
-    AboutTooltips["Text11"] := L("TT_11")
-    AboutTooltips["Text12"] := L("TT_12")
-    AboutTooltips["Text13"] := L("TT_13")
-    AboutTooltips["Text14"] := L("TT_14")
+    AboutTooltips["Text10"] := L("TT_10") . tipClickSuffix
+    AboutTooltips["Text11"] := L("TT_11") . tipClickSuffix
+    AboutTooltips["Text12"] := L("TT_12") . tipClickSuffix
+    AboutTooltips["Text13"] := L("TT_13") . tipClickSuffix
+    AboutTooltips["Text14"] := L("TT_14") . tipClickSuffix
     AboutTooltips["TextInfo"] := L("TT_Info")
-    AboutTooltips["TextPaste"] := L("TT_PastePlain")
-    AboutTooltips["TextToggle"] := (CurrentLang = "en") ? "Toggle gestures and advanced scroll on/off" : "Bật hoặc tắt nhanh toàn bộ cử chỉ và cuộn chuột (hoặc nhấp chuột vào icon khay)"
+    AboutTooltips["TextPaste"] := L("TT_PastePlain") . tipClickSuffix
+    AboutTooltips["TextToggle"] := ((CurrentLang = "en") ? "Toggle gestures and advanced scroll on/off" : "Bật hoặc tắt nhanh toàn bộ cử chỉ và cuộn chuột (hoặc nhấp chuột vào icon khay)") . tipClickSuffix
 
     if (CurrentLang = "en") {
         TabSystemText =
@@ -100,87 +101,87 @@ ShowAbout:
 
     ; 4 thao tác cuộn chuột & âm lượng (Kèm icon chuột minh họa thao tác rõ ràng)
     if FileExist(iconManual)
-        Gui, Add, Picture, x28 y116 w24 h24, %iconManual%
-    Gui, Add, Text, x58 y118 w145, % L("Set_ManualScroll")
-    Gui, Add, Button, x210 y115 w335 h25 Center gShowAboutTooltip vText1, % L("Set_ManualScrollBtn")
+        Gui, Add, Picture, x24 y113 w24 h24, %iconManual%
+    Gui, Add, Text, x54 y115 w145, % L("Set_ManualScroll")
+    Gui, Add, Button, x205 y111 w355 h26 Center gShowAboutTooltip vText1, % L("Set_ManualScrollBtn")
 
     if FileExist(iconAuto)
-        Gui, Add, Picture, x28 y146 w24 h24, %iconAuto%
-    Gui, Add, Text, x58 y148 w145, % L("Set_AutoScroll")
-    Gui, Add, Button, x210 y145 w335 h25 Center gShowAboutTooltip vText2, % L("Set_AutoScrollBtn")
+        Gui, Add, Picture, x24 y143 w24 h24, %iconAuto%
+    Gui, Add, Text, x54 y145 w145, % L("Set_AutoScroll")
+    Gui, Add, Button, x205 y141 w355 h26 Center gShowAboutTooltip vText2, % L("Set_AutoScrollBtn")
 
     if FileExist(iconPage)
-        Gui, Add, Picture, x28 y176 w24 h24, %iconPage%
-    Gui, Add, Text, x58 y178 w145, % L("Set_PgScroll")
-    Gui, Add, Button, x210 y175 w335 h25 Center gShowAboutTooltip vText3, % L("Set_PgScrollBtn")
+        Gui, Add, Picture, x24 y173 w24 h24, %iconPage%
+    Gui, Add, Text, x54 y175 w145, % L("Set_PgScroll")
+    Gui, Add, Button, x205 y171 w355 h26 Center gShowAboutTooltip vText3, % L("Set_PgScrollBtn")
 
     if FileExist(iconVol)
-        Gui, Add, Picture, x28 y206 w24 h24, %iconVol%
-    Gui, Add, Text, x58 y208 w145, % L("Set_MouseVolume")
-    Gui, Add, Button, x210 y205 w335 h25 Center gShowAboutTooltip vTextVol, % L("Set_MouseVolumeBtn")
+        Gui, Add, Picture, x24 y203 w24 h24, %iconVol%
+    Gui, Add, Text, x54 y205 w145, % L("Set_MouseVolume")
+    Gui, Add, Button, x205 y201 w355 h26 Center gShowAboutTooltip vTextVol, % L("Set_MouseVolumeBtn")
 
     ; Dòng tiêu đề cử chỉ trình duyệt
     Gui, Font, s9.5 Bold c004499, Segoe UI
-    Gui, Add, Text, x28 y244, % (CurrentLang = "en" ? "Browser & File Explorer Gestures (Hold Right Mouse Button):" : "Cử chỉ trình duyệt & File Explorer (Giữ chuột phải):")
+    Gui, Add, Text, x24 y238, % (CurrentLang = "en" ? "Browser && File Explorer Gestures (Hold Right Mouse Button):" : "Cử chỉ trình duyệt && File Explorer (Giữ chuột phải):")
     Gui, Font, s9.5 Norm c000000, Segoe UI
 
     ; 6 cử chỉ trình duyệt chia 2 cột đối xứng
-    Gui, Add, Text, x28 y274 w145, % L("Set_Back")
-    Gui, Add, Button, x178 y270 w44 h25 Center gShowAboutTooltip vText4, ←
-    Gui, Add, Text, x285 y274 w145, % L("Set_Forward")
-    Gui, Add, Button, x501 y270 w44 h25 Center gShowAboutTooltip vText5, →
+    Gui, Add, Text, x24 y268 w135, % L("Set_Back")
+    Gui, Add, Button, x164 y264 w46 h26 Center gShowAboutTooltip vText4, ←
+    Gui, Add, Text, x295 y268 w155, % L("Set_Forward")
+    Gui, Add, Button, x514 y264 w46 h26 Center gShowAboutTooltip vText5, →
 
-    Gui, Add, Text, x28 y304 w145, % L("Set_PrevTab")
-    Gui, Add, Button, x178 y300 w44 h25 Center gShowAboutTooltip vText6, ↑__
-    Gui, Add, Text, x285 y304 w145, % L("Set_NextTab")
-    Gui, Add, Button, x501 y300 w44 h25 Center gShowAboutTooltip vText7, ↓¯¯
+    Gui, Add, Text, x24 y298 w135, % L("Set_PrevTab")
+    Gui, Add, Button, x164 y294 w46 h26 Center gShowAboutTooltip vText6, ↑__
+    Gui, Add, Text, x295 y298 w155, % L("Set_NextTab")
+    Gui, Add, Button, x514 y294 w46 h26 Center gShowAboutTooltip vText7, ↓¯¯
 
-    Gui, Add, Text, x28 y334 w145, % L("Set_CloseTab")
-    Gui, Add, Button, x178 y330 w44 h25 Center gShowAboutTooltip vText8, __↑
-    Gui, Add, Text, x285 y334 w145, % L("Set_Refresh")
-    Gui, Add, Button, x501 y330 w44 h25 Center gShowAboutTooltip vText9, ¯¯↓
+    Gui, Add, Text, x24 y328 w135, % L("Set_CloseTab")
+    Gui, Add, Button, x164 y324 w46 h26 Center gShowAboutTooltip vText8, __↑
+    Gui, Add, Text, x295 y328 w155, % L("Set_Refresh")
+    Gui, Add, Button, x514 y324 w46 h26 Center gShowAboutTooltip vText9, ¯¯↓
 
     ; ========================================================
-    ; TAB 2: PHÍM TẮT & TIỆN ÍCH (Kèm Icon hệ thống Windows)
+    ; TAB 2: PHÍM TẮT & TIỆN ÍCH (Kèm Icon hệ thống Windows - Nhấp để thực thi ngay)
     ; ========================================================
     Gui, Tab, 2
     Gui, Font, s9.5 Norm c000000, Segoe UI
 
-    Gui, Add, Picture, x28 y116 w22 h22 Icon3, %A_WinDir%\System32\SndVol.exe
-    Gui, Add, Text, x58 y118 w150, % L("Set_Mute")
-    Gui, Add, Button, x218 y115 w185 h25 Center gShowAboutTooltip vText10, Ctrl + Shift + M
+    Gui, Add, Picture, x24 y115 w22 h22 Icon3, %A_WinDir%\System32\SndVol.exe
+    Gui, Add, Text, x54 y117 w150, % L("Set_Mute")
+    Gui, Add, Button, x210 y113 w190 h26 Center gActionMute vText10, Ctrl + Shift + M
 
-    Gui, Add, Picture, x28 y146 w22 h22 Icon48, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Text, x58 y148 w150, % L("Set_AutoLock")
-    Gui, Add, Button, x218 y145 w185 h25 Center gShowAboutTooltip vText11, Ctrl + Shift + L
+    Gui, Add, Picture, x24 y145 w22 h22 Icon48, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Text, x54 y147 w150, % L("Set_AutoLock")
+    Gui, Add, Button, x210 y143 w190 h26 Center gActionAutoLock vText11, Ctrl + Shift + L
 
-    Gui, Add, Picture, x28 y176 w22 h22 Icon2, %A_WinDir%\System32\SndVol.exe
-    Gui, Add, Text, x58 y178 w150, % L("Set_Volume")
-    Gui, Add, Button, x218 y175 w220 h25 Center gShowAboutTooltip vText12, Win + Lăn chuột / PgUp/Dn
+    Gui, Add, Picture, x24 y175 w22 h22 Icon2, %A_WinDir%\System32\SndVol.exe
+    Gui, Add, Text, x54 y177 w150, % L("Set_Volume")
+    Gui, Add, Button, x210 y173 w235 h26 Center gActionVolumeTest vText12, Win + Lăn chuột / PgUp/Dn
 
-    Gui, Add, Picture, x28 y206 w22 h22 Icon26, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Text, x58 y208 w150, % L("Set_Brightness")
-    Gui, Add, Button, x218 y205 w185 h25 Center gShowAboutTooltip vText13, F9 / F10
+    Gui, Add, Picture, x24 y205 w22 h22 Icon26, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Text, x54 y207 w150, % L("Set_Brightness")
+    Gui, Add, Button, x210 y203 w190 h26 Center gActionBrightnessTest vText13, F9 / F10
 
-    Gui, Add, Picture, x28 y236 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Text, x58 y238 w150, % L("Set_LockKBAndMouse")
-    Gui, Add, Button, x218 y235 w185 h25 Center gShowAboutTooltip vText14, Ctrl + Alt + L
-    Gui, Add, Picture, x410 y241 w14 h14 gShowAboutTooltip vTextInfo Icon-200, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Picture, x24 y235 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Text, x54 y237 w150, % L("Set_LockKBAndMouse")
+    Gui, Add, Button, x210 y233 w190 h26 Center gActionLockKeyboard vText14, Ctrl + Alt + L
+    Gui, Add, Picture, x410 y239 w14 h14 gShowAboutTooltip vTextInfo Icon-200, %A_WinDir%\System32\shell32.dll
 
-    Gui, Add, Picture, x28 y266 w22 h22 Icon261, %A_WinDir%\System32\shell32.dll
-    Gui, Add, Text, x58 y268 w150, % L("Set_PastePlain")
-    Gui, Add, Button, x218 y265 w185 h25 Center gShowAboutTooltip vTextPaste, Ctrl + Shift + V
+    Gui, Add, Picture, x24 y265 w22 h22 Icon261, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Text, x54 y267 w150, % L("Set_PastePlain")
+    Gui, Add, Button, x210 y263 w190 h26 Center gActionPastePlain vTextPaste, Ctrl + Shift + V
 
-    Gui, Add, Picture, x28 y296 w22 h22 Icon1, %aboutIcon%
-    Gui, Add, Text, x58 y298 w150, % (CurrentLang = "en" ? "Toggle Gestures & Scroll" : "Bật / Tắt Cử chỉ & Cuộn")
-    Gui, Add, Button, x218 y295 w185 h25 Center gShowAboutTooltip vTextToggle, Ctrl + Alt
+    Gui, Add, Picture, x24 y295 w22 h22 Icon1, %aboutIcon%
+    Gui, Add, Text, x54 y297 w150, % (CurrentLang = "en" ? "Toggle Gestures & Scroll" : "Bật / Tắt Cử chỉ & Cuộn")
+    Gui, Add, Button, x210 y293 w190 h26 Center gActionToggleGestures vTextToggle, Ctrl + Alt
 
     ; ========================================================
     ; TAB 3: HỆ THỐNG & MẸO
     ; ========================================================
     Gui, Tab, 3
     Gui, Font, s9.5 Norm c000000, Segoe UI
-    Gui, Add, Edit, x23 y115 w528 h245 ReadOnly +Border +VScroll HwndhEdit3, %TabSystemText%
+    Gui, Add, Edit, x18 y112 w539 h242 ReadOnly +Border +VScroll HwndhEdit3, %TabSystemText%
 
     ; Đăng ký sự kiện theo dõi chuột để hiển thị tooltip trên các nút
     OnMessage(0x200, "WM_MOUSEMOVE_ABOUT")
@@ -270,4 +271,58 @@ AboutGuiEscape:
     Gui, About:Destroy
     hAboutGui := 0
     hEdit3 := 0
+return
+
+; ========================================================
+; HÀNH ĐỘNG KHI NHẤP CHUỘT TRỰC TIẾP VÀO CÁC NÚT PHÍM TẮT TRÊN TAB 2
+; ========================================================
+ActionMute:
+    SoundSet, +1, , mute
+    SoundGet, isMuted, , mute
+    tipMsg := (isMuted = "On" || isMuted = 1) ? (CurrentLang = "en" ? "Audio Muted" : "Đã tắt tiếng hệ thống") : (CurrentLang = "en" ? "Audio Unmuted" : "Đã bật tiếng hệ thống")
+    ToolTip, % tipMsg
+    SetTimer, ClearAboutTip, -2000
+return
+
+ActionAutoLock:
+    ToolTip
+    if (IsLabel("ShowLockScreenGUI"))
+        Gosub, ShowLockScreenGUI
+return
+
+ActionVolumeTest:
+    Send, {Blind}{Volume_Up}
+    ToolTip, % (CurrentLang = "en" ? "Tested: Volume Up" : "Thử nghiệm: Tăng âm lượng")
+    SetTimer, ClearAboutTip, -1500
+return
+
+ActionBrightnessTest:
+    if (IsLabel("F10"))
+        Gosub, F10
+    else if (IsLabel("BrightnessTip"))
+        Gosub, BrightnessTip
+return
+
+ActionLockKeyboard:
+    ToolTip
+    if (IsFunc("ToggleLock"))
+        ToggleLock()
+return
+
+ActionPastePlain:
+    ToolTip
+    if (IsLabel("PastePlainText"))
+        Gosub, PastePlainText
+return
+
+ActionToggleGestures:
+    if (IsFunc("ToggleGestureScroll"))
+        ToggleGestureScroll()
+    tipMsg := GestureScrollEnabled ? (CurrentLang = "en" ? "Gestures: ENABLED" : "Cử chỉ chuột: ĐÃ BẬT") : (CurrentLang = "en" ? "Gestures: DISABLED" : "Cử chỉ chuột: ĐÃ TẮT")
+    ToolTip, % tipMsg
+    SetTimer, ClearAboutTip, -2000
+return
+
+ClearAboutTip:
+    ToolTip
 return

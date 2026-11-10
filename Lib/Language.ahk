@@ -1,4 +1,4 @@
-; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
+﻿; Language.ahk - Quản lý đa ngôn ngữ (Tiếng Việt & English)
 #NoEnv
 
 global CurrentLang := "en"

@@ -1,4 +1,4 @@
-; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
+﻿; Menu.ahk - Quản lý Menu Tray, Cài đặt và Giới thiệu
 #NoEnv
 
 Menu:
@@ -214,7 +214,7 @@ Settings:
     ; THẺ TRẠNG THÁI: Huy hiệu đặc quyền hệ thống (Privilege Badge)
     ; ========================================================
     Gui, Add, GroupBox, x18 y58 w494 h52
-    Gui, Add, Picture, x28 y72 w22 h22 Icon77, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Picture, x30 y75 w18 h18 Icon77, %A_WinDir%\System32\shell32.dll
 
     if (hasPriv = "Admin") {
         Gui, Font, s9.5 Bold c007A00, Segoe UI
@@ -236,11 +236,11 @@ Settings:
     }
 
     ; ========================================================
-    ; NHÓM 1: Cài đặt chung & Ngôn ngữ (Kèm Icon bánh răng & Cờ)
+    ; NHÓM 1: Cài đặt chung & Ngôn ngữ (Kèm Icon bánh răng & Cờ chuẩn 16x16)
     ; ========================================================
     Gui, Font, Bold
     Gui, Add, GroupBox, x18 y116 w494 h72, % "       " . L("Set_GroupGeneral")
-    Gui, Add, Picture, x26 y114 w18 h18 Icon22, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Picture, x28 y115 w16 h16 Icon22, %A_WinDir%\System32\shell32.dll
     Gui, Font, Normal
 
     Gui, Add, Checkbox, x36 y135 vAutoStart gSaveSettings Checked%AutoStart%, % L("Set_AutoStart")
@@ -256,34 +256,34 @@ Settings:
     Gui, Add, Radio, x255 y158 vLangEN gOnLangRadio Checked%chkEN%, English
 
     ; ========================================================
-    ; NHÓM 2: Phương pháp cuộn chuột (Kèm Icon chuột cuộn)
+    ; NHÓM 2: Phương pháp cuộn chuột (Kèm Icon chuột cuộn chuẩn 16x16)
     ; ========================================================
     Gui, Font, Bold
     Gui, Add, GroupBox, x18 y194 w494 h78, % "       " . L("Set_GroupScroll")
     if FileExist(iconManual)
-        Gui, Add, Picture, x26 y192 w18 h18, %iconManual%
+        Gui, Add, Picture, x28 y193 w16 h16, %iconManual%
     Gui, Font, Normal
 
     Gui, Add, Radio, x36 y216 vScrollStyle1 gSaveSettings Group Checked%chkS1%, % L("Set_ScrollStyle1")
     Gui, Add, Radio, x36 y242 vScrollStyle2 gSaveSettings Checked%chkS2%, % L("Set_ScrollStyle2")
 
     ; ========================================================
-    ; NHÓM 3: Cử chỉ chuột & Ứng dụng loại trừ (Kèm Icon chuột)
+    ; NHÓM 3: Cử chỉ chuột & Ứng dụng loại trừ (Kèm Icon chuột chuẩn 16x16)
     ; ========================================================
     Gui, Font, Bold
     Gui, Add, GroupBox, x18 y278 w494 h78, % "       " . L("Set_GroupGesture")
-    Gui, Add, Picture, x26 y276 w18 h18 Icon24, %A_WinDir%\System32\shell32.dll
+    Gui, Add, Picture, x28 y277 w16 h16 Icon24, %A_WinDir%\System32\shell32.dll
     Gui, Font, Normal
 
     Gui, Add, Checkbox, x36 y298 vGestureEnabled gOnToggleGestureCheckbox Checked%GestureScrollEnabled%, % L("Set_EnableGesture")
     Gui, Add, Button, x36 y322 w210 h26 gOpenExcludedAppsGui, % L("Set_ExcludedAppsBtn")
 
     ; ========================================================
-    ; NHÓM 4: Khóa bàn phím & chuột (Kèm Icon ổ khóa vàng)
+    ; NHÓM 4: Khóa bàn phím & chuột (Kèm Icon ổ khóa vàng chuẩn 16x16)
     ; ========================================================
     Gui, Font, Bold
     Gui, Add, GroupBox, x18 y362 w494 h78, % "       " . L("Set_GroupLock")
-    Gui, Add, Picture, x26 y360 w18 h18 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Picture, x28 y361 w16 h16 Icon28, %A_WinDir%\System32\ddores.dll
     Gui, Font, Normal
 
     Gui, Add, Checkbox, x36 y384 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Set_LockMouse")
