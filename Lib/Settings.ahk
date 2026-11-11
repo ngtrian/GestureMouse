@@ -3,9 +3,11 @@
 
 #Include *i Language.ahk
 
-global currentSettingsTab := 1
-global isCodeRevealed     := 0
-global hChangeCodeGui     := 0
+global currentSettingsTab   := 1
+global isCodeRevealed       := 0
+global hChangeCodeGui       := 0
+global SettingsTooltips     := {}
+global LastSettingsTipHwnd  := 0
 
 ; Tạo GUI cài đặt - Settings (Giao diện Fluent Cards gọn gàng, Singleton pattern)
 Settings:
@@ -26,6 +28,8 @@ Settings:
         LoadLockSettings()
 
     isCodeRevealed := 0
+    SettingsTooltips := {}
+    LastSettingsTipHwnd := 0
 
     Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
     SetGuiYellowIcon(hSettingsGui)
@@ -160,10 +164,10 @@ Settings:
     Gui, Font, s9 Bold c004499, Segoe UI
     Gui, Add, Text, x246 y297 w500, % L("Set_BrowserGesturesTitle")
 
-    gestureBadges := CreateGestureBadgeBitmaps()
-    AddBrowserGestureRow(322, gestureBadges["L"],  "Set_Back",     "Set_DirL",  gestureBadges["R"],  "Set_Forward", "Set_DirR")
-    AddBrowserGestureRow(346, gestureBadges["LU"], "Set_PrevTab",  "Set_DirLU", gestureBadges["LD"], "Set_NextTab", "Set_DirLD")
-    AddBrowserGestureRow(370, gestureBadges["RU"], "Set_CloseTab", "Set_DirRU", gestureBadges["RD"], "Set_Refresh", "Set_DirRD")
+    gestureBadges := CreateGestureBadgeBitmaps(32, 22)
+    AddBrowserGestureRow(322, gestureBadges["L"],  "Set_Back",     "Set_TipGestureL",  gestureBadges["R"],  "Set_Forward", "Set_TipGestureR")
+    AddBrowserGestureRow(346, gestureBadges["LU"], "Set_PrevTab",  "Set_TipGestureLU", gestureBadges["LD"], "Set_NextTab", "Set_TipGestureLD")
+    AddBrowserGestureRow(370, gestureBadges["RU"], "Set_CloseTab", "Set_TipGestureRU", gestureBadges["RD"], "Set_Refresh", "Set_TipGestureRD")
 
     ; --------------------------------------------------------
     ; TAB 3: KHÓA BÀN PHÍM && CHUỘT
@@ -287,6 +291,9 @@ Settings:
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
     SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1)
 
+    ; Đăng ký theo dõi hover để hiển thị chú thích cho icon cử chỉ
+    OnMessage(0x200, "WM_MOUSEMOVE_SETTINGS")
+
     ; Hiển thị giao diện kích thước tinh gọn (w780 h455)
     Gui, Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
     SetGuiYellowIcon(hSettingsGui)
@@ -332,24 +339,25 @@ AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
     Gui, Settings:Add, Text, x436 y%yPos% w310, % "→ " . L(descKey)
 }
 
-AddBrowserGestureRow(yPos, hBmp1, labelKey1, dirKey1, hBmp2, labelKey2, dirKey2) {
+AddBrowserGestureRow(yPos, hBmp1, labelKey1, tipKey1, hBmp2, labelKey2, tipKey2) {
+    global SettingsTooltips
     badgeY := yPos - 2
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x246 y%yPos% w132, % L(labelKey1)
-    if (hBmp1)
-        Gui, Settings:Add, Picture, x382 y%badgeY% w30 h22, HBITMAP:%hBmp1%
-    Gui, Settings:Font, s8.5 Norm c666666, Segoe UI
-    Gui, Settings:Add, Text, x418 y%yPos% w72, % L(dirKey1)
+    Gui, Settings:Add, Text, x246 y%yPos% w160, % L(labelKey1)
+    if (hBmp1) {
+        Gui, Settings:Add, Picture, x412 y%badgeY% +0x100 HwndhBadge1, HBITMAP:%hBmp1%
+        SettingsTooltips[hBadge1] := L(tipKey1)
+    }
 
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x496 y%yPos% w136, % L(labelKey2)
-    if (hBmp2)
-        Gui, Settings:Add, Picture, x636 y%badgeY% w30 h22, HBITMAP:%hBmp2%
-    Gui, Settings:Font, s8.5 Norm c666666, Segoe UI
-    Gui, Settings:Add, Text, x672 y%yPos% w74, % L(dirKey2)
+    Gui, Settings:Add, Text, x500 y%yPos% w170, % L(labelKey2)
+    if (hBmp2) {
+        Gui, Settings:Add, Picture, x676 y%badgeY% +0x100 HwndhBadge2, HBITMAP:%hBmp2%
+        SettingsTooltips[hBadge2] := L(tipKey2)
+    }
 }
 
-CreateGestureBadgeBitmaps() {
+CreateGestureBadgeBitmaps(badgeW := 32, badgeH := 22) {
     result := {}
     hGdip := DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
     if (!hGdip)
@@ -363,44 +371,50 @@ CreateGestureBadgeBitmaps() {
         return result
     }
 
+    scale := A_ScreenDPI / 96.0
+    pixW := Round(badgeW * scale)
+    pixH := Round(badgeH * scale)
+
     bgr := DllCall("GetSysColor", "Int", 15, "UInt")
     argbWin := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
 
-    badgeW := 30, badgeH := 22
     DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pPath)
-    d := 8.0
-    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", 0.5, "Float", 0.5, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
-    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", badgeW - 1.5 - d, "Float", 0.5, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
-    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", badgeW - 1.5 - d, "Float", badgeH - 1.5 - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
-    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", 0.5, "Float", badgeH - 1.5 - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
+    d := 8.0 * scale
+    pad := 0.5 * scale
+    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", pad, "Float", pad, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
+    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", pixW - 1.0 * scale - d, "Float", pad, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
+    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", pixW - 1.0 * scale - d, "Float", pixH - 1.0 * scale - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
+    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", pad, "Float", pixH - 1.0 * scale - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
     DllCall("gdiplus\GdipClosePathFigure", "Ptr", pPath)
 
     DllCall("gdiplus\GdipCreateSolidFill", "UInt", 0xFFEBF3FB, "Ptr*", pBrushBg)
-    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFFBDD6F0, "Float", 1.0, "Int", 2, "Ptr*", pPenBorder)
-    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFF005FB8, "Float", 2.0, "Int", 2, "Ptr*", pPenArrow)
+    DllCall("gdiplus\GdipCreateSolidFill", "UInt", 0xFF005FB8, "Ptr*", pBrushArrow)
+    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFFBDD6F0, "Float", 1.0 * scale, "Int", 2, "Ptr*", pPenBorder)
+    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFF005FB8, "Float", 2.0 * scale, "Int", 2, "Ptr*", pPenArrow)
     DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pPenArrow, "Int", 2)
     DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPenArrow, "Int", 2)
-    DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenArrow, "Int", 2)
+    DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenArrow, "Int", 0)
 
-    paths := {}
-    paths["L"]  := [[22.0, 11.0,  8.0, 11.0], [12.5,  7.0,  8.0, 11.0, 12.5, 15.0]]
-    paths["R"]  := [[ 8.0, 11.0, 22.0, 11.0], [17.5,  7.0, 22.0, 11.0, 17.5, 15.0]]
-    paths["LU"] := [[21.5, 16.0, 10.5, 16.0, 10.5,  6.0], [ 7.0,  9.5, 10.5,  6.0, 14.0,  9.5]]
-    paths["LD"] := [[21.5,  6.0, 10.5,  6.0, 10.5, 16.0], [ 7.0, 12.5, 10.5, 16.0, 14.0, 12.5]]
-    paths["RU"] := [[ 8.5, 16.0, 19.5, 16.0, 19.5,  6.0], [16.0,  9.5, 19.5,  6.0, 23.0,  9.5]]
-    paths["RD"] := [[ 8.5,  6.0, 19.5,  6.0, 19.5, 16.0], [16.0, 12.5, 19.5, 16.0, 23.0, 12.5]]
+    shapes := {}
+    shapes["L"]  := {shaft: [24.0, 11.0, 11.5, 11.0],               head: [ 7.0, 11.0, 13.0,  6.5, 13.0, 15.5]}
+    shapes["R"]  := {shaft: [ 8.0, 11.0, 20.5, 11.0],               head: [25.0, 11.0, 19.0,  6.5, 19.0, 15.5]}
+    shapes["LU"] := {shaft: [23.0, 16.5, 11.5, 16.5, 11.5,  8.5],   head: [11.5,  4.5,  7.0, 10.0, 16.0, 10.0]}
+    shapes["LD"] := {shaft: [23.0,  5.5, 11.5,  5.5, 11.5, 13.5],   head: [11.5, 17.5,  7.0, 12.0, 16.0, 12.0]}
+    shapes["RU"] := {shaft: [ 9.0, 16.5, 20.5, 16.5, 20.5,  8.5],   head: [20.5,  4.5, 16.0, 10.0, 25.0, 10.0]}
+    shapes["RD"] := {shaft: [ 9.0,  5.5, 20.5,  5.5, 20.5, 13.5],   head: [20.5, 17.5, 16.0, 12.0, 25.0, 12.0]}
 
-    for dirKey, segs in paths {
+    for dirKey, geom in shapes {
         pBitmap := 0, pGraphics := 0, hBmp := 0
-        DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", badgeW, "Int", badgeH, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", pBitmap)
+        DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", pixW, "Int", pixH, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", pBitmap)
         DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmap, "Ptr*", pGraphics)
         DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", pGraphics, "Int", 4)
+        DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", pGraphics, "Int", 2)
         DllCall("gdiplus\GdipGraphicsClear", "Ptr", pGraphics, "UInt", argbWin)
         DllCall("gdiplus\GdipFillPath", "Ptr", pGraphics, "Ptr", pBrushBg, "Ptr", pPath)
         DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPenBorder, "Ptr", pPath)
 
-        DrawGdipPolyline(pGraphics, pPenArrow, segs[1])
-        DrawGdipPolyline(pGraphics, pPenArrow, segs[2])
+        DrawGdipPolyline(pGraphics, pPenArrow, geom.shaft, scale)
+        FillGdipPolygon(pGraphics, pBrushArrow, geom.head, scale)
 
         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", argbWin)
         result[dirKey] := hBmp
@@ -410,6 +424,7 @@ CreateGestureBadgeBitmaps() {
 
     DllCall("gdiplus\GdipDeletePen", "Ptr", pPenArrow)
     DllCall("gdiplus\GdipDeletePen", "Ptr", pPenBorder)
+    DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushArrow)
     DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushBg)
     DllCall("gdiplus\GdipDeletePath", "Ptr", pPath)
     DllCall("gdiplus\GdiplusShutdown", "Ptr", pToken)
@@ -417,16 +432,60 @@ CreateGestureBadgeBitmaps() {
     return result
 }
 
-DrawGdipPolyline(pGraphics, pPen, coords) {
+DrawGdipPolyline(pGraphics, pPen, coords, scale := 1.0) {
     cnt := coords.Length() // 2
     VarSetCapacity(pts, cnt * 8, 0)
     Loop, %cnt% {
         idx := (A_Index - 1) * 2
-        NumPut(coords[idx + 1], pts, idx * 4, "Float")
-        NumPut(coords[idx + 2], pts, (idx + 1) * 4, "Float")
+        NumPut(coords[idx + 1] * scale, pts, idx * 4, "Float")
+        NumPut(coords[idx + 2] * scale, pts, (idx + 1) * 4, "Float")
     }
     DllCall("gdiplus\GdipDrawLines", "Ptr", pGraphics, "Ptr", pPen, "Ptr", &pts, "Int", cnt)
 }
+
+FillGdipPolygon(pGraphics, pBrush, coords, scale := 1.0) {
+    cnt := coords.Length() // 2
+    VarSetCapacity(pts, cnt * 8, 0)
+    Loop, %cnt% {
+        idx := (A_Index - 1) * 2
+        NumPut(coords[idx + 1] * scale, pts, idx * 4, "Float")
+        NumPut(coords[idx + 2] * scale, pts, (idx + 1) * 4, "Float")
+    }
+    DllCall("gdiplus\GdipFillPolygon", "Ptr", pGraphics, "Ptr", pBrush, "Ptr", &pts, "Int", cnt, "Int", 0)
+}
+
+WM_MOUSEMOVE_SETTINGS(wParam, lParam, msg, hwnd) {
+    global SettingsTooltips, LastSettingsTipHwnd, hSettingsGui
+    if (!hSettingsGui || !WinExist("ahk_id " . hSettingsGui))
+        return
+
+    MouseGetPos, , , idUnderMouse, ctrlUnderMouse, 2
+    if (idUnderMouse == hSettingsGui && ctrlUnderMouse && SettingsTooltips.HasKey(ctrlUnderMouse)) {
+        if (LastSettingsTipHwnd != ctrlUnderMouse) {
+            LastSettingsTipHwnd := ctrlUnderMouse
+            ToolTip, % SettingsTooltips[ctrlUnderMouse]
+            SetTimer, CheckSettingsTooltipLeave, 120
+        }
+    } else if (LastSettingsTipHwnd) {
+        ClearSettingsTooltip()
+    }
+}
+
+ClearSettingsTooltip() {
+    global LastSettingsTipHwnd
+    if (LastSettingsTipHwnd) {
+        ToolTip
+        LastSettingsTipHwnd := 0
+    }
+    SetTimer, CheckSettingsTooltipLeave, Off
+}
+
+CheckSettingsTooltipLeave:
+    MouseGetPos, , , idUnderMouse, ctrlUnderMouse, 2
+    if (!hSettingsGui || idUnderMouse != hSettingsGui || !SettingsTooltips.HasKey(ctrlUnderMouse)) {
+        ClearSettingsTooltip()
+    }
+return
 
 AddShortcutRow(yPos, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text := "", gLabel2 := "") {
     icoY := yPos - 1
@@ -521,6 +580,7 @@ return
 
 SwitchSettingsTab(tabNum) {
     global currentSettingsTab, hSettingsGui
+    ClearSettingsTooltip()
     currentSettingsTab := tabNum
     if (!hSettingsGui)
         return
@@ -778,6 +838,7 @@ return
 SettingsCloseBtn:
 SettingsGuiClose:
 SettingsGuiEscape:
+    ClearSettingsTooltip()
     ; Tự động lưu tất cả thiết lập trước khi đóng
     Gosub, SaveSettings
 
