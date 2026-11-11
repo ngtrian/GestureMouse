@@ -186,7 +186,7 @@ InitLanguage() {
     
     ; Giới thiệu - About
     v["About_Title"]            := "Giới thiệu về GestureMouse"
-    v["About_Headline"]         := "Hỗ trợ thao tác cử chỉ, phím tắt và cuộn tự động"
+    v["About_Headline"]         := "Cử chỉ chuột, phím tắt và cuộn tự động"
     v["About_Version"]          := "Phiên bản: " . (AppVersion ? AppVersion : "1.1.0") . " | Ngày phát hành: " . (AppReleaseDate ? AppReleaseDate : "03/11/2026")
     v["About_GuideTitle"]       := "Hướng dẫn sử dụng:"
     v["About_Author"]           := "Tác giả: Nguyễn Tri Ân"
@@ -535,7 +535,7 @@ InitLanguage() {
     
     ; About
     e["About_Title"]            := "About GestureMouse"
-    e["About_Headline"]         := "Mouse gestures, shortcuts and auto-scroll utility"
+    e["About_Headline"]         := "Mouse gestures, shortcuts and auto-scroll"
     e["About_Version"]          := "Version: " . (AppVersion ? AppVersion : "1.1.0") . " | Release Date: " . (AppReleaseDate ? AppReleaseDate : "03/11/2026")
     e["About_GuideTitle"]       := "User Guide:"
     e["About_Author"]           := "Author: Nguyen Tri An"

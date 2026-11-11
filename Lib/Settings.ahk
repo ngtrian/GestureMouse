@@ -277,11 +277,11 @@ Settings:
         AddSettingsIcon(248, 40, 56, 56, "image\unnamed.ico", 1)
 
     Gui, Font, s15 Bold c004499, Segoe UI
-    Gui, Add, Text, x318 y30 w285 +BackgroundTrans, GestureMouse
+    Gui, Add, Text, x318 y24 w288 +BackgroundTrans, GestureMouse
     Gui, Font, s9.5 Norm c2C3E50, Segoe UI
-    Gui, Add, Text, x318 y58 w288 +BackgroundTrans, % L("About_Headline")
+    Gui, Add, Text, x318 y53 w288 h32 +BackgroundTrans, % L("About_Headline")
     Gui, Font, s8.5 Norm c5A6B7C, Segoe UI
-    Gui, Add, Text, x318 y82 w288 +BackgroundTrans, % L("About_HeroMeta")
+    Gui, Add, Text, x318 y89 w288 +BackgroundTrans, % L("About_HeroMeta")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Button, x616 y52 w130 h32 gOpenDonateLink, % "❤ " . L("About_Donate")
@@ -296,7 +296,7 @@ Settings:
 
     ; Đoạn giới thiệu ngắn gọn (bôi đen copy được, không thanh cuộn)
     Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Edit, x228 y192 w536 h46 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_ShortDesc")
+    Gui, Add, Edit, x225 y192 w539 h46 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_ShortDesc")
 
     Gui, Add, Text, x228 y246 w536 h1 0x10
 
@@ -304,7 +304,7 @@ Settings:
     Gui, Font, s9 Norm c666666, Segoe UI
     Gui, Add, Text, x228 y262 w108, % L("About_LblAuthor")
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, Edit, x340 y261 w424 h20 ReadOnly -E0x200 -VScroll -Tabstop, % L("About_ValAuthor")
+    Gui, Add, Edit, x337 y261 w427 h20 ReadOnly -E0x200 -VScroll -Tabstop, % L("About_ValAuthor")
 
     Gui, Font, s9 Norm c666666, Segoe UI
     Gui, Add, Text, x228 y290 w108, % L("About_LblLicense")
@@ -553,26 +553,37 @@ CreateAboutHeroIconBitmap(iconSize := 56, bgRgb := 0xEEF5FC) {
     if (!hIcon)
         return 0
 
-    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
-    hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
-    hBmp := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", pix, "Int", pix, "Ptr")
-    hOld := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hBmp, "Ptr")
+    hGdip := DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
+    if (hGdip) {
+        VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0)
+        NumPut(1, si, 0, "UInt")
+        pToken := 0
+        if (DllCall("gdiplus\GdiplusStartup", "Ptr*", pToken, "Ptr", &si, "Ptr", 0) == 0) {
+            argbBg := 0xFF000000 | (bgRgb & 0xFFFFFF)
+            pIconBmp := 0, pBitmap := 0, pGraphics := 0, hBmp := 0
+            DllCall("gdiplus\GdipCreateBitmapFromHICON", "Ptr", hIcon, "Ptr*", pIconBmp)
+            DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", pix, "Int", pix, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", pBitmap)
+            DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmap, "Ptr*", pGraphics)
+            DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", pGraphics, "Int", 7)
+            DllCall("gdiplus\GdipGraphicsClear", "Ptr", pGraphics, "UInt", argbBg)
+            if (pIconBmp)
+                DllCall("gdiplus\GdipDrawImageRectI", "Ptr", pGraphics, "Ptr", pIconBmp, "Int", 0, "Int", 0, "Int", pix, "Int", pix)
+            DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", argbBg)
+            if (pIconBmp)
+                DllCall("gdiplus\GdipDisposeImage", "Ptr", pIconBmp)
+            DllCall("gdiplus\GdipDeleteGraphics", "Ptr", pGraphics)
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
+            DllCall("gdiplus\GdiplusShutdown", "Ptr", pToken)
+            DllCall("FreeLibrary", "Ptr", hGdip)
+            DllCall("DestroyIcon", "Ptr", hIcon)
+            if (hBmp)
+                return hBmp
+        }
+        DllCall("FreeLibrary", "Ptr", hGdip)
+    }
 
-    bgr := ((bgRgb & 0xFF) << 16) | (bgRgb & 0xFF00) | ((bgRgb >> 16) & 0xFF)
-    hBrush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
-    VarSetCapacity(rc, 16, 0)
-    NumPut(pix, rc, 8, "Int")
-    NumPut(pix, rc, 12, "Int")
-    DllCall("FillRect", "Ptr", hdcMem, "Ptr", &rc, "Ptr", hBrush)
-    DllCall("DeleteObject", "Ptr", hBrush)
-
-    DllCall("DrawIconEx", "Ptr", hdcMem, "Int", 0, "Int", 0, "Ptr", hIcon, "Int", pix, "Int", pix, "UInt", 0, "Ptr", 0, "UInt", 0x3)
-
-    DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hOld, "Ptr")
-    DllCall("DeleteDC", "Ptr", hdcMem)
-    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
     DllCall("DestroyIcon", "Ptr", hIcon)
-    return hBmp
+    return 0
 }
 
 AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
