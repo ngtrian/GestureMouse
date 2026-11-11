@@ -181,16 +181,16 @@ Settings:
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Picture, x246 y77 w24 h24 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x274 y81 w118 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
-    Gui, Add, Picture, x396 y77 w24 h24 Icon32, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x424 y81 w92 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
+    Gui, Add, Checkbox, x276 y78 w122 h22 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
+    Gui, Add, Picture, x412 y77 w24 h24 Icon32, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x442 y78 w108 h22 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x520 y76 w226 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
+    Gui, Add, Button, x562 y76 w184 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y117 w266 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
+    Gui, Add, Checkbox, x246 y117 w306 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, DropDownList, x520 y114 w226 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+    Gui, Add, DropDownList, x562 y114 w184 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Checkbox, x246 y148 w500 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
@@ -333,8 +333,8 @@ AddSettingsIcon(x, y, w, h, relPath, resId := 0) {
 }
 
 AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
-    icoY := yPos - 3
-    AddSettingsIcon(246, icoY, 24, 24, icoRelPath, resId)
+    icoY := yPos - 1
+    AddSettingsIcon(246, icoY, 20, 20, icoRelPath, resId)
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
     Gui, Settings:Add, Text, x278 y%yPos% w154, % L(labelKey)
     Gui, Settings:Font, s8.5 Norm c555555, Segoe UI
