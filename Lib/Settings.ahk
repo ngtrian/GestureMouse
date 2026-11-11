@@ -62,33 +62,21 @@ Settings:
     hasPriv := A_IsAdmin ? "Admin" : (IsFunc("HasUIAccessOrAdmin") && HasUIAccessOrAdmin() ? "UIAccess" : "Standard")
 
     ; ========================================================
-    ; SIDEBAR ĐIỀU HƯỚNG BÊN TRÁI
+    ; SIDEBAR ĐIỀU HƯỚNG BÊN TRÁI (GỌN SẠCH, KHÔNG LOGO/VERSION)
     ; ========================================================
-    Gui, Add, Picture, x16 y14 w32 h32 Icon1, %aboutIcon%
-    Gui, Font, s11 Bold c004499, Segoe UI
-    Gui, Add, Text, x56 y12 w148 h20, GestureMouse
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x56 y32 w148 h16, % L("Set_Title")
+    AddSidebarNav(1, 16,  "⚙️", L("Nav_General"))
+    AddSidebarNav(2, 56,  "🖱️", L("Nav_ScrollAndGesture"))
+    AddSidebarNav(3, 96,  "🔒", L("Nav_Lock"))
+    AddSidebarNav(4, 136, "⌨️", L("Nav_Shortcuts"))
+    AddSidebarNav(5, 176, "ℹ️", L("Nav_About"))
 
-    Gui, Add, Text, x12 y54 w190 h1 0x10
-
-    AddSidebarNav(1, 64,  "⚙️", L("Nav_General"))
-    AddSidebarNav(2, 104, "🖱️", L("Nav_ScrollAndGesture"))
-    AddSidebarNav(3, 144, "🔒", L("Nav_Lock"))
-    AddSidebarNav(4, 184, "⌨️", L("Nav_Shortcuts"))
-    AddSidebarNav(5, 224, "ℹ️", L("Nav_About"))
-
-    ; Chân Sidebar: Chỉ hiển thị phiên bản (không lặp tên ứng dụng)
-    Gui, Font, s8.5 Norm c888888, Segoe UI
-    Gui, Add, Text, x12 y421 w190 h18 Center, % "v" . (AppVersion ? AppVersion : "1.1.0")
-
-    ; Vách phân cách dọc giữa Sidebar và Vùng nội dung
-    Gui, Add, Text, x212 y12 w1 h431 0x11
+    ; Vách phân cách dọc duy nhất giữa Sidebar và Vùng nội dung
+    Gui, Add, Text, x212 y12 w1 h428 0x11
 
     ; ========================================================
-    ; VÙNG NỘI DUNG BÊN PHẢI (TAB2 ẨN HEADER ĐỂ ĐIỀU HƯỚNG MƯỢT)
+    ; VÙNG NỘI DUNG BÊN PHẢI (TAB2 +Buttons ẨN HOÀN TOÀN VIỀN KHUNG)
     ; ========================================================
-    Gui, Add, Tab2, x216 y-35 w564 h439 -Theme -Wrap vSettingsTabNav, TabGeneral|TabScrollGesture|TabLock|TabShortcuts|TabAbout
+    Gui, Add, Tab2, x216 y-35 w564 h439 +Buttons -Theme -Wrap vSettingsTabNav, TabGeneral|TabScrollGesture|TabLock|TabShortcuts|TabAbout
 
     ; --------------------------------------------------------
     ; TAB 1: CÀI ĐẶT CHUNG && HỆ THỐNG
@@ -98,50 +86,49 @@ Settings:
 
     ; Card 1: Cài đặt chung (Khởi động + Ngôn ngữ)
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h92, % L("Set_GroupGeneral")
+    Gui, Add, GroupBox, x228 y58 w536 h82, % L("Set_GroupGeneral")
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Checkbox, x246 y80 w490 vAutoStart gSaveSettings Checked%AutoStart%, % L("Set_AutoStart")
-    Gui, Add, Text, x246 y107 w500 h1 0x10
 
-    Gui, Add, Text, x246 y120 w115, % L("Set_Language")
+    Gui, Add, Text, x246 y110 w145, % L("Set_Language")
     chkVI := (CurrentLang = "vi") ? 1 : 0
     chkEN := (CurrentLang = "en") ? 1 : 0
-    AddSettingsIcon(366, 121, 16, 16, "image\flag_vn.ico", 312)
-    Gui, Add, Radio, x388 y120 w105 vLangVI gOnLangRadio Group Checked%chkVI%, Tiếng Việt
-    AddSettingsIcon(506, 121, 16, 16, "image\flag_en.ico", 313)
-    Gui, Add, Radio, x528 y120 w90 vLangEN gOnLangRadio Checked%chkEN%, English
+    AddSettingsIcon(398, 111, 16, 16, "image\flag_vn.ico", 312)
+    Gui, Add, Radio, x420 y110 w105 vLangVI gOnLangRadio Group Checked%chkVI%, Tiếng Việt
+    AddSettingsIcon(538, 111, 16, 16, "image\flag_en.ico", 313)
+    Gui, Add, Radio, x560 y110 w90 vLangEN gOnLangRadio Checked%chkEN%, English
 
     ; Card 2: Đặc quyền hệ thống (UIPI & UIAccess)
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y160 w536 h122, % L("Set_Privilege")
+    Gui, Add, GroupBox, x228 y150 w536 h122, % L("Set_Privilege")
 
     if (hasPriv = "Admin") {
         Gui, Font, s9.5 Bold c007A00, Segoe UI
-        Gui, Add, Text, x246 y183 w500, % "✔ " . L("Set_PrivAdmin")
+        Gui, Add, Text, x246 y173 w500, % "✔ " . L("Set_PrivAdmin")
         Gui, Font, s8.5 Norm c555555, Segoe UI
-        Gui, Add, Text, x246 y204 w500, % L("Set_PrivSubAdmin")
+        Gui, Add, Text, x246 y194 w500, % L("Set_PrivSubAdmin")
     } else if (hasPriv = "UIAccess") {
         Gui, Font, s9.5 Bold c0078D7, Segoe UI
-        Gui, Add, Text, x246 y183 w500, % "✔ " . L("Set_PrivUIA")
+        Gui, Add, Text, x246 y173 w500, % "✔ " . L("Set_PrivUIA")
         Gui, Font, s8.5 Norm c555555, Segoe UI
-        Gui, Add, Text, x246 y204 w500, % L("Set_PrivSubUIA")
+        Gui, Add, Text, x246 y194 w500, % L("Set_PrivSubUIA")
     } else {
         Gui, Font, s9.5 Bold cC0392B, Segoe UI
-        Gui, Add, Text, x246 y183 w335, % "⚠ " . L("Set_PrivStandard")
+        Gui, Add, Text, x246 y173 w335, % "⚠ " . L("Set_PrivStandard")
         Gui, Font, s8.5 Norm c555555, Segoe UI
-        Gui, Add, Text, x246 y204 w335, % L("Set_PrivSubStandard")
+        Gui, Add, Text, x246 y194 w335, % L("Set_PrivSubStandard")
         Gui, Font, s9 Norm c222222, Segoe UI
-        Gui, Add, Button, x590 y183 w156 h30 gRunAsAdmin, % L("Set_RunAdminBtn")
+        Gui, Add, Button, x590 y173 w156 h30 gRunAsAdmin, % L("Set_RunAdminBtn")
     }
 
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y228 w500 h46, % L("Set_PrivHelp")
+    Gui, Add, Text, x246 y218 w500 h46, % L("Set_PrivHelp")
 
     ; Card 3: Lưu ý nhanh
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y292 w536 h104, % L("Set_GroupTips")
+    Gui, Add, GroupBox, x228 y282 w536 h104, % L("Set_GroupTips")
     Gui, Font, s8.5 Norm c444444, Segoe UI
-    Gui, Add, Text, x246 y314 w500 h72, % L("Set_QuickTips")
+    Gui, Add, Text, x246 y304 w500 h72, % L("Set_QuickTips")
 
     ; --------------------------------------------------------
     ; TAB 2: CUỘN && CỬ CHỈ CHUỘT
@@ -151,33 +138,31 @@ Settings:
 
     ; Card 1: Bật/tắt, Ứng dụng loại trừ & Phương pháp cuộn
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h106, % L("Set_GroupGesture")
+    Gui, Add, GroupBox, x228 y58 w536 h102, % L("Set_GroupGesture")
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Checkbox, x246 y80 w300 vGestureEnabled gOnToggleGestureCheckbox Checked%GestureScrollEnabled%, % L("Set_EnableGesture")
     Gui, Font, s9 Norm c222222, Segoe UI
     Gui, Add, Button, x556 y76 w190 h26 gOpenExcludedAppsGui, % L("Set_ExcludedAppsBtn")
-    Gui, Add, Text, x246 y108 w500 h1 0x10
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Radio, x246 y117 w500 vScrollStyle1 gSaveSettings Group Checked%chkS1%, % L("Set_ScrollStyle1")
-    Gui, Add, Radio, x246 y140 w500 vScrollStyle2 gSaveSettings Checked%chkS2%, % L("Set_ScrollStyle2")
+    Gui, Add, Radio, x246 y112 w500 vScrollStyle1 gSaveSettings Group Checked%chkS1%, % L("Set_ScrollStyle1")
+    Gui, Add, Radio, x246 y134 w500 vScrollStyle2 gSaveSettings Checked%chkS2%, % L("Set_ScrollStyle2")
 
     ; Card 2: Thao tác chuột & Cử chỉ trình duyệt (Dùng icon .ico thực tế)
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y174 w536 h224, % L("Set_GroupMouseActions")
+    Gui, Add, GroupBox, x228 y170 w536 h224, % L("Set_GroupMouseActions")
 
-    AddMouseActionRow(196, "image\scroll_manual.ico", 314, "Set_ManualScroll", "Set_ManualScrollBtn")
-    AddMouseActionRow(221, "image\scroll_auto.ico",   315, "Set_AutoScroll",   "Set_AutoScrollBtn")
-    AddMouseActionRow(246, "image\scroll_page.ico",   316, "Set_PgScroll",     "Set_PgScrollBtn")
-    AddMouseActionRow(271, "image\mouse_volume.ico",  317, "Set_MouseVolume",  "Set_MouseVolumeBtn")
+    AddMouseActionRow(192, "image\scroll_manual.ico", 314, "Set_ManualScroll", "Set_ManualScrollBtn")
+    AddMouseActionRow(217, "image\scroll_auto.ico",   315, "Set_AutoScroll",   "Set_AutoScrollBtn")
+    AddMouseActionRow(242, "image\scroll_page.ico",   316, "Set_PgScroll",     "Set_PgScrollBtn")
+    AddMouseActionRow(267, "image\mouse_volume.ico",  317, "Set_MouseVolume",  "Set_MouseVolumeBtn")
 
-    Gui, Add, Text, x246 y296 w500 h1 0x10
     Gui, Font, s9 Bold c004499, Segoe UI
-    Gui, Add, Text, x246 y305 w500, % L("Set_BrowserGesturesTitle")
+    Gui, Add, Text, x246 y297 w500, % L("Set_BrowserGesturesTitle")
 
-    AddBrowserGestureRow(329, "image\L.ico",  301, "Set_Back",     "←",   "image\R.ico",  304, "Set_Forward", "→")
-    AddBrowserGestureRow(352, "image\LU.ico", 303, "Set_PrevTab",  "← ↑", "image\LD.ico", 302, "Set_NextTab", "← ↓")
-    AddBrowserGestureRow(375, "image\RU.ico", 306, "Set_CloseTab", "→ ↑", "image\RD.ico", 305, "Set_Refresh", "→ ↓")
+    AddBrowserGestureRow(322, "image\L.ico",  301, "Set_Back",     "image\R.ico",  304, "Set_Forward")
+    AddBrowserGestureRow(346, "image\LU.ico", 303, "Set_PrevTab",  "image\LD.ico", 302, "Set_NextTab")
+    AddBrowserGestureRow(370, "image\RU.ico", 306, "Set_CloseTab", "image\RD.ico", 305, "Set_Refresh")
 
     ; --------------------------------------------------------
     ; TAB 3: KHÓA BÀN PHÍM && CHUỘT
@@ -187,7 +172,7 @@ Settings:
 
     ; Card 1: Thiết lập khóa thiết bị
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h126, % L("Lock_Card1Title")
+    Gui, Add, GroupBox, x228 y58 w536 h122, % L("Lock_Card1Title")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Checkbox, x246 y81 w130 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
@@ -195,39 +180,35 @@ Settings:
     Gui, Font, s9 Norm c222222, Segoe UI
     Gui, Add, Button, x516 y76 w230 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
 
-    Gui, Add, Text, x246 y110 w500 h1 0x10
-
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y121 w260 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
+    Gui, Add, Checkbox, x246 y117 w260 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, DropDownList, x516 y118 w230 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+    Gui, Add, DropDownList, x516 y114 w230 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y152 w500 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
+    Gui, Add, Checkbox, x246 y148 w500 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
 
     ; Card 2: Bảo mật & Mở khóa
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y194 w536 h204, % L("Lock_Card2Title")
+    Gui, Add, GroupBox, x228 y190 w536 h204, % L("Lock_Card2Title")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y216 w500 vwindowsLogonOnly gOnToggleWindowsLogonOnly Checked%windowsLogonOnly%, % L("Lock_WinLogonOnly")
+    Gui, Add, Checkbox, x246 y212 w500 vwindowsLogonOnly gOnToggleWindowsLogonOnly Checked%windowsLogonOnly%, % L("Lock_WinLogonOnly")
 
-    Gui, Add, Text, x246 y249 w105 vLockKeyPromptLbl, % L("Lock_KeyPrompt")
+    Gui, Add, Text, x246 y245 w105 vLockKeyPromptLbl, % L("Lock_KeyPrompt")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Edit, x356 y246 w184 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
-    Gui, Add, Button, x546 y245 w64 h26 gToggleRevealCode vBtnToggleReveal Center, % L("Lock_ShowBtn")
-    Gui, Add, Button, x616 y245 w130 h26 gOpenChangeCodeGui vBtnChangeCode, % L("Lock_ChangeCodeBtn")
+    Gui, Add, Edit, x356 y242 w184 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
+    Gui, Add, Button, x546 y241 w64 h26 gToggleRevealCode vBtnToggleReveal Center, % L("Lock_ShowBtn")
+    Gui, Add, Button, x616 y241 w130 h26 gOpenChangeCodeGui vBtnChangeCode, % L("Lock_ChangeCodeBtn")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y280 w500 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
+    Gui, Add, Checkbox, x246 y276 w500 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
 
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y308 w500 h30 vLockMethodHintTxt, % ("• " . (windowsLogonOnly ? L("Lock_MethodHintWinOnly") : L("Lock_MethodHint")))
-
-    Gui, Add, Text, x246 y343 w500 h1 0x10
+    Gui, Add, Text, x246 y304 w500 h30 vLockMethodHintTxt, % ("• " . (windowsLogonOnly ? L("Lock_MethodHintWinOnly") : L("Lock_MethodHint")))
 
     Gui, Font, s9.5 Bold c004499, Segoe UI
-    Gui, Add, Button, x246 y354 w500 h34 gActionOpenLockCenter, % L("Lock_CenterBtn")
+    Gui, Add, Button, x246 y348 w500 h34 gActionOpenLockCenter, % L("Lock_CenterBtn")
 
     ; --------------------------------------------------------
     ; TAB 4: PHÍM TẮT && TIỆN ÍCH
@@ -237,7 +218,7 @@ Settings:
 
     ; Card 1: Phím tắt hệ thống
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h234, % L("Set_GroupSystemHotkeys")
+    Gui, Add, GroupBox, x228 y58 w536 h232, % L("Set_GroupSystemHotkeys")
 
     AddShortcutRow(82,  "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",   "ActionOpenLockCenter")
     AddShortcutRow(116, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V", "ActionPastePlain")
@@ -246,15 +227,15 @@ Settings:
     AddShortcutRow(218, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp")
 
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y258 w500 h26, % L("Set_ShortcutsTip")
+    Gui, Add, Text, x246 y258 w500 h24, % L("Set_ShortcutsTip")
 
     ; Card 2: Thao tác nhanh trên khay hệ thống
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y302 w536 h96, % L("Set_GroupTrayActions")
+    Gui, Add, GroupBox, x228 y300 w536 h94, % L("Set_GroupTrayActions")
 
-    AddShortcutRow(326, "Icon1", aboutIcon, "Set_TrayToggleLabel", L("Set_TrayToggleBtn"), "ActionToggleGestures")
+    AddShortcutRow(324, "Icon1", aboutIcon, "Set_TrayToggleLabel", L("Set_TrayToggleBtn"), "ActionToggleGestures")
     Gui, Font, s8.5 Norm c555555, Segoe UI
-    Gui, Add, Text, x246 y360 w500 h28, % "• " . L("Set_TrayDblClickTip")
+    Gui, Add, Text, x246 y358 w500 h26, % "• " . L("Set_TrayDblClickTip")
 
     ; --------------------------------------------------------
     ; TAB 5: THÔNG TIN && BẢN QUYỀN
@@ -264,30 +245,30 @@ Settings:
 
     ; Card 1: Thông tin ứng dụng & Liên kết nhanh
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h142, GestureMouse
-    Gui, Add, Picture, x246 y82 w44 h44 Icon1, %aboutIcon%
+    Gui, Add, GroupBox, x228 y58 w536 h138, GestureMouse
+    Gui, Add, Picture, x246 y80 w44 h44 Icon1, %aboutIcon%
 
     Gui, Font, s13 Bold c004499, Segoe UI
-    Gui, Add, Text, x302 y80 w300, GestureMouse
+    Gui, Add, Text, x302 y78 w300, GestureMouse
     Gui, Font, s9 Norm c333333, Segoe UI
-    Gui, Add, Text, x302 y104 w300, % L("About_Headline")
+    Gui, Add, Text, x302 y102 w300, % L("About_Headline")
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x302 y124 w300, % L("About_Version")
+    Gui, Add, Text, x302 y122 w300, % L("About_Version")
 
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x616 y82 w130 h30 gOpenDonateLink, % "❤ " . L("About_Donate")
+    Gui, Add, Button, x616 y80 w130 h30 gOpenDonateLink, % "❤ " . L("About_Donate")
 
-    Gui, Add, Text, x246 y148 w500 h1 0x10
+    Gui, Add, Button, x246 y154 w160 h28 gCheckForUpdates, % L("Tray_CheckUpdate")
+    Gui, Add, Button, x416 y154 w160 h28 gOpenGitHubLink, GitHub Releases
+    Gui, Add, Button, x586 y154 w160 h28 gOpenEmailLink, % L("About_ContactBtn")
 
-    Gui, Add, Button, x246 y159 w160 h28 gCheckForUpdates, % L("Tray_CheckUpdate")
-    Gui, Add, Button, x416 y159 w160 h28 gOpenGitHubLink, GitHub Releases
-    Gui, Add, Button, x586 y159 w160 h28 gOpenEmailLink, % L("About_ContactBtn")
-
-    ; Card 2: Giới thiệu & Bản quyền
+    ; Card 2: Giới thiệu & Bản quyền (Cho phép bôi đen copy và nhấp trực tiếp vào link)
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y210 w536 h188, % L("About_GroupDetails")
+    Gui, Add, GroupBox, x228 y206 w536 h188, % L("About_GroupDetails")
     Gui, Font, s9 Norm c333333, Segoe UI
-    Gui, Add, Text, x246 y233 w500 h156, % L("About_DetailText")
+    Gui, Add, Edit, x246 y228 w500 h92 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_DetailText")
+    Gui, Add, Link, x246 y328 w500 h20 gOnAboutLinkClick, % L("About_LinkEmail")
+    Gui, Add, Link, x246 y352 w500 h20 gOnAboutLinkClick, % L("About_LinkRepo")
 
     ; ========================================================
     ; CHÂN TRANG GỌN GÀNG (AUTO-SAVE + NÚT ĐÓNG)
@@ -314,6 +295,9 @@ return
 ; HELPER DỰNG LAYOUT THỐNG NHẤT CHO CÁC TAB & CONTROL
 ; ========================================================
 AddSidebarNav(idx, yPos, iconChar, labelText) {
+    global NavBg1, NavBg2, NavBg3, NavBg4, NavBg5
+    global NavInd1, NavInd2, NavInd3, NavInd4, NavInd5
+    global NavTxt1, NavTxt2, NavTxt3, NavTxt4, NavTxt5
     indY := yPos + 7
     Gui, Settings:Font, s9.5 Norm c444444, Segoe UI
     Gui, Settings:Add, Progress, x10 y%yPos% w192 h34 BackgroundE5F1FB cE5F1FB vNavBg%idx% -Theme Disabled, 100
@@ -347,18 +331,61 @@ AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
     Gui, Settings:Add, Text, x436 y%yPos% w310, % "→ " . L(descKey)
 }
 
-AddBrowserGestureRow(yPos, ico1, res1, key1, sym1, ico2, res2, key2, sym2) {
-    AddSettingsIcon(246, yPos, 16, 16, ico1, res1)
+AddBrowserGestureRow(yPos, ico1, res1, key1, ico2, res2, key2) {
+    badgeY := yPos - 2
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x270 y%yPos% w155, % L(key1)
-    Gui, Settings:Font, s8.5 Bold c004499, Segoe UI
-    Gui, Settings:Add, Text, x430 y%yPos% w45, %sym1%
+    Gui, Settings:Add, Text, x246 y%yPos% w150, % L(key1)
+    hBmp1 := CreateGestureBadgeBitmap(ico1, res1, 28, 22, 16)
+    if (hBmp1)
+        Gui, Settings:Add, Picture, x402 y%badgeY% w28 h22, HBITMAP:%hBmp1%
 
-    AddSettingsIcon(500, yPos, 16, 16, ico2, res2)
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x524 y%yPos% w165, % L(key2)
-    Gui, Settings:Font, s8.5 Bold c004499, Segoe UI
-    Gui, Settings:Add, Text, x694 y%yPos% w52, %sym2%
+    Gui, Settings:Add, Text, x496 y%yPos% w160, % L(key2)
+    hBmp2 := CreateGestureBadgeBitmap(ico2, res2, 28, 22, 16)
+    if (hBmp2)
+        Gui, Settings:Add, Picture, x662 y%badgeY% w28 h22, HBITMAP:%hBmp2%
+}
+
+CreateGestureBadgeBitmap(relPath, resId, badgeW := 28, badgeH := 22, icoSize := 16) {
+    hIcon := 0
+    if (A_IsCompiled && resId > 0) {
+        hMod := DllCall("GetModuleHandle", "Ptr", 0, "Ptr")
+        hIcon := DllCall("LoadImage", "Ptr", hMod, "UInt", resId, "UInt", 1, "Int", icoSize, "Int", icoSize, "UInt", 0, "Ptr")
+    } else {
+        fullPath := A_ScriptDir . "\" . relPath
+        if (FileExist(fullPath))
+            hIcon := DllCall("LoadImage", "Ptr", 0, "Str", fullPath, "UInt", 1, "Int", icoSize, "Int", icoSize, "UInt", 0x10, "Ptr")
+    }
+    if (!hIcon)
+        return 0
+
+    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
+    hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
+    hBmp := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", badgeW, "Int", badgeH, "Ptr")
+    hOldBmp := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hBmp, "Ptr")
+
+    VarSetCapacity(rc, 16, 0)
+    NumPut(badgeW, rc, 8, "Int")
+    NumPut(badgeH, rc, 12, "Int")
+    hBrushBorder := DllCall("CreateSolidBrush", "UInt", 0x554738, "Ptr")
+    DllCall("FillRect", "Ptr", hdcMem, "Ptr", &rc, "Ptr", hBrushBorder)
+    DllCall("DeleteObject", "Ptr", hBrushBorder)
+
+    NumPut(1, rc, 0, "Int"), NumPut(1, rc, 4, "Int")
+    NumPut(badgeW - 1, rc, 8, "Int"), NumPut(badgeH - 1, rc, 12, "Int")
+    hBrushBg := DllCall("CreateSolidBrush", "UInt", 0x3B291E, "Ptr")
+    DllCall("FillRect", "Ptr", hdcMem, "Ptr", &rc, "Ptr", hBrushBg)
+    DllCall("DeleteObject", "Ptr", hBrushBg)
+
+    drawX := (badgeW - icoSize) // 2
+    drawY := (badgeH - icoSize) // 2
+    DllCall("DrawIconEx", "Ptr", hdcMem, "Int", drawX, "Int", drawY, "Ptr", hIcon, "Int", icoSize, "Int", icoSize, "UInt", 0, "Ptr", 0, "UInt", 3)
+
+    DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hOldBmp, "Ptr")
+    DllCall("DeleteDC", "Ptr", hdcMem)
+    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
+    DllCall("DestroyIcon", "Ptr", hIcon)
+    return hBmp
 }
 
 AddShortcutRow(yPos, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text := "", gLabel2 := "") {
@@ -367,7 +394,7 @@ AddShortcutRow(yPos, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text :=
     if (iconFile != "" && FileExist(iconFile))
         Gui, Settings:Add, Picture, x246 y%icoY% w20 h20 %iconOpt%, %iconFile%
     Gui, Settings:Font, s9.5 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x274 y%yPos% w252, % L(labelKey)
+    Gui, Settings:Add, Text, x274 y%yPos% w256, % L(labelKey)
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
     if (btn2Text = "") {
         Gui, Settings:Add, Button, x536 y%btnY% w210 h26 Center g%gLabel1%, %btn1Text%
@@ -700,6 +727,12 @@ return
 
 OpenGitHubLink:
     Run, https://github.com/ngtrian/GestureMouse/releases
+return
+
+OnAboutLinkClick:
+    if (ErrorLevel != "") {
+        try Run, %ErrorLevel%
+    }
 return
 
 SettingsCloseBtn:
