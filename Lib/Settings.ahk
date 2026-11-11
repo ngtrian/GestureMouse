@@ -15,6 +15,7 @@ Settings:
         DetectHiddenWindows, Off
         if (guiExists) {
             UpdateSettingsGuiControls()
+            SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1)
             Gui, Settings:Show, Center, % "Gesture Mouse - " . L("Set_Title")
             WinActivate, ahk_id %hSettingsGui%
             return
@@ -198,7 +199,7 @@ Settings:
     Gui, Font, Bold
     Gui, Add, GroupBox, x228 y328 w535 h136, % "  💡 " . ((CurrentLang = "en") ? "Quick Tips" : "Mẹo sử dụng nhanh")
     Gui, Font, s8.5 Norm c444444, Segoe UI
-    quickTipText := (CurrentLang = "en") ? "• In File Explorer, gestures work when no files are selected. When files are selected, dragging moves files normally.`n`n• Double-click the system tray icon anytime to quickly open Settings.`n`n• Press Ctrl + Alt to instantly toggle gestures off while gaming." : "• Trong File Explorer, cử chỉ chuột hoạt động khi không chọn file nào. Khi chọn file, kéo chuột sẽ kéo thả file bình thường.`n`n• Nhấp đúp vào icon khay hệ thống để mở nhanh cửa sổ Cài đặt bất kỳ lúc nào.`n`n• Bấm Ctrl + Alt để bật hoặc tắt nhanh toàn bộ cử chỉ khi chơi game."
+    quickTipText := (CurrentLang = "en") ? "• In File Explorer, gestures work when no files are selected. When files are selected, dragging moves files normally.`n`n• Double-click the system tray icon anytime to quickly open Settings.`n`n• Single-click the system tray icon to toggle gestures off while gaming." : "• Trong File Explorer, cử chỉ chuột hoạt động khi không chọn file nào. Khi chọn file, kéo chuột sẽ kéo thả file bình thường.`n`n• Nhấp đúp vào icon khay hệ thống để mở nhanh cửa sổ Cài đặt bất kỳ lúc nào.`n`n• Nhấp chuột trái 1 lần vào icon khay hệ thống để bật hoặc tắt nhanh toàn bộ cử chỉ khi chơi game."
     Gui, Add, Text, x243 y352 w505 h104, %quickTipText%
 
     ; --------------------------------------------------------
@@ -352,34 +353,30 @@ Settings:
     Gui, Add, GroupBox, x228 y50 w535 h414, % "  ⌨️ " . L("About_TabShortcuts")
     Gui, Font, s9 Norm c222222, Segoe UI
 
-    Gui, Add, Text, x246 y77 w20 h18 Center, 🖱️
-    Gui, Add, Text, x273 y78 w190, % (CurrentLang = "en" ? "Toggle Gestures && Scroll" : "Bật / Tắt Cử chỉ && Cuộn")
-    Gui, Add, Button, x475 y74 w180 h26 Center gActionToggleGestures, Ctrl + Alt
+    Gui, Add, Text, x246 y77 w20 h18 Center, 🔐
+    Gui, Add, Text, x273 y78 w190, % L("Set_LockCenter")
+    Gui, Add, Button, x475 y74 w180 h26 Center gActionOpenLockCenter, Ctrl + Alt + L
 
-    Gui, Add, Text, x246 y113 w20 h18 Center, 🔐
-    Gui, Add, Text, x273 y114 w190, % L("Set_LockCenter")
-    Gui, Add, Button, x475 y110 w180 h26 Center gActionOpenLockCenter, Ctrl + Alt + L
+    Gui, Add, Text, x246 y113 w20 h18 Center, 📋
+    Gui, Add, Text, x273 y114 w190, % L("Set_PastePlain")
+    Gui, Add, Button, x475 y110 w180 h26 Center gActionPastePlain, Ctrl + Shift + V
 
-    Gui, Add, Text, x246 y149 w20 h18 Center, 📋
-    Gui, Add, Text, x273 y150 w190, % L("Set_PastePlain")
-    Gui, Add, Button, x475 y146 w180 h26 Center gActionPastePlain, Ctrl + Shift + V
+    Gui, Add, Text, x246 y149 w20 h18 Center, 🔇
+    Gui, Add, Text, x273 y150 w190, % L("Set_Mute")
+    Gui, Add, Button, x475 y146 w180 h26 Center gActionMute, Ctrl + Shift + M
 
-    Gui, Add, Text, x246 y185 w20 h18 Center, 🔇
-    Gui, Add, Text, x273 y186 w190, % L("Set_Mute")
-    Gui, Add, Button, x475 y182 w180 h26 Center gActionMute, Ctrl + Shift + M
+    Gui, Add, Text, x246 y185 w20 h18 Center, 🔊
+    Gui, Add, Text, x273 y186 w190, % L("Set_Volume")
+    Gui, Add, Button, x475 y182 w85 h26 Center gActionVolUp, % (CurrentLang = "en" ? "Win + ↑" : "Win + Cuộn ↑")
+    Gui, Add, Button, x570 y182 w85 h26 Center gActionVolDown, % (CurrentLang = "en" ? "Win + ↓" : "Win + Cuộn ↓")
 
-    Gui, Add, Text, x246 y221 w20 h18 Center, 🔊
-    Gui, Add, Text, x273 y222 w190, % L("Set_Volume")
-    Gui, Add, Button, x475 y218 w85 h26 Center gActionVolUp, % (CurrentLang = "en" ? "Win + ↑" : "Win + Cuộn ↑")
-    Gui, Add, Button, x570 y218 w85 h26 Center gActionVolDown, % (CurrentLang = "en" ? "Win + ↓" : "Win + Cuộn ↓")
-
-    Gui, Add, Text, x246 y257 w20 h18 Center, ☀️
-    Gui, Add, Text, x273 y258 w190, % L("Set_Brightness")
-    Gui, Add, Button, x475 y254 w85 h26 Center gActionBrightDown, % (CurrentLang = "en" ? "F9 (Darker)" : "F9 (Tối)")
-    Gui, Add, Button, x570 y254 w85 h26 Center gActionBrightUp, % (CurrentLang = "en" ? "F10 (Brighter)" : "F10 (Sáng)")
+    Gui, Add, Text, x246 y221 w20 h18 Center, ☀️
+    Gui, Add, Text, x273 y222 w190, % L("Set_Brightness")
+    Gui, Add, Button, x475 y218 w85 h26 Center gActionBrightDown, % (CurrentLang = "en" ? "F9 (Darker)" : "F9 (Tối)")
+    Gui, Add, Button, x570 y218 w85 h26 Center gActionBrightUp, % (CurrentLang = "en" ? "F10 (Brighter)" : "F10 (Sáng)")
 
     Gui, Font, s8 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y304 w495, % (CurrentLang = "en" ? "Tip: You can click directly on any of the shortcut buttons above to trigger the action immediately." : "Mẹo: Bạn có thể nhấp trực tiếp vào bất kỳ nút phím tắt nào ở trên để kích hoạt hành động ngay lập tức.")
+    Gui, Add, Text, x246 y268 w495, % (CurrentLang = "en" ? "Tip: You can click directly on any of the shortcut buttons above to trigger the action immediately." : "Mẹo: Bạn có thể nhấp trực tiếp vào bất kỳ nút phím tắt nào ở trên để kích hoạt hành động ngay lập tức.")
 
     ; --------------------------------------------------------
     ; TAB 5: GIỚI THIỆU && BẢN QUYỀN
@@ -517,24 +514,27 @@ OnNav5:
 return
 
 SwitchSettingsTab(tabNum) {
-    global currentSettingsTab
+    global currentSettingsTab, hSettingsGui
     currentSettingsTab := tabNum
-    GuiControl, Choose, SettingsTabNav, %tabNum%
+    if (!hSettingsGui)
+        return
+    Gui, Settings:Default
+    GuiControl, Settings:Choose, SettingsTabNav, %tabNum%
     Loop 5 {
         if (A_Index == tabNum) {
-            GuiControl, Show, NavBg%A_Index%
-            GuiControl, Show, NavInd%A_Index%
-            Gui, Font, s9.5 Bold c005FB8, Segoe UI
-            GuiControl, Font, NavTxt%A_Index%
-            GuiControl, +BackgroundTrans, NavTxt%A_Index%
-            GuiControl, MoveDraw, NavTxt%A_Index%
+            GuiControl, Settings:Show, NavBg%A_Index%
+            GuiControl, Settings:Show, NavInd%A_Index%
+            Gui, Settings:Font, s9.5 Bold c005FB8, Segoe UI
+            GuiControl, Settings:Font, NavTxt%A_Index%
+            GuiControl, Settings:+BackgroundTrans, NavTxt%A_Index%
+            GuiControl, Settings:MoveDraw, NavTxt%A_Index%
         } else {
-            GuiControl, Hide, NavBg%A_Index%
-            GuiControl, Hide, NavInd%A_Index%
-            Gui, Font, s9.5 Norm c444444, Segoe UI
-            GuiControl, Font, NavTxt%A_Index%
-            GuiControl, +BackgroundTrans, NavTxt%A_Index%
-            GuiControl, MoveDraw, NavTxt%A_Index%
+            GuiControl, Settings:Hide, NavBg%A_Index%
+            GuiControl, Settings:Hide, NavInd%A_Index%
+            Gui, Settings:Font, s9.5 Norm c444444, Segoe UI
+            GuiControl, Settings:Font, NavTxt%A_Index%
+            GuiControl, Settings:+BackgroundTrans, NavTxt%A_Index%
+            GuiControl, Settings:MoveDraw, NavTxt%A_Index%
         }
     }
 }

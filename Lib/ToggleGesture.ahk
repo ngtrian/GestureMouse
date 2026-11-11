@@ -66,11 +66,3 @@ UpdateTrayIcon() {
     ; Khôi phục icon của A_ScriptHwnd và Taskbar LUÔN là màu vàng
     SetScriptYellowIcon()
 }
-
-; Bật/tắt tính năng cuộn và cử chỉ chuột bằng phím tắt Ctrl + Alt
-~^Alt Up::
-~!Ctrl Up::
-    if (A_PriorKey = "LAlt" || A_PriorKey = "RAlt" || A_PriorKey = "LControl" || A_PriorKey = "RControl") {
-        ToggleGestureScroll()
-    }
-return

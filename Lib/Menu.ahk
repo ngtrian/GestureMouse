@@ -114,12 +114,9 @@ RebuildTrayMenu() {
 
     Menu, Tray, Add  ; Dòng phân cách
     if (!A_IsCompiled) {
-        if (!A_IsCompiled) {
         Menu, Tray, Add, % L("Tray_Reload"), ReloadApp
+        Menu, Tray, Add  ; Dòng phân cách
     }
-    }
-    Menu, Tray, Add, % L("Tray_CheckUpdate"), CheckForUpdates
-    Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_About"), ShowAbout
     Menu, Tray, Add
     Menu, Tray, Add, % L("Tray_Exit"), ExitMenu

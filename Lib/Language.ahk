@@ -21,8 +21,8 @@ InitLanguage() {
     ; ĐỊNH NGHĨA CHUỖI TIẾNG VIỆT
     ; =============================================
     v := LangTable["vi"]
-    v["Tray_Enabled"]           := "Đang bật (Ctrl+Alt)"
-    v["Tray_Disabled"]          := "Đang tắt (Ctrl+Alt)"
+    v["Tray_Enabled"]           := "Đang bật"
+    v["Tray_Disabled"]          := "Đang tắt"
     v["Tray_Settings"]          := "Thiết lập..."
     v["Tray_RunAsAdmin"]        := "Chạy quyền Admin"
     v["Tray_Install"]           := "Cài đặt vào hệ thống (UIAccess)"
@@ -82,7 +82,7 @@ InitLanguage() {
     v["Set_ScrollStyle1"]       := "Rê chuột để kéo nội dung (như trên màn hình cảm ứng)"
     v["Set_ScrollStyle2"]       := "Rê chuột để kéo thanh cuộn (truyền thống)"
     v["Set_GroupGesture"]       := "Cử chỉ chuột && Danh sách loại trừ"
-    v["Set_EnableGesture"]      := "Bật tính năng Cử chỉ chuột && Cuộn nâng cao (Ctrl + Alt)"
+    v["Set_EnableGesture"]      := "Bật tính năng Cử chỉ chuột && Cuộn nâng cao"
     v["Set_ExcludedAppsBtn"]    := "Danh sách ứng dụng loại trừ..."
     v["Set_GroupLock"]          := "Khóa bàn phím && Chuột (Ctrl + Alt + L)"
     v["Set_LockMouse"]          := "Khóa cả nhấp chuột khi khóa bàn phím (gõ 'unlock' để mở)"
@@ -331,8 +331,8 @@ InitLanguage() {
     ; ĐỊNH NGHĨA CHUỖI TIẾNG ANH
     ; =============================================
     e := LangTable["en"]
-    e["Tray_Enabled"]           := "Enabled (Ctrl+Alt)"
-    e["Tray_Disabled"]          := "Disabled (Ctrl+Alt)"
+    e["Tray_Enabled"]           := "Enabled"
+    e["Tray_Disabled"]          := "Disabled"
     e["Tray_Settings"]          := "Settings..."
     e["Tray_RunAsAdmin"]        := "Run as Administrator"
     e["Tray_Install"]           := "Install to System (UIAccess)"
@@ -392,7 +392,7 @@ InitLanguage() {
     e["Set_ScrollStyle1"]       := "Drag content up/down (touchscreen style)"
     e["Set_ScrollStyle2"]       := "Drag scrollbar up/down (classic style)"
     e["Set_GroupGesture"]       := "Mouse Gestures && Excluded Apps"
-    e["Set_EnableGesture"]      := "Enable Mouse Gestures & Advanced Scroll (Ctrl + Alt)"
+    e["Set_EnableGesture"]      := "Enable Mouse Gestures & Advanced Scroll"
     e["Set_ExcludedAppsBtn"]    := "Excluded Applications..."
     e["Set_GroupLock"]          := "Lock Keyboard && Mouse (Ctrl + Alt + L)"
     e["Set_LockMouse"]          := "Lock mouse clicks as well (type 'unlock' to restore)"

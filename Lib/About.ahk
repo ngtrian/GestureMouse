@@ -4,12 +4,13 @@
 global DonateURL := "https://paypal.me/nguyentrian87"
 
 ShowAbout:
+    currentSettingsTab := 5
     Gosub, Settings
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
         if (IsFunc("SwitchSettingsTab"))
             SwitchSettingsTab(5)
         else
-            GuiControl, Choose, SettingsTabNav, 5
+            GuiControl, Settings:Choose, SettingsTabNav, 5
         WinActivate, ahk_id %hSettingsGui%
     }
 return
@@ -86,7 +87,7 @@ OldShowAbout:
         [ QUICK TIPS ]
           • In File Explorer, gestures work when no files are selected. If files are selected, dragging is treated as standard file drag & drop.
           • Double-click the tray icon to quickly open Settings.
-          • Press Ctrl + Alt to quickly toggle gestures off while gaming.
+          • Single-click the tray icon to quickly toggle gestures off while gaming.
         )
     } else {
         TabSystemText =
@@ -102,7 +103,7 @@ OldShowAbout:
         [ MẸO SỬ DỤNG NHANH ]
         • Trong File Explorer, cử chỉ vẽ hoạt động khi bạn không chọn file nào. Nếu đang chọn file, thao tác kéo chuột sẽ hiểu là kéo thả file bình thường.
         • Nhấp đúp chuột trái vào icon khay hệ thống để mở nhanh cửa sổ Cài đặt.
-        • Để tắt tạm thời chức năng cử chỉ khi chơi game, chỉ cần bấm Ctrl + Alt.
+        • Nhấp chuột trái 1 lần vào icon khay hệ thống để bật/tắt nhanh chức năng cử chỉ khi chơi game.
         )
     }
 
@@ -189,7 +190,7 @@ OldShowAbout:
 
     Gui, Add, Picture, x24 y295 w22 h22 Icon1, %aboutIcon%
     Gui, Add, Text, x54 y297 w180, % (CurrentLang = "en" ? "Toggle Gestures & Scroll" : "Bật / Tắt Cử chỉ & Cuộn")
-    Gui, Add, Button, x240 y293 w180 h26 Center gActionToggleGestures vTextToggle, Ctrl + Alt
+    Gui, Add, Button, x240 y293 w180 h26 Center gActionToggleGestures vTextToggle, % (CurrentLang = "en" ? "Click Tray Icon" : "Nhấp icon khay")
 
     ; ========================================================
     ; TAB 3: HỆ THỐNG & MẸO
