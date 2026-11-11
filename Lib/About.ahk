@@ -301,8 +301,8 @@ return
 
 ActionAutoLock:
     ToolTip
-    if (IsLabel("ShowLockScreenGUI"))
-        Gosub, ShowLockScreenGUI
+    if (IsFunc("OpenLockCenterFromUI"))
+        OpenLockCenterFromUI()
 return
 
 ActionVolUp:
@@ -333,8 +333,8 @@ return
 
 ActionLockKeyboard:
     ToolTip
-    if (IsFunc("ToggleLock"))
-        ToggleLock()
+    if (IsFunc("OpenLockCenterFromUI"))
+        OpenLockCenterFromUI()
 return
 
 ActionPastePlain:

@@ -91,17 +91,6 @@ global wasBrakingFling := 0       ; Cờ đánh dấu nhấn chuột phải đ�
 global ScrollStyle := 1           ; Phương pháp cuộn: 1 - kéo nội dung lên xuống, 2 - kéo thanh cuộn lên xuống
 global ExplorerHasSelection := false ; Trạng thái cache kiểm tra File Explorer có file đang chọn
 
-
-; Khai báo biến toàn cục LockKeyboard
-global isLocked := 0 ; Trạng thái khóa 
-global mouseLockEnabled := 0 ; Bật tắt khoá chuột mặc định
-global disableAutoLockScreen := 1
-global hKeyboardHook := 0 ; Biến lưu hook
-global hMouseHook := 0 ; Hook cho chuột
-global Buffer := "" ; Biến lưu trữ ký tự đã nhập
-global UNLOCK_KEYWORD := "unlock" ; Từ khóa để mở khóa
-global KEYWORD_LENGTH := StrLen(UNLOCK_KEYWORD) ; Độ dài từ khóa
-
 ; Đọc giá trị ScrollStyle đã lưu từ registry khi script khởi động
 RegRead, val, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScrollStyle
 if (val != "") 
@@ -124,10 +113,10 @@ SetTimer, UpdateExplorerSelectionState, 300 ; Timer kiểm tra nền selection c
 #Include %A_ScriptDir%\Lib\About.ahk ; Giới thiệu và hướng dẫn sử dụng
 #Include %A_ScriptDir%\Lib\ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
 #Include %A_ScriptDir%\Lib\ExcludedApps.ahk ; Quản lý danh sách ứng dụng loại trừ khỏi cử chỉ chuột
-#Include %A_ScriptDir%\Lib\Hotkey.ahk ;AutoScreenLock, Mute
+#Include %A_ScriptDir%\Lib\Hotkey.ahk ; PastePlainText, Mute
 #Include %A_ScriptDir%\Lib\Brightness.ahk
 #Include %A_ScriptDir%\Lib\AutoScroll.ahk ; AutoScroll
-#Include %A_ScriptDir%\Lib\LockKeyboard.ahk ; Khóa bàn phím
+#Include %A_ScriptDir%\Lib\LockManager.ahk ; Trung tâm Khóa hợp nhất (Khóa phím/chuột, Màn hình, Focus Lock, Hẹn giờ)
 #Include %A_ScriptDir%\Lib\Volume.ahk
 
 
@@ -860,9 +849,10 @@ OnSessionChange(wParam, lParam) {
 
     ; 0x8 = WTS_SESSION_UNLOCK (Chỉ kích hoạt khi người dùng mở khóa màn hình Windows)
     if (wParam = 0x8) {
-        if (isLocked) {
-            UnlockKeyboard()
-        }
+        if (IsFunc("OnWindowsSessionUnlocked"))
+            OnWindowsSessionUnlocked()
+        else if (isLocked && IsFunc("UnlockKeyboard"))
+            UnlockKeyboard(true)
         SetTimer, RecoverFromSleep, -1000
     }
 }

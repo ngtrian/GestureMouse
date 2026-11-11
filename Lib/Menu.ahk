@@ -7,10 +7,8 @@ Menu:
     InitLanguage()
     InitGestureScroll()
     InitExcludedApps()
-    if (IsFunc("LoadLockSettings"))
-        LoadLockSettings()
-    if (IsFunc("InitAutoLockTimer"))
-        InitAutoLockTimer()
+    if (IsFunc("InitLockManager"))
+        InitLockManager()
 
     ; Xây dựng menu khay hệ thống ban đầu
     RebuildTrayMenu()
@@ -25,7 +23,7 @@ Menu:
 
 ; Cập nhật tray tip tổng hợp
 UpdateTrayTip() {
-    global Brightness, GuiOn, isLocked, mouseLockEnabled, GestureScrollEnabled, lockMode, focusWndTitle
+    global Brightness, GuiOn, isLocked, mouseLockEnabled, GestureScrollEnabled, lockMode, focusWndTitle, lockTimerActive
     TrayTip := L("Tip_Title")
     
     GestureTip := L("Tip_Gesture") . (GestureScrollEnabled ? L("Tip_On") : L("Tip_Off")) . "`n"
@@ -40,10 +38,12 @@ UpdateTrayTip() {
         LockKeyboardTip := L("Tip_LockKB") . L("Tip_Off") . "`n"
     }
     LockMouseTip := L("Tip_LockMouse") . (mouseLockEnabled && isLocked ? L("Tip_On") : L("Tip_Off")) . "`n"
+    LockTimerTip := (lockTimerActive && IsFunc("GetActiveTimerStatusText")) ? (L("Tip_LockTimer") . GetActiveTimerStatusText() . "`n") : ""
 
     TrayTip .= GestureTip
     TrayTip .= LockKeyboardTip
     TrayTip .= LockMouseTip
+    TrayTip .= LockTimerTip
 
     ; Độ sáng
     BrightnessPercent := Round((255 - Brightness) / 255 * 100)
@@ -60,10 +60,7 @@ RebuildTrayMenu() {
     try Menu, PhimTat, DeleteAll
     try Menu, LangMenu, DeleteAll
 
-    ; Sub-menu Phím tắt
-    Menu, PhimTat, Add, % L("Sub_LockKB"), LockKeyboard
-    Menu, PhimTat, Add, % L("Sub_FocusLock"), MenuActionFocusLock
-    Menu, PhimTat, Add, % L("Sub_AutoLock"), ShowLockScreenGUI
+    ; Sub-menu Phím tắt (gắn với GestureScrollEnabled)
     Menu, PhimTat, Add, % L("Sub_PlainText"), PastePlainText
     Menu, PhimTat, Add, % L("Sub_Mute"), MuteFunc
 
@@ -98,6 +95,7 @@ RebuildTrayMenu() {
     Menu, Tray, Add, %menuGestureText%, ToggleGestureScrollLabel
     Menu, Tray, Add  ; Dòng phân cách
     Menu, Tray, Add, % L("Tray_Settings"), Settings
+    Menu, Tray, Add, % L("Sub_LockCenter"), MenuActionLockCenter
 
     ; Mục Cài đặt vào hệ thống (chỉ hiển thị khi file .exe chưa nằm trong Program Files)
     isInstalledDir := (InStr(A_ScriptDir, "Program Files") > 0)
@@ -515,6 +513,12 @@ SetGuiYellowIcon(guiHwnd) {
     }
 }
 
+MenuActionLockCenter:
+    Sleep, 150
+    if (IsFunc("OpenLockCenterFromUI"))
+        OpenLockCenterFromUI()
+return
+
 MenuActionFocusLock:
     Sleep, 200
     if (IsFunc("TriggerFocusLockDirect")) {
@@ -525,7 +529,7 @@ return
 
 ; Giữ icon chính của ứng dụng và các cửa sổ GUI LUÔN là màu vàng
 SetScriptYellowIcon() {
-    global hSettingsGui, hAboutGui, hLockOpt, hAutoLock
+    global hSettingsGui, hAboutGui, hLockOpt, hAutoLock, hLockCenterGui
     dhw := A_DetectHiddenWindows
     DetectHiddenWindows, On
     SetGuiYellowIcon(A_ScriptHwnd)
@@ -537,6 +541,8 @@ SetScriptYellowIcon() {
         SetGuiYellowIcon(hLockOpt)
     if (hAutoLock && WinExist("ahk_id " . hAutoLock))
         SetGuiYellowIcon(hAutoLock)
+    if (hLockCenterGui && WinExist("ahk_id " . hLockCenterGui))
+        SetGuiYellowIcon(hLockCenterGui)
     if (hExcludedGui && WinExist("ahk_id " . hExcludedGui))
         SetGuiYellowIcon(hExcludedGui)
     if (hRunningAppsGui && WinExist("ahk_id " . hRunningAppsGui))

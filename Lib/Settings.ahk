@@ -56,10 +56,8 @@ Settings:
     ; Danh sách phút tự động khóa khi rảnh rỗi (Idle)
     if (CurrentLang = "en") {
         idleMinutesList := "1 min|3 mins|5 mins|10 mins|15 mins|30 mins|60 mins"
-        timerMinutesList := "15 mins|30 mins|45 mins|60 mins|120 mins"
     } else {
         idleMinutesList := "1 phút|3 phút|5 phút|10 phút|15 phút|30 phút|60 phút"
-        timerMinutesList := "15 phút|30 phút|45 phút|60 phút|120 phút"
     }
 
     selIdleIdx := 3 ; Mặc định 5 phút
@@ -77,18 +75,6 @@ Settings:
         selIdleIdx := 6
     else if (autoLockIdleMinutes == 60)
         selIdleIdx := 7
-
-    selTimerIdx := 1 ; Mặc định 15 phút
-    if (scheduledLockMinutes == 15)
-        selTimerIdx := 1
-    else if (scheduledLockMinutes == 30)
-        selTimerIdx := 2
-    else if (scheduledLockMinutes == 45)
-        selTimerIdx := 3
-    else if (scheduledLockMinutes == 60)
-        selTimerIdx := 4
-    else if (scheduledLockMinutes == 120)
-        selTimerIdx := 5
 
     ; Xác định đặc quyền hệ thống (Admin / UIAccess / Standard)
     hasPriv := A_IsAdmin ? "Admin" : (IsFunc("HasUIAccessOrAdmin") && HasUIAccessOrAdmin() ? "UIAccess" : "Standard")
@@ -281,21 +267,21 @@ Settings:
     Gui, Add, Button, x535 y425 w45 h22 Center, ¯¯↓
 
     ; --------------------------------------------------------
-    ; TAB 3: KHÓA BÀN PHÍM && CHUỘT (TỐI ƯU 2 CARD LỚN GỌN GÀNG)
+    ; TAB 3: KHÓA BÀN PHÍM && CHUỘT (TRUNG TÂM CẤU HÌNH BẢO MẬT)
     ; --------------------------------------------------------
     Gui, Tab, TabLock
 
     ; Header
     Gui, Font, s13 Bold c004499, Segoe UI
-    Gui, Add, Text, x230 y10 w535, % "🔒 " . (CurrentLang = "en" ? "Lock Keyboard && Mouse" : "Khóa bàn phím && chuột")
+    Gui, Add, Text, x230 y10 w535, % "🔒 " . (CurrentLang = "en" ? "Lock Security && Preferences" : "Cấu hình Khóa && Bảo mật")
     Gui, Font, s8 Norm c666666, Segoe UI
-    Gui, Add, Text, x230 y32 w535, % (CurrentLang = "en" ? "Customizable locking, idle/timer auto-lock, and instant unlocking." : "Tùy chỉnh khóa thiết bị, tự động khóa độc lập và mở khóa trực tiếp.")
+    Gui, Add, Text, x230 y32 w535, % (CurrentLang = "en" ? "Configure locked devices, idle auto-lock, unlock code, and Lock Center security." : "Thiết lập thiết bị khóa, tự động khóa khi rảnh rỗi và bảo mật cho Trung tâm Khóa.")
 
     ; ========================================================
     ; CARD 1: THIẾT LẬP KHÓA (LOCKING SETUP)
     ; ========================================================
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y50 w535 h166, % "  🛡️ " . L("Lock_Card1Title")
+    Gui, Add, GroupBox, x228 y50 w535 h140, % "  🛡️ " . L("Lock_Card1Title")
     Gui, Font, s9 Norm c222222, Segoe UI
 
     ; Hàng 1: Thiết bị khóa + Nút Ngoại lệ
@@ -309,50 +295,45 @@ Settings:
 
     Gui, Add, Text, x243 y101 w505 h1 0x10
 
-    ; Hàng 2: Tự động khóa khi rảnh rỗi (Thiết lập sẵn mặc định)
-    Gui, Add, Text, x243 y112 w20 h18 Center, ⏳
-    Gui, Add, Checkbox, x266 y112 w250 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
-    Gui, Add, DropDownList, x520 y109 w230 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+    ; Hàng 2: Tự động khóa khi rảnh rỗi (Idle)
+    Gui, Add, Text, x243 y114 w20 h18 Center, ⏳
+    Gui, Add, Checkbox, x266 y114 w250 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
+    Gui, Add, DropDownList, x520 y111 w230 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
 
-    ; Hàng 3: Hẹn giờ khóa sau khoảng thời gian (Hoạt động độc lập)
-    Gui, Add, Text, x243 y146 w20 h18 Center, ⏱️
-    Gui, Add, Checkbox, x266 y146 w250 vscheduledLockEnabled gOnToggleTimerCheck Checked%scheduledLockEnabled%, % L("Lock_AutoTimerCheck")
-    Gui, Add, DropDownList, x520 y143 w230 vscheduledLockMinutesChoice gSaveSettings Choose%selTimerIdx%, %timerMinutesList%
-
-    ; Hàng 4: Giữ màn hình sáng khi khóa
-    Gui, Add, Text, x243 y180 w20 h18 Center, 💡
-    Gui, Add, Checkbox, x266 y179 w485 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
+    ; Hàng 3: Giữ màn hình sáng khi khóa
+    Gui, Add, Text, x243 y150 w20 h18 Center, 💡
+    Gui, Add, Checkbox, x266 y149 w485 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
 
     ; ========================================================
-    ; CARD 2: MỞ KHÓA && THAO TÁC KÍCH HOẠT (UNLOCKING & ACTIONS)
+    ; CARD 2: BẢO MẬT MỞ KHÓA && TRUNG TÂM KHÓA
     ; ========================================================
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y224 w535 h238, % "  🔑 " . L("Lock_Card2Title")
+    Gui, Add, GroupBox, x228 y198 w535 h264, % "  🔑 " . L("Lock_Card2Title")
     Gui, Font, s9 Norm c222222, Segoe UI
 
     ; Hàng 1: Mã mở khóa bảo mật (Mask Password + Xem/Ẩn + Đổi mã)
-    Gui, Add, Text, x243 y249 w20 h18 Center, 🔑
-    Gui, Add, Text, x266 y250 w90, % L("Lock_KeyPrompt")
-    Gui, Add, Edit, x360 y247 w115 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
-    Gui, Add, Button, x480 y246 w36 h25 gToggleRevealCode vBtnToggleReveal Center, 👁️
-    Gui, Add, Button, x522 y246 w110 h25 gOpenChangeCodeGui, % L("Lock_ChangeCodeBtn")
+    Gui, Add, Text, x243 y226 w20 h18 Center, 🔑
+    Gui, Add, Text, x266 y227 w90, % L("Lock_KeyPrompt")
+    Gui, Add, Edit, x360 y224 w115 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
+    Gui, Add, Button, x480 y223 w36 h25 gToggleRevealCode vBtnToggleReveal Center, 👁️
+    Gui, Add, Button, x522 y223 w110 h25 gOpenChangeCodeGui, % L("Lock_ChangeCodeBtn")
 
-    ; Hàng 2: Xác thực tài khoản Windows
-    Gui, Add, Text, x243 y284 w20 h18 Center, 🪟
-    Gui, Add, Checkbox, x266 y283 w480 vrequireWindowsPassword gSaveSettings Checked%requireWindowsPassword%, % L("Lock_ReqWinPass")
+    ; Hàng 2: Yêu cầu mã khi chỉnh sửa/hủy hẹn giờ đang chạy
+    Gui, Add, Text, x243 y263 w20 h18 Center, 🛡️
+    Gui, Add, Checkbox, x266 y262 w485 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
+
     Gui, Font, s8 Norm c666666, Segoe UI
-    Gui, Add, Text, x286 y306 w460, % ("• " . L("Lock_MethodHint"))
+    Gui, Add, Text, x266 y290 w480 h32, % ("• " . L("Lock_MethodHint"))
 
-    Gui, Add, Text, x243 y332 w505 h1 0x10
+    Gui, Add, Text, x243 y330 w505 h1 0x10
 
-    ; Hàng 3: Các nút hành động kích hoạt (Focus Lock & Khóa toàn diện)
+    ; Hàng 3: Nút mở Trung tâm Khóa hợp nhất
     Gui, Font, s9.5 Bold c004499, Segoe UI
-    Gui, Add, Button, x243 y348 w245 h36 gActionFocusLockFromSettings, % L("Lock_FocusBtn")
-    Gui, Add, Button, x500 y348 w250 h36 gActionLockKeyboard, % L("Lock_FullBtn")
+    Gui, Add, Button, x243 y346 w505 h40 gActionOpenLockCenter, % L("Lock_CenterBtn")
 
     Gui, Font, s8 Norm c777777, Segoe UI
-    lockActionTip := (CurrentLang = "en") ? "• Tip: You can unlock anytime by typing your secret code or pressing Ctrl+Alt+L." : "• Mẹo: Có thể mở khóa bất kỳ lúc nào bằng cách gõ mã bí mật hoặc bấm Ctrl+Alt+L."
-    Gui, Add, Text, x243 y394 w505 Center, %lockActionTip%
+    lockActionTip := (CurrentLang = "en") ? "• Tip: Press Ctrl+Alt+L anytime (even when gestures are disabled) to open Lock Center, manage active timers, or lock Windows." : "• Mẹo: Bấm Ctrl+Alt+L bất kỳ lúc nào (kể cả khi tắt cử chỉ) để mở Trung tâm Khóa, quản lý hẹn giờ hoặc khóa màn hình."
+    Gui, Add, Text, x243 y398 w505 h34 Center, %lockActionTip%
 
     ; --------------------------------------------------------
     ; TAB 4: PHÍM TẮT && TIỆN ÍCH
@@ -368,37 +349,33 @@ Settings:
     Gui, Font, s9 Norm c222222, Segoe UI
 
     Gui, Add, Text, x246 y77 w20 h18 Center, 🖱️
-    Gui, Add, Text, x273 y78 w180, % (CurrentLang = "en" ? "Toggle Gestures && Scroll" : "Bật / Tắt Cử chỉ && Cuộn")
+    Gui, Add, Text, x273 y78 w190, % (CurrentLang = "en" ? "Toggle Gestures && Scroll" : "Bật / Tắt Cử chỉ && Cuộn")
     Gui, Add, Button, x475 y74 w180 h26 Center gActionToggleGestures, Ctrl + Alt
 
-    Gui, Add, Text, x246 y113 w20 h18 Center, 🔒
-    Gui, Add, Text, x273 y114 w180, % L("Set_LockKBAndMouse")
-    Gui, Add, Button, x475 y110 w180 h26 Center gActionLockKeyboard, Ctrl + Alt + L
+    Gui, Add, Text, x246 y113 w20 h18 Center, 🔐
+    Gui, Add, Text, x273 y114 w190, % L("Set_LockCenter")
+    Gui, Add, Button, x475 y110 w180 h26 Center gActionOpenLockCenter, Ctrl + Alt + L
 
-    Gui, Add, Text, x246 y149 w20 h18 Center, ⏳
-    Gui, Add, Text, x273 y150 w180, % L("Set_AutoLock")
-    Gui, Add, Button, x475 y146 w180 h26 Center gActionAutoLock, Ctrl + Shift + L
+    Gui, Add, Text, x246 y149 w20 h18 Center, 📋
+    Gui, Add, Text, x273 y150 w190, % L("Set_PastePlain")
+    Gui, Add, Button, x475 y146 w180 h26 Center gActionPastePlain, Ctrl + Shift + V
 
-    Gui, Add, Text, x246 y185 w20 h18 Center, 📋
-    Gui, Add, Text, x273 y186 w180, % L("Set_PastePlain")
-    Gui, Add, Button, x475 y182 w180 h26 Center gActionPastePlain, Ctrl + Shift + V
+    Gui, Add, Text, x246 y185 w20 h18 Center, 🔇
+    Gui, Add, Text, x273 y186 w190, % L("Set_Mute")
+    Gui, Add, Button, x475 y182 w180 h26 Center gActionMute, Ctrl + Shift + M
 
-    Gui, Add, Text, x246 y221 w20 h18 Center, 🔇
-    Gui, Add, Text, x273 y222 w180, % L("Set_Mute")
-    Gui, Add, Button, x475 y218 w180 h26 Center gActionMute, Ctrl + Shift + M
+    Gui, Add, Text, x246 y221 w20 h18 Center, 🔊
+    Gui, Add, Text, x273 y222 w190, % L("Set_Volume")
+    Gui, Add, Button, x475 y218 w85 h26 Center gActionVolUp, % (CurrentLang = "en" ? "Win + ↑" : "Win + Cuộn ↑")
+    Gui, Add, Button, x570 y218 w85 h26 Center gActionVolDown, % (CurrentLang = "en" ? "Win + ↓" : "Win + Cuộn ↓")
 
-    Gui, Add, Text, x246 y257 w20 h18 Center, 🔊
-    Gui, Add, Text, x273 y258 w180, % L("Set_Volume")
-    Gui, Add, Button, x475 y254 w85 h26 Center gActionVolUp, % (CurrentLang = "en" ? "Win + ↑" : "Win + Cuộn ↑")
-    Gui, Add, Button, x570 y254 w85 h26 Center gActionVolDown, % (CurrentLang = "en" ? "Win + ↓" : "Win + Cuộn ↓")
-
-    Gui, Add, Text, x246 y293 w20 h18 Center, ☀️
-    Gui, Add, Text, x273 y294 w180, % L("Set_Brightness")
-    Gui, Add, Button, x475 y290 w85 h26 Center gActionBrightDown, % (CurrentLang = "en" ? "F9 (Darker)" : "F9 (Tối)")
-    Gui, Add, Button, x570 y290 w85 h26 Center gActionBrightUp, % (CurrentLang = "en" ? "F10 (Brighter)" : "F10 (Sáng)")
+    Gui, Add, Text, x246 y257 w20 h18 Center, ☀️
+    Gui, Add, Text, x273 y258 w190, % L("Set_Brightness")
+    Gui, Add, Button, x475 y254 w85 h26 Center gActionBrightDown, % (CurrentLang = "en" ? "F9 (Darker)" : "F9 (Tối)")
+    Gui, Add, Button, x570 y254 w85 h26 Center gActionBrightUp, % (CurrentLang = "en" ? "F10 (Brighter)" : "F10 (Sáng)")
 
     Gui, Font, s8 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y340 w495, % (CurrentLang = "en" ? "Tip: You can click directly on any of the shortcut buttons above to trigger the action immediately." : "Mẹo: Bạn có thể nhấp trực tiếp vào bất kỳ nút phím tắt nào ở trên để kích hoạt hành động ngay lập tức.")
+    Gui, Add, Text, x246 y304 w495, % (CurrentLang = "en" ? "Tip: You can click directly on any of the shortcut buttons above to trigger the action immediately." : "Mẹo: Bạn có thể nhấp trực tiếp vào bất kỳ nút phím tắt nào ở trên để kích hoạt hành động ngay lập tức.")
 
     ; --------------------------------------------------------
     ; TAB 5: GIỚI THIỆU && BẢN QUYỀN
@@ -445,7 +422,6 @@ Settings:
 
     ; Khởi tạo trạng thái Enable/Disable của dropdown theo checkbox
     GuiControl, Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
-    GuiControl, Enable%scheduledLockEnabled%, scheduledLockMinutesChoice
 
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
     SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1)
@@ -504,23 +480,8 @@ UpdateSettingsGuiControls() {
         selIdleIdx := 7
     GuiControl, Settings:Choose, autoLockIdleMinutesChoice, %selIdleIdx%
 
-    GuiControl, Settings:, scheduledLockEnabled, %scheduledLockEnabled%
-    GuiControl, Settings:Enable%scheduledLockEnabled%, scheduledLockMinutesChoice
-    selTimerIdx := 1
-    if (scheduledLockMinutes == 15)
-        selTimerIdx := 1
-    else if (scheduledLockMinutes == 30)
-        selTimerIdx := 2
-    else if (scheduledLockMinutes == 45)
-        selTimerIdx := 3
-    else if (scheduledLockMinutes == 60)
-        selTimerIdx := 4
-    else if (scheduledLockMinutes == 120)
-        selTimerIdx := 5
-    GuiControl, Settings:Choose, scheduledLockMinutesChoice, %selTimerIdx%
-
     GuiControl, Settings:, disableAutoLockScreen, %disableAutoLockScreen%
-    GuiControl, Settings:, requireWindowsPassword, %requireWindowsPassword%
+    GuiControl, Settings:, requireCodeForTimerEdit, %requireCodeForTimerEdit%
     GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
 
     chkVI := (CurrentLang = "vi") ? 1 : 0
@@ -653,13 +614,16 @@ ChangeCodeGuiEscape:
 return
 
 ; ========================================================
-; KÍCH HOẠT FOCUS LOCK TỪ NÚT BẤM TRÊN SETTINGS
+; MỞ TRUNG TÂM KHÓA TỪ SETTINGS
 ; ========================================================
+ActionOpenLockCenter:
+    if (IsFunc("OpenLockCenterFromUI"))
+        OpenLockCenterFromUI("Settings")
+return
+
 ActionFocusLockFromSettings:
-    ; Tạm ẩn cửa sổ Settings để xác định cửa sổ làm việc mục tiêu
     Gui, Settings:Hide
     Sleep, 150
-    ; Kích hoạt Focus Lock trên cửa sổ active kế tiếp
     if (IsFunc("TriggerFocusLockDirect")) {
         fnFocus := "TriggerFocusLockDirect"
         %fnFocus%(WinExist("A"))
@@ -669,12 +633,6 @@ return
 OnToggleIdleCheck:
     Gui, Settings:Submit, NoHide
     GuiControl, Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
-    Gosub, SaveSettings
-return
-
-OnToggleTimerCheck:
-    Gui, Settings:Submit, NoHide
-    GuiControl, Enable%scheduledLockEnabled%, scheduledLockMinutesChoice
     Gosub, SaveSettings
 return
 
@@ -747,26 +705,12 @@ Save:
         autoLockIdleMinutes := 5
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AutoLockIdleMinutes, %autoLockIdleMinutes%
 
-    ; Lưu Hẹn giờ tự động khóa (Scheduled timer lock)
-    scheduledLockEnabled := scheduledLockEnabled ? 1 : 0
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScheduledLockEnabled, %scheduledLockEnabled%
-    if (RegExMatch(scheduledLockMinutesChoice, "(\d+)", mTimer))
-        scheduledLockMinutes := mTimer1
-    else
-        scheduledLockMinutes := 0
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScheduledLockMinutes, %scheduledLockMinutes%
-
-    if (scheduledLockEnabled && scheduledLockMinutes > 0)
-        scheduledLockTargetTick := A_TickCount + (scheduledLockMinutes * 60 * 1000)
-    else
-        scheduledLockTargetTick := 0
-
     if (IsFunc("InitAutoLockTimer"))
         InitAutoLockTimer()
 
-    ; Lưu tùy chọn xác thực Windows (không yêu cầu 2 lần)
-    requireWindowsPassword := requireWindowsPassword ? 1 : 0
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, RequireWindowsPassword, %requireWindowsPassword%
+    ; Lưu tùy chọn yêu cầu mã khi chỉnh sửa / hủy hẹn giờ đang chạy
+    requireCodeForTimerEdit := requireCodeForTimerEdit ? 1 : 0
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, RequireCodeForTimerEdit, %requireCodeForTimerEdit%
 
     ; Lưu trạng thái giữ màn hình luôn sáng khi khóa
     disableAutoLockScreen := disableAutoLockScreen ? 1 : 0
