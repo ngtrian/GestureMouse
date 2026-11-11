@@ -160,9 +160,10 @@ Settings:
     Gui, Font, s9 Bold c004499, Segoe UI
     Gui, Add, Text, x246 y297 w500, % L("Set_BrowserGesturesTitle")
 
-    AddBrowserGestureRow(322, "image\L.ico",  301, "Set_Back",     "image\R.ico",  304, "Set_Forward")
-    AddBrowserGestureRow(346, "image\LU.ico", 303, "Set_PrevTab",  "image\LD.ico", 302, "Set_NextTab")
-    AddBrowserGestureRow(370, "image\RU.ico", 306, "Set_CloseTab", "image\RD.ico", 305, "Set_Refresh")
+    gestureBadges := CreateGestureBadgeBitmaps()
+    AddBrowserGestureRow(322, gestureBadges["L"],  "Set_Back",     "Set_DirL",  gestureBadges["R"],  "Set_Forward", "Set_DirR")
+    AddBrowserGestureRow(346, gestureBadges["LU"], "Set_PrevTab",  "Set_DirLU", gestureBadges["LD"], "Set_NextTab", "Set_DirLD")
+    AddBrowserGestureRow(370, gestureBadges["RU"], "Set_CloseTab", "Set_DirRU", gestureBadges["RD"], "Set_Refresh", "Set_DirRD")
 
     ; --------------------------------------------------------
     ; TAB 3: KHÓA BÀN PHÍM && CHUỘT
@@ -245,30 +246,30 @@ Settings:
 
     ; Card 1: Thông tin ứng dụng & Liên kết nhanh
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h138, GestureMouse
-    Gui, Add, Picture, x246 y80 w44 h44 Icon1, %aboutIcon%
+    Gui, Add, GroupBox, x228 y58 w536 h126, GestureMouse
+    Gui, Add, Picture, x246 y78 w44 h44 Icon1, %aboutIcon%
 
     Gui, Font, s13 Bold c004499, Segoe UI
-    Gui, Add, Text, x302 y78 w300, GestureMouse
+    Gui, Add, Text, x302 y76 w300, GestureMouse
     Gui, Font, s9 Norm c333333, Segoe UI
-    Gui, Add, Text, x302 y102 w300, % L("About_Headline")
+    Gui, Add, Text, x302 y99 w300, % L("About_Headline")
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x302 y122 w300, % L("About_Version")
+    Gui, Add, Text, x302 y118 w300, % L("About_Version")
 
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x616 y80 w130 h30 gOpenDonateLink, % "❤ " . L("About_Donate")
+    Gui, Add, Button, x616 y78 w130 h30 gOpenDonateLink, % "❤ " . L("About_Donate")
 
-    Gui, Add, Button, x246 y154 w160 h28 gCheckForUpdates, % L("Tray_CheckUpdate")
-    Gui, Add, Button, x416 y154 w160 h28 gOpenGitHubLink, GitHub Releases
-    Gui, Add, Button, x586 y154 w160 h28 gOpenEmailLink, % L("About_ContactBtn")
+    Gui, Add, Button, x246 y144 w160 h28 gCheckForUpdates, % L("Tray_CheckUpdate")
+    Gui, Add, Button, x416 y144 w160 h28 gOpenGitHubLink, GitHub Releases
+    Gui, Add, Button, x586 y144 w160 h28 gOpenEmailLink, % L("About_ContactBtn")
 
-    ; Card 2: Giới thiệu & Bản quyền (Cho phép bôi đen copy và nhấp trực tiếp vào link)
+    ; Card 2: Giới thiệu & Bản quyền (Hiển thị trọn vẹn, bôi đen copy và nhấp link trực tiếp)
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y206 w536 h188, % L("About_GroupDetails")
+    Gui, Add, GroupBox, x228 y194 w536 h200, % L("About_GroupDetails")
     Gui, Font, s9 Norm c333333, Segoe UI
-    Gui, Add, Edit, x246 y228 w500 h92 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_DetailText")
-    Gui, Add, Link, x246 y328 w500 h20 gOnAboutLinkClick, % L("About_LinkEmail")
-    Gui, Add, Link, x246 y352 w500 h20 gOnAboutLinkClick, % L("About_LinkRepo")
+    Gui, Add, Edit, x246 y216 w500 h118 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_DetailText")
+    Gui, Add, Link, x246 y340 w500 h20 gOnAboutLinkClick, % L("About_LinkEmail")
+    Gui, Add, Link, x246 y364 w500 h20 gOnAboutLinkClick, % L("About_LinkRepo")
 
     ; ========================================================
     ; CHÂN TRANG GỌN GÀNG (AUTO-SAVE + NÚT ĐÓNG)
@@ -331,61 +332,100 @@ AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
     Gui, Settings:Add, Text, x436 y%yPos% w310, % "→ " . L(descKey)
 }
 
-AddBrowserGestureRow(yPos, ico1, res1, key1, ico2, res2, key2) {
+AddBrowserGestureRow(yPos, hBmp1, labelKey1, dirKey1, hBmp2, labelKey2, dirKey2) {
     badgeY := yPos - 2
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x246 y%yPos% w150, % L(key1)
-    hBmp1 := CreateGestureBadgeBitmap(ico1, res1, 28, 22, 16)
+    Gui, Settings:Add, Text, x246 y%yPos% w132, % L(labelKey1)
     if (hBmp1)
-        Gui, Settings:Add, Picture, x402 y%badgeY% w28 h22, HBITMAP:%hBmp1%
+        Gui, Settings:Add, Picture, x382 y%badgeY% w30 h22, HBITMAP:%hBmp1%
+    Gui, Settings:Font, s8.5 Norm c666666, Segoe UI
+    Gui, Settings:Add, Text, x418 y%yPos% w72, % L(dirKey1)
 
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x496 y%yPos% w160, % L(key2)
-    hBmp2 := CreateGestureBadgeBitmap(ico2, res2, 28, 22, 16)
+    Gui, Settings:Add, Text, x496 y%yPos% w136, % L(labelKey2)
     if (hBmp2)
-        Gui, Settings:Add, Picture, x662 y%badgeY% w28 h22, HBITMAP:%hBmp2%
+        Gui, Settings:Add, Picture, x636 y%badgeY% w30 h22, HBITMAP:%hBmp2%
+    Gui, Settings:Font, s8.5 Norm c666666, Segoe UI
+    Gui, Settings:Add, Text, x672 y%yPos% w74, % L(dirKey2)
 }
 
-CreateGestureBadgeBitmap(relPath, resId, badgeW := 28, badgeH := 22, icoSize := 16) {
-    hIcon := 0
-    if (A_IsCompiled && resId > 0) {
-        hMod := DllCall("GetModuleHandle", "Ptr", 0, "Ptr")
-        hIcon := DllCall("LoadImage", "Ptr", hMod, "UInt", resId, "UInt", 1, "Int", icoSize, "Int", icoSize, "UInt", 0, "Ptr")
-    } else {
-        fullPath := A_ScriptDir . "\" . relPath
-        if (FileExist(fullPath))
-            hIcon := DllCall("LoadImage", "Ptr", 0, "Str", fullPath, "UInt", 1, "Int", icoSize, "Int", icoSize, "UInt", 0x10, "Ptr")
+CreateGestureBadgeBitmaps() {
+    result := {}
+    hGdip := DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
+    if (!hGdip)
+        return result
+
+    VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0)
+    NumPut(1, si, 0, "UInt")
+    pToken := 0
+    if (DllCall("gdiplus\GdiplusStartup", "Ptr*", pToken, "Ptr", &si, "Ptr", 0) != 0) {
+        DllCall("FreeLibrary", "Ptr", hGdip)
+        return result
     }
-    if (!hIcon)
-        return 0
 
-    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
-    hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
-    hBmp := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", badgeW, "Int", badgeH, "Ptr")
-    hOldBmp := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hBmp, "Ptr")
+    bgr := DllCall("GetSysColor", "Int", 15, "UInt")
+    argbWin := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
 
-    VarSetCapacity(rc, 16, 0)
-    NumPut(badgeW, rc, 8, "Int")
-    NumPut(badgeH, rc, 12, "Int")
-    hBrushBorder := DllCall("CreateSolidBrush", "UInt", 0x554738, "Ptr")
-    DllCall("FillRect", "Ptr", hdcMem, "Ptr", &rc, "Ptr", hBrushBorder)
-    DllCall("DeleteObject", "Ptr", hBrushBorder)
+    badgeW := 30, badgeH := 22
+    DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pPath)
+    d := 8.0
+    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", 0.5, "Float", 0.5, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
+    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", badgeW - 1.5 - d, "Float", 0.5, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
+    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", badgeW - 1.5 - d, "Float", badgeH - 1.5 - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
+    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", 0.5, "Float", badgeH - 1.5 - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
+    DllCall("gdiplus\GdipClosePathFigure", "Ptr", pPath)
 
-    NumPut(1, rc, 0, "Int"), NumPut(1, rc, 4, "Int")
-    NumPut(badgeW - 1, rc, 8, "Int"), NumPut(badgeH - 1, rc, 12, "Int")
-    hBrushBg := DllCall("CreateSolidBrush", "UInt", 0x3B291E, "Ptr")
-    DllCall("FillRect", "Ptr", hdcMem, "Ptr", &rc, "Ptr", hBrushBg)
-    DllCall("DeleteObject", "Ptr", hBrushBg)
+    DllCall("gdiplus\GdipCreateSolidFill", "UInt", 0xFFEBF3FB, "Ptr*", pBrushBg)
+    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFFBDD6F0, "Float", 1.0, "Int", 2, "Ptr*", pPenBorder)
+    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFF005FB8, "Float", 2.0, "Int", 2, "Ptr*", pPenArrow)
+    DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pPenArrow, "Int", 2)
+    DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPenArrow, "Int", 2)
+    DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenArrow, "Int", 2)
 
-    drawX := (badgeW - icoSize) // 2
-    drawY := (badgeH - icoSize) // 2
-    DllCall("DrawIconEx", "Ptr", hdcMem, "Int", drawX, "Int", drawY, "Ptr", hIcon, "Int", icoSize, "Int", icoSize, "UInt", 0, "Ptr", 0, "UInt", 3)
+    paths := {}
+    paths["L"]  := [[22.0, 11.0,  8.0, 11.0], [12.5,  7.0,  8.0, 11.0, 12.5, 15.0]]
+    paths["R"]  := [[ 8.0, 11.0, 22.0, 11.0], [17.5,  7.0, 22.0, 11.0, 17.5, 15.0]]
+    paths["LU"] := [[21.5, 16.0, 10.5, 16.0, 10.5,  6.0], [ 7.0,  9.5, 10.5,  6.0, 14.0,  9.5]]
+    paths["LD"] := [[21.5,  6.0, 10.5,  6.0, 10.5, 16.0], [ 7.0, 12.5, 10.5, 16.0, 14.0, 12.5]]
+    paths["RU"] := [[ 8.5, 16.0, 19.5, 16.0, 19.5,  6.0], [16.0,  9.5, 19.5,  6.0, 23.0,  9.5]]
+    paths["RD"] := [[ 8.5,  6.0, 19.5,  6.0, 19.5, 16.0], [16.0, 12.5, 19.5, 16.0, 23.0, 12.5]]
 
-    DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hOldBmp, "Ptr")
-    DllCall("DeleteDC", "Ptr", hdcMem)
-    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
-    DllCall("DestroyIcon", "Ptr", hIcon)
-    return hBmp
+    for dirKey, segs in paths {
+        pBitmap := 0, pGraphics := 0, hBmp := 0
+        DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", badgeW, "Int", badgeH, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", pBitmap)
+        DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmap, "Ptr*", pGraphics)
+        DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", pGraphics, "Int", 4)
+        DllCall("gdiplus\GdipGraphicsClear", "Ptr", pGraphics, "UInt", argbWin)
+        DllCall("gdiplus\GdipFillPath", "Ptr", pGraphics, "Ptr", pBrushBg, "Ptr", pPath)
+        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPenBorder, "Ptr", pPath)
+
+        DrawGdipPolyline(pGraphics, pPenArrow, segs[1])
+        DrawGdipPolyline(pGraphics, pPenArrow, segs[2])
+
+        DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", argbWin)
+        result[dirKey] := hBmp
+        DllCall("gdiplus\GdipDeleteGraphics", "Ptr", pGraphics)
+        DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
+    }
+
+    DllCall("gdiplus\GdipDeletePen", "Ptr", pPenArrow)
+    DllCall("gdiplus\GdipDeletePen", "Ptr", pPenBorder)
+    DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushBg)
+    DllCall("gdiplus\GdipDeletePath", "Ptr", pPath)
+    DllCall("gdiplus\GdiplusShutdown", "Ptr", pToken)
+    DllCall("FreeLibrary", "Ptr", hGdip)
+    return result
+}
+
+DrawGdipPolyline(pGraphics, pPen, coords) {
+    cnt := coords.Length() // 2
+    VarSetCapacity(pts, cnt * 8, 0)
+    Loop, %cnt% {
+        idx := (A_Index - 1) * 2
+        NumPut(coords[idx + 1], pts, idx * 4, "Float")
+        NumPut(coords[idx + 2], pts, (idx + 1) * 4, "Float")
+    }
+    DllCall("gdiplus\GdipDrawLines", "Ptr", pGraphics, "Ptr", pPen, "Ptr", &pts, "Int", cnt)
 }
 
 AddShortcutRow(yPos, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text := "", gLabel2 := "") {
