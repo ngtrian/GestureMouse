@@ -618,7 +618,7 @@ return
 ; ========================================================
 ActionOpenLockCenter:
     if (IsFunc("OpenLockCenterFromUI"))
-        OpenLockCenterFromUI("Settings")
+        OpenLockCenterFromUI()
 return
 
 ActionFocusLockFromSettings:
@@ -695,6 +695,9 @@ Save:
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, LockKeyboard, %lockKeyboardEnabled%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, mouseLockEnabled, %mouseLockEnabled%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, LockMouseClick, %lockMouseClick%
+
+    if (IsFunc("RefreshLockCenterDeviceIcons"))
+        RefreshLockCenterDeviceIcons()
 
     ; Lưu Tự động khóa khi không dùng máy (Idle)
     autoLockIdleEnabled := autoLockIdleEnabled ? 1 : 0

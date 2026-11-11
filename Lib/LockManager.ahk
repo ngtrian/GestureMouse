@@ -53,13 +53,14 @@ global hMouseHook                := 0
 global Buffer                    := ""
 global hLockCenterGui            := 0
 global hLockCountdownGui         := 0
+global hFocusUnlockGui           := 0
 global centerEditUnlocked        := 1
 global focusCandidateHwnds       := []
 global focusCandidateTitles      := []
 
-; Biến control của GUI Trung tâm Khóa & Đếm ngược
-global LockCountdownText
-global CenterActiveBanner, CenterType0, CenterType1, CenterType2, CenterFocusTargetTxt, CenterBtnLockSettings
+; Biến control của GUI Trung tâm Khóa & Mở khóa Focus Lock
+global FocusUnlockCodeInput, FocusUnlockErrorTxt
+global CenterActiveBanner, CenterType0, CenterType1, CenterType2, CenterDeviceIcons, CenterFocusTargetTxt, CenterBtnLockSettings
 global CenterTimerGroup, CenterTimingNow, CenterTimingTimer, CenterMinutesInput, CenterMinutesUpDown, CenterMinUnitTxt
 global CenterPreset5, CenterPreset15, CenterPreset30, CenterPreset60, CenterRepeatCheck
 global CenterFocusInfoGroup, CenterFocusSelectLbl, CenterFocusWndChoice, CenterFocusInfoTxt
@@ -231,10 +232,10 @@ OpenLockCenterFromUI(hideOwnerGui := "") {
 }
 
 IsValidFocusTargetWnd(hwnd, allowMinimized := false) {
-    global hLockCenterGui, hSettingsGui, hAboutGui, hLockOpt, hAutoLock, hLockCountdownGui, hExcludedGui, hWhitelistGui, hChangeCodeGui
+    global hLockCenterGui, hSettingsGui, hAboutGui, hLockOpt, hAutoLock, hLockCountdownGui, hFocusUnlockGui, hExcludedGui, hWhitelistGui, hChangeCodeGui
     if (!hwnd || !DllCall("IsWindow", "Ptr", hwnd))
         return false
-    if (hwnd = hLockCenterGui || hwnd = hSettingsGui || hwnd = hAboutGui || hwnd = hLockOpt || hwnd = hAutoLock || hwnd = hLockCountdownGui || hwnd = hExcludedGui || hwnd = hWhitelistGui || hwnd = hChangeCodeGui || hwnd = A_ScriptHwnd)
+    if (hwnd = hLockCenterGui || hwnd = hSettingsGui || hwnd = hAboutGui || hwnd = hLockOpt || hwnd = hAutoLock || hwnd = hLockCountdownGui || hwnd = hFocusUnlockGui || hwnd = hExcludedGui || hwnd = hWhitelistGui || hwnd = hChangeCodeGui || hwnd = A_ScriptHwnd)
         return false
     if (!DllCall("IsWindowVisible", "Ptr", hwnd))
         return false
@@ -388,7 +389,7 @@ ShowLockCenterGUI() {
     }
 
     Gui, LockCenter:Destroy
-    Gui, LockCenter:New, +AlwaysOnTop -MaximizeBox -MinimizeBox +HwndhLockCenterGui, % L("LC_Title")
+    Gui, LockCenter:New, -MaximizeBox -MinimizeBox +HwndhLockCenterGui, % L("LC_Title")
     if (IsFunc("SetGuiYellowIcon"))
         SetGuiYellowIcon(hLockCenterGui)
 
@@ -433,9 +434,11 @@ ShowLockCenterGUI() {
     yR3 := yOffset + 86
     yTarget := yOffset + 114
 
-    Gui, Add, Radio, x30 y%yR1% w300 h22 vCenterType0 gOnLockCenterTypeChange Group Checked%chkType0%, % "🔒 " . L("LC_ModeFull")
+    Gui, Add, Radio, x30 y%yR1% w236 h22 vCenterType0 gOnLockCenterTypeChange Group Checked%chkType0%, % "🔒 " . L("LC_ModeFull")
     Gui, Add, Radio, x30 y%yR2% w410 h22 vCenterType1 gOnLockCenterTypeChange Checked%chkType1%, % "🖥️ " . L("LC_ModeScreen")
     Gui, Add, Radio, x30 y%yR3% w410 h22 vCenterType2 gOnLockCenterTypeChange Checked%chkType2%, % "🎯 " . L("LC_ModeFocus")
+    Gui, Font, s9 Norm c005FB8, Segoe UI
+    Gui, Add, Text, x268 y%yR1% w64 h22 +0x200 Right vCenterDeviceIcons, % GetLockDeviceStatusIcons()
     Gui, Font, s8.5 Norm, Segoe UI
     Gui, Add, Button, x336 y%yR1Btn% w106 h24 gOnOpenLockSettingsFromCenter vCenterBtnLockSettings, % "⚙️ " . L("LC_BtnSettings")
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -519,9 +522,22 @@ ShowLockCenterGUI() {
     Gui, Show, w470 h%totalH% Center, % L("LC_Title")
     if (IsFunc("SetGuiYellowIcon"))
         SetGuiYellowIcon(hLockCenterGui)
+    WinActivate, ahk_id %hLockCenterGui%
 
     if (lockTimerActive && requireCodeForTimerEdit && !centerEditUnlocked)
         GuiControl, LockCenter:Focus, CenterAuthInput
+}
+
+GetLockDeviceStatusIcons() {
+    global lockKeyboardEnabled, mouseLockEnabled
+    icons := ""
+    if (lockKeyboardEnabled)
+        icons .= "⌨️🔒"
+    if (mouseLockEnabled)
+        icons .= (icons != "" ? " " : "") . "🖱️🔒"
+    if (icons = "")
+        icons := "⚠️"
+    return icons
 }
 
 GetShortFocusTargetTitle() {
@@ -618,8 +634,6 @@ return
 OnOpenLockSettingsFromCenter:
     if (lockTimerActive && !centerEditUnlocked)
         return
-    Gui, LockCenter:Destroy
-    hLockCenterGui := 0
     currentSettingsTab := 3
     Gosub, Settings
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
@@ -628,6 +642,13 @@ OnOpenLockSettingsFromCenter:
         WinActivate, ahk_id %hSettingsGui%
     }
 return
+
+RefreshLockCenterDeviceIcons() {
+    global hLockCenterGui
+    if (hLockCenterGui && WinExist("ahk_id " . hLockCenterGui)) {
+        GuiControl, LockCenter:, CenterDeviceIcons, % GetLockDeviceStatusIcons()
+    }
+}
 
 OnLockCenterTypeChange:
     UpdateLockCenterUIState()
@@ -800,7 +821,6 @@ StartLockCountdown(type, minutes, repeat := 0) {
     lockTimerTargetTick := A_TickCount + (lockTimerMinutes * 60 * 1000)
     lockTimerLastDisplayed := ""
 
-    CreateCountdownGui()
     Gosub, UpdateLockCountdown
     SetTimer, UpdateLockCountdown, 1000
 
@@ -809,9 +829,9 @@ StartLockCountdown(type, minutes, repeat := 0) {
         %fnTip%()
 }
 
-CreateCountdownGui() {
-    global hLockCountdownGui, LockCountdownText
-    hTaskbar := 48
+ShowCountdownToast(msg) {
+    global hLockCountdownGui
+    hTaskbar := 60
     if (WinExist("ahk_class Shell_TrayWnd"))
         WinGetPos,,,, hTaskbar, ahk_class Shell_TrayWnd
 
@@ -821,13 +841,15 @@ CreateCountdownGui() {
     Gui, Font, s9.5 Norm, Segoe UI
     Gui, Color, FFF9C4, 2B1E00 ; Nền vàng nhạt nổi bật, chữ nâu sẫm dễ đọc
     Gui, Font, c2B1E00
-    Gui, Add, Text, vLockCountdownText w290 Center, ...
+    Gui, Add, Text, Center, %msg%
     Gui, Show, Hide
     WinGetPos,,, gw, gh, ahk_id %hLockCountdownGui%
-    if (!gw)
-        gw := 322, gh := 38
+    if (!gw || !gh)
+        gw := 300, gh := 38
+
     posX := A_ScreenWidth - gw - 16
     posY := A_ScreenHeight - gh - hTaskbar - 16
+
     Gui, Show, x%posX% y%posY% NoActivate
     WinSet, Transparent, 240, ahk_id %hLockCountdownGui%
     WinSet, Region, 0-0 w%gw% h%gh% R12-12, ahk_id %hLockCountdownGui%
@@ -892,10 +914,7 @@ UpdateLockCountdown:
 
     if (msg != lockTimerLastDisplayed) {
         lockTimerLastDisplayed := msg
-        if (hLockCountdownGui && WinExist("ahk_id " . hLockCountdownGui)) {
-            Gui, LockCountdown:Default
-            GuiControl,, LockCountdownText, %msg%
-        }
+        ShowCountdownToast(msg)
         if (hLockCenterGui && WinExist("ahk_id " . hLockCenterGui)) {
             Gui, LockCenter:Default
             GuiControl,, CenterActiveBanner, % "⏱️ " . GetActiveTimerStatusText()
@@ -962,13 +981,12 @@ ShowNotification() {
     global isLocked, lockMode, focusWndTitle
 
     if (isLocked) {
-        if (lockMode == 1 && focusWndTitle != "") {
-            shortTitle := SubStr(focusWndTitle, 1, 35) . (StrLen(focusWndTitle) > 35 ? "..." : "")
-            msg := "🎯 " . L("Lock_NotificationFocus") . shortTitle
+        if (lockMode == 1) {
+            shortTitle := (focusWndTitle != "") ? (SubStr(focusWndTitle, 1, 35) . (StrLen(focusWndTitle) > 35 ? "..." : "")) : ""
+            msg := "🎯 " . L("Lock_NotificationFocus") . shortTitle . "`n" . L("Lock_FocusToastHint")
         } else {
-            msg := "🔒 " . L("Lock_NotificationFull")
+            msg := "🔒 " . L("Lock_NotificationFull") . "`n" . L("Lock_ToastHint")
         }
-        msg .= "`n" . L("Lock_ToastHint")
         ShowToastBanner(msg, 0)
     } else {
         ShowToastBanner("✔ " . L("Lock_Unlocked"), 2500)
@@ -986,6 +1004,21 @@ return
 ; ========================================================
 ; KÍCH HOẠT & MỞ KHÓA THIẾT BỊ (FULL LOCK / FOCUS LOCK)
 ; ========================================================
+ApplyFocusClipCursor() {
+    global isLocked, lockMode, hFocusWnd
+    if (!isLocked || lockMode != 1 || !hFocusWnd || !WinExist("ahk_id " . hFocusWnd))
+        return
+    WinGetPos, fX, fY, fW, fH, ahk_id %hFocusWnd%
+    if (fW > 0 && fH > 0) {
+        VarSetCapacity(rect, 16, 0)
+        NumPut(fX, rect, 0, "Int")
+        NumPut(fY, rect, 4, "Int")
+        NumPut(fX + fW, rect, 8, "Int")
+        NumPut(fY + fH, rect, 12, "Int")
+        DllCall("ClipCursor", "Ptr", &rect)
+    }
+}
+
 ActivateLock(mode := 0, targetHwnd := 0) {
     global isLocked, hKeyboardHook, hMouseHook, lockMode, hFocusWnd, focusWndTitle
     global lockKeyboardEnabled, mouseLockEnabled, disableAutoLockScreen, Buffer
@@ -1005,15 +1038,7 @@ ActivateLock(mode := 0, targetHwnd := 0) {
             WinActivate, ahk_id %hFocusWnd%
             Sleep, 80
             WinGetTitle, focusWndTitle, ahk_id %hFocusWnd%
-            WinGetPos, fX, fY, fW, fH, ahk_id %hFocusWnd%
-            if (fW > 0 && fH > 0) {
-                VarSetCapacity(rect, 16, 0)
-                NumPut(fX, rect, 0, "Int")
-                NumPut(fY, rect, 4, "Int")
-                NumPut(fX + fW, rect, 8, "Int")
-                NumPut(fY + fH, rect, 12, "Int")
-                DllCall("ClipCursor", "Ptr", &rect)
-            }
+            ApplyFocusClipCursor()
         } else {
             lockMode := 0
         }
@@ -1061,7 +1086,7 @@ ToggleLock(forceState := -1) {
 }
 
 UnlockKeyboard(fromWindowsSession := false) {
-    global isLocked, hKeyboardHook, hMouseHook, Buffer
+    global isLocked, hKeyboardHook, hMouseHook, Buffer, hFocusUnlockGui
     global pendingRepeatFullLock, pendingRepeatMinutes
 
     if (!isLocked)
@@ -1071,6 +1096,11 @@ UnlockKeyboard(fromWindowsSession := false) {
     Buffer := ""
 
     DllCall("ClipCursor", "Ptr", 0)
+
+    if (hFocusUnlockGui && WinExist("ahk_id " . hFocusUnlockGui)) {
+        Gui, FocusUnlock:Destroy
+        hFocusUnlockGui := 0
+    }
 
     if (hKeyboardHook) {
         DllCall("UnhookWindowsHookEx", "Ptr", hKeyboardHook)
@@ -1107,7 +1137,7 @@ UnlockKeyboard(fromWindowsSession := false) {
 ; ========================================================
 KeyboardProc(nCode, wParam, lParam) {
     global isLocked, Buffer, UNLOCK_KEYWORD, KEYWORD_LENGTH
-    global lockMode, hFocusWnd, lockKeyboardEnabled, allowSpace, allowMedia, allowNav
+    global lockMode, hFocusWnd, hFocusUnlockGui, lockKeyboardEnabled, allowSpace, allowMedia, allowNav
     static ctrlState := 0
     static altState := 0
     Critical
@@ -1132,7 +1162,7 @@ KeyboardProc(nCode, wParam, lParam) {
     isCtrl := ctrlState || ((DllCall("GetAsyncKeyState", "Int", 0x11) & 0x8000) != 0) || GetKeyState("Ctrl", "P")
     isAlt  := altState || isAltDown || ((DllCall("GetAsyncKeyState", "Int", 0x12) & 0x8000) != 0) || GetKeyState("Alt", "P")
 
-    ; 1. ƯU TIÊN SỐ 1: Bấm Ctrl + Alt + L khi đang khóa -> LUÔN chuyển sang màn hình khóa Windows
+    ; 1. ƯU TIÊN SỐ 1: Bấm Ctrl + Alt + L khi đang khóa
     if (isKeyDown && vkCode = 0x4C && isCtrl && isAlt) {
         static lastHotkeyPress := 0
         if (A_TickCount - lastHotkeyPress > 700) {
@@ -1140,12 +1170,35 @@ KeyboardProc(nCode, wParam, lParam) {
             ctrlState := 0
             altState := 0
             Buffer := ""
-            SetTimer, TriggerWindowsAuthPrompt, -1
+            if (lockMode == 1 && !(hFocusUnlockGui && WinExist("ahk_id " . hFocusUnlockGui)))
+                SetTimer, TriggerFocusUnlockPrompt, -1
+            else
+                SetTimer, TriggerWindowsAuthPrompt, -1
         }
         return 1
     }
 
-    ; 2. ƯU TIÊN SỐ 2: Bắt mã mở khóa (áp dụng cho cả Full Lock và Focus Lock)
+    ; 2. Xử lý Focus Lock (Hướng A: không nghe lén gõ tự do; chỉ mở qua popup Ctrl+Alt+L hoặc khóa Windows)
+    if (lockMode == 1 && hFocusWnd) {
+        if (vkCode = 0x5B || vkCode = 0x5C || (isAlt && (vkCode = 0x09 || vkCode = 0x1B)) || (vkCode = 0x1B && isCtrl)) {
+            return 1
+        }
+        curActive := WinExist("A")
+        if (hFocusUnlockGui && curActive == hFocusUnlockGui) {
+            return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+        }
+        if (curActive == hFocusWnd) {
+            return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
+        } else {
+            if (hFocusUnlockGui && WinExist("ahk_id " . hFocusUnlockGui))
+                WinActivate, ahk_id %hFocusUnlockGui%
+            else
+                WinActivate, ahk_id %hFocusWnd%
+            return 1
+        }
+    }
+
+    ; 3. Bắt mã mở khóa trực tiếp cho Full Lock
     if (isKeyDown) {
         char := ""
         if (vkCode >= 0x30 && vkCode <= 0x39) {
@@ -1179,20 +1232,6 @@ KeyboardProc(nCode, wParam, lParam) {
         }
     }
 
-    ; 3. Xử lý Focus Lock
-    if (lockMode == 1 && hFocusWnd) {
-        curActive := WinExist("A")
-        if (vkCode = 0x5B || vkCode = 0x5C || (isAlt && (vkCode = 0x09 || vkCode = 0x1B)) || (vkCode = 0x1B && isCtrl)) {
-            return 1
-        }
-        if (curActive == hFocusWnd) {
-            return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
-        } else {
-            WinActivate, ahk_id %hFocusWnd%
-            return 1
-        }
-    }
-
     ; 4. Kiểm tra Whitelist (Full Lock)
     if (isKeyDown) {
         if (allowSpace && vkCode = 0x20)
@@ -1209,11 +1248,88 @@ KeyboardProc(nCode, wParam, lParam) {
     return 1
 }
 
+TriggerFocusUnlockPrompt:
+    ShowFocusUnlockGUI()
+return
+
+ShowFocusUnlockGUI() {
+    global hFocusUnlockGui, FocusUnlockCodeInput, FocusUnlockErrorTxt
+    if (!isLocked || lockMode != 1)
+        return
+    if (hFocusUnlockGui && WinExist("ahk_id " . hFocusUnlockGui)) {
+        WinActivate, ahk_id %hFocusUnlockGui%
+        GuiControl, FocusUnlock:Focus, FocusUnlockCodeInput
+        return
+    }
+
+    ; Tạm giải phóng ClipCursor để chuột thao tác được trên popup mở khóa
+    DllCall("ClipCursor", "Ptr", 0)
+
+    Gui, FocusUnlock:Destroy
+    Gui, FocusUnlock:New, +AlwaysOnTop -MaximizeBox -MinimizeBox +HwndhFocusUnlockGui, % L("LC_FocusUnlockTitle")
+    if (IsFunc("SetGuiYellowIcon"))
+        SetGuiYellowIcon(hFocusUnlockGui)
+
+    Gui, Font, s9.5 Norm c222222, Segoe UI
+    Gui, Add, Text, x18 y16 w364, % "🔑 " . L("LC_FocusUnlockPrompt")
+    Gui, Add, Edit, x18 y44 w364 h26 Password vFocusUnlockCodeInput
+
+    Gui, Font, s8.5 Bold cC62828, Segoe UI
+    Gui, Add, Text, x18 y76 w364 h18 vFocusUnlockErrorTxt,
+
+    Gui, Font, s8.5 Norm c666666, Segoe UI
+    Gui, Add, Text, x18 y96 w364 h18, % L("LC_FocusUnlockTip")
+
+    Gui, Font, s9.5 Norm, Segoe UI
+    Gui, Add, Button, x18 y122 w110 h30 gSubmitFocusUnlock Default, % "✔ " . L("LC_FocusUnlockBtn")
+    Gui, Add, Button, x136 y122 w142 h30 gSwitchFocusToWinLock, % "🖥️ " . L("LC_FocusWinLockBtn")
+    Gui, Add, Button, x286 y122 w96 h30 gFocusUnlockGuiClose, % L("LC_BtnCancel")
+
+    Gui, Show, w400 h166 Center, % L("LC_FocusUnlockTitle")
+    if (IsFunc("SetGuiYellowIcon"))
+        SetGuiYellowIcon(hFocusUnlockGui)
+    WinActivate, ahk_id %hFocusUnlockGui%
+    GuiControl, FocusUnlock:Focus, FocusUnlockCodeInput
+}
+
+SubmitFocusUnlock:
+    Gui, FocusUnlock:Submit, NoHide
+    if (FocusUnlockCodeInput == UNLOCK_KEYWORD) {
+        Gui, FocusUnlock:Destroy
+        hFocusUnlockGui := 0
+        UnlockKeyboard(false)
+    } else {
+        GuiControl, FocusUnlock:, FocusUnlockErrorTxt, % "❌ " . L("LC_AuthWrong")
+        GuiControl, FocusUnlock:, FocusUnlockCodeInput,
+        GuiControl, FocusUnlock:Focus, FocusUnlockCodeInput
+    }
+return
+
+SwitchFocusToWinLock:
+    Gui, FocusUnlock:Destroy
+    hFocusUnlockGui := 0
+    Gosub, TriggerWindowsAuthPrompt
+return
+
+FocusUnlockGuiClose:
+FocusUnlockGuiEscape:
+    Gui, FocusUnlock:Destroy
+    hFocusUnlockGui := 0
+    if (isLocked && lockMode == 1 && hFocusWnd && WinExist("ahk_id " . hFocusWnd)) {
+        WinActivate, ahk_id %hFocusWnd%
+        ApplyFocusClipCursor()
+    }
+return
+
 TriggerDirectUnlock:
     UnlockKeyboard(false)
 return
 
 TriggerWindowsAuthPrompt:
+    if (hFocusUnlockGui && WinExist("ahk_id " . hFocusUnlockGui)) {
+        Gui, FocusUnlock:Destroy
+        hFocusUnlockGui := 0
+    }
     if (hKeyboardHook) {
         DllCall("UnhookWindowsHookEx", "Ptr", hKeyboardHook)
         hKeyboardHook := 0
@@ -1230,7 +1346,7 @@ return
 ; LOW-LEVEL MOUSE HOOK
 ; ========================================================
 MouseProc(nCode, wParam, lParam) {
-    global isLocked, lockMode, hFocusWnd, mouseLockEnabled, lockMouseClick
+    global isLocked, lockMode, hFocusWnd, hFocusUnlockGui, mouseLockEnabled, lockMouseClick
     global lockMouseWheel, lockMouseMove, allowMouseMove, allowMouseWheel
     Critical
 
@@ -1242,6 +1358,9 @@ MouseProc(nCode, wParam, lParam) {
         ptY := NumGet(lParam+0, 4, "Int")
         ptWnd := DllCall("WindowFromPoint", "Int64", (ptY << 32) | (ptX & 0xFFFFFFFF), "Ptr")
         rootWnd := DllCall("GetAncestor", "Ptr", ptWnd, "UInt", 2, "Ptr")
+
+        if (hFocusUnlockGui && (ptWnd == hFocusUnlockGui || rootWnd == hFocusUnlockGui))
+            return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
 
         if (ptWnd != hFocusWnd && rootWnd != hFocusWnd)
             return 1
