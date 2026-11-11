@@ -230,71 +230,109 @@ OpenLockCenterFromUI(hideOwnerGui := "") {
     ShowLockCenterGUI()
 }
 
-IsValidFocusTargetWnd(hwnd) {
+IsValidFocusTargetWnd(hwnd, allowMinimized := false) {
     global hLockCenterGui, hSettingsGui, hAboutGui, hLockOpt, hAutoLock, hLockCountdownGui, hExcludedGui, hWhitelistGui, hChangeCodeGui
-    if (!hwnd || !WinExist("ahk_id " . hwnd))
+    if (!hwnd || !DllCall("IsWindow", "Ptr", hwnd))
         return false
     if (hwnd = hLockCenterGui || hwnd = hSettingsGui || hwnd = hAboutGui || hwnd = hLockOpt || hwnd = hAutoLock || hwnd = hLockCountdownGui || hwnd = hExcludedGui || hwnd = hWhitelistGui || hwnd = hChangeCodeGui || hwnd = A_ScriptHwnd)
         return false
     if (!DllCall("IsWindowVisible", "Ptr", hwnd))
         return false
-    WinGet, mmState, MinMax, ahk_id %hwnd%
-    if (mmState = -1) ; Bỏ qua cửa sổ đang thu nhỏ
+
+    cloaked := 0
+    DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 14, "UInt*", cloaked, "UInt", 4)
+    if (cloaked)
         return false
+
+    if (!allowMinimized) {
+        WinGet, mmState, MinMax, ahk_id %hwnd%
+        if (mmState = -1)
+            return false
+    }
+
     WinGetClass, wClass, ahk_id %hwnd%
-    if (wClass = "Shell_TrayWnd" || wClass = "Shell_SecondaryTrayWnd" || wClass = "NotifyIconOverflowWindow" || wClass = "Progman" || wClass = "WorkerW" || wClass = "#32768" || wClass = "Windows.UI.Core.CoreWindow" || wClass = "TopLevelWindowForOverflowXamlIsland")
+    if (wClass = "Shell_TrayWnd" || wClass = "Shell_SecondaryTrayWnd" || wClass = "NotifyIconOverflowWindow" || wClass = "Progman" || wClass = "WorkerW" || wClass = "#32768" || wClass = "Windows.UI.Core.CoreWindow" || wClass = "DV2ControlHost" || wClass = "TopLevelWindowForOverflowXamlIsland")
         return false
-    WinGetTitle, wTitle, ahk_id %hwnd%
-    if (Trim(wTitle) = "")
-        return false
+
     WinGet, exStyle, ExStyle, ahk_id %hwnd%
     if (exStyle & 0x00000080) ; WS_EX_TOOLWINDOW
+        return false
+    if (exStyle & 0x08000000) ; WS_EX_NOACTIVATE
+        return false
+    if (!(exStyle & 0x00040000)) { ; Nếu không có WS_EX_APPWINDOW, chỉ bỏ qua cửa sổ con có owner đang hiển thị
+        ownerHwnd := DllCall("GetWindow", "Ptr", hwnd, "UInt", 4, "Ptr")
+        if (ownerHwnd && DllCall("IsWindowVisible", "Ptr", ownerHwnd))
+            return false
+    }
+
+    WinGetTitle, wTitle, ahk_id %hwnd%
+    if (Trim(wTitle) = "")
         return false
     return true
 }
 
 FindBestFocusTarget(preferredHwnd := 0) {
-    if (IsValidFocusTargetWnd(preferredHwnd))
+    dhw := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+    if (IsValidFocusTargetWnd(preferredHwnd, false)) {
+        DetectHiddenWindows, %dhw%
         return preferredHwnd
-    WinGet, winList, List
-    Loop, %winList% {
-        hwnd := winList%A_Index%
-        if (IsValidFocusTargetWnd(hwnd))
-            return hwnd
     }
-    return 0
+    enumState := {"hwnds": [], "titles": [], "seen": {}, "allowMin": false}
+    pState := Object(enumState)
+    static cbBest := 0
+    if (!cbBest)
+        cbBest := RegisterCallback("EnumFocusWindowsProc", "Fast", 2)
+    DllCall("EnumWindows", "Ptr", cbBest, "Ptr", pState)
+    ObjRelease(pState)
+    DetectHiddenWindows, %dhw%
+    return (enumState.hwnds.MaxIndex() >= 1) ? enumState.hwnds[1] : 0
+}
+
+EnumFocusWindowsProc(hwnd, lParam) {
+    state := Object(lParam)
+    if (!state.seen.HasKey(hwnd) && IsValidFocusTargetWnd(hwnd, state.allowMin)) {
+        WinGetTitle, wTitle, ahk_id %hwnd%
+        state.hwnds.Push(hwnd)
+        state.titles.Push(wTitle)
+        state.seen[hwnd] := true
+    }
+    return true
 }
 
 PopulateFocusCandidates(preferredHwnd := 0) {
     global focusCandidateHwnds, focusCandidateTitles
     focusCandidateHwnds := []
     focusCandidateTitles := []
-    seen := {}
     selIdx := 1
 
-    if (IsValidFocusTargetWnd(preferredHwnd)) {
+    dhw := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+
+    enumState := {"hwnds": [], "titles": [], "seen": {}, "allowMin": true}
+    if (IsValidFocusTargetWnd(preferredHwnd, true)) {
         WinGetTitle, pTitle, ahk_id %preferredHwnd%
-        focusCandidateHwnds.Push(preferredHwnd)
-        focusCandidateTitles.Push(pTitle)
-        seen[preferredHwnd] := true
+        enumState.hwnds.Push(preferredHwnd)
+        enumState.titles.Push(pTitle)
+        enumState.seen[preferredHwnd] := true
     }
 
-    WinGet, winList, List
-    Loop, %winList% {
-        hwnd := winList%A_Index%
-        if (seen.HasKey(hwnd) || !IsValidFocusTargetWnd(hwnd))
-            continue
-        WinGetTitle, wTitle, ahk_id %hwnd%
-        focusCandidateHwnds.Push(hwnd)
-        focusCandidateTitles.Push(wTitle)
-        seen[hwnd] := true
-    }
+    pState := Object(enumState)
+    static cbList := 0
+    if (!cbList)
+        cbList := RegisterCallback("EnumFocusWindowsProc", "Fast", 2)
+    DllCall("EnumWindows", "Ptr", cbList, "Ptr", pState)
+    ObjRelease(pState)
+    DetectHiddenWindows, %dhw%
+
+    focusCandidateHwnds := enumState.hwnds
+    focusCandidateTitles := enumState.titles
 
     ddlList := ""
     for idx, t in focusCandidateTitles {
         cleanT := StrReplace(t, "|", "-")
-        if (StrLen(cleanT) > 52)
-            cleanT := SubStr(cleanT, 1, 52) . "..."
+        if (StrLen(cleanT) > 55)
+            cleanT := SubStr(cleanT, 1, 55) . "..."
         ddlList .= (idx > 1 ? "|" : "") . cleanT
     }
     return {list: ddlList, sel: selIdx}
@@ -376,90 +414,90 @@ ShowLockCenterGUI() {
 
     ; Banner trạng thái khi đang đếm ngược
     if (lockTimerActive) {
-        Gui, Add, Progress, x15 y12 w390 h36 BackgroundE5F1FB cE5F1FB -Theme Disabled, 100
+        Gui, Add, Progress, x15 y12 w440 h36 BackgroundE5F1FB cE5F1FB -Theme Disabled, 100
         Gui, Add, Progress, x15 y12 w4 h36 Background0067C0 c0067C0 -Theme Disabled, 100
         Gui, Font, s9.5 Bold c004499, Segoe UI
-        Gui, Add, Text, x28 y12 w370 h36 +0x200 +BackgroundTrans vCenterActiveBanner, % "⏱️ " . GetActiveTimerStatusText()
+        Gui, Add, Text, x28 y12 w420 h36 +0x200 +BackgroundTrans vCenterActiveBanner, % "⏱️ " . GetActiveTimerStatusText()
         Gui, Font, s9.5 Norm c222222, Segoe UI
         yOffset := 58
     }
 
     ; Nhóm 1: Kiểu khóa
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x15 y%yOffset% w390 h124, % "  🔐 " . L("LC_GroupMode")
+    Gui, Add, GroupBox, x15 y%yOffset% w440 h146, % "  🔐 " . L("LC_GroupMode")
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
-    yR1 := yOffset + 25
-    yR1Btn := yOffset + 21
-    yR2 := yOffset + 51
-    yR3 := yOffset + 77
-    yTarget := yOffset + 100
+    yR1 := yOffset + 26
+    yR1Btn := yOffset + 24
+    yR2 := yOffset + 56
+    yR3 := yOffset + 86
+    yTarget := yOffset + 114
 
-    Gui, Add, Radio, x30 y%yR1% w248 vCenterType0 gOnLockCenterTypeChange Group Checked%chkType0%, % "🔒 " . L("LC_ModeFull")
+    Gui, Add, Radio, x30 y%yR1% w300 h22 vCenterType0 gOnLockCenterTypeChange Group Checked%chkType0%, % "🔒 " . L("LC_ModeFull")
+    Gui, Add, Radio, x30 y%yR2% w410 h22 vCenterType1 gOnLockCenterTypeChange Checked%chkType1%, % "🖥️ " . L("LC_ModeScreen")
+    Gui, Add, Radio, x30 y%yR3% w410 h22 vCenterType2 gOnLockCenterTypeChange Checked%chkType2%, % "🎯 " . L("LC_ModeFocus")
     Gui, Font, s8.5 Norm, Segoe UI
-    Gui, Add, Button, x282 y%yR1Btn% w108 h24 gOnOpenLockSettingsFromCenter vCenterBtnLockSettings, % "⚙️ " . L("LC_BtnSettings")
+    Gui, Add, Button, x336 y%yR1Btn% w106 h24 gOnOpenLockSettingsFromCenter vCenterBtnLockSettings, % "⚙️ " . L("LC_BtnSettings")
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Radio, x30 y%yR2% w360 vCenterType1 gOnLockCenterTypeChange Checked%chkType1%, % "🖥️ " . L("LC_ModeScreen")
-    Gui, Add, Radio, x30 y%yR3% w360 vCenterType2 gOnLockCenterTypeChange Checked%chkType2%, % "🎯 " . L("LC_ModeFocus")
 
     focusData := PopulateFocusCandidates(hPendingFocusWnd)
     shortTarget := GetShortFocusTargetTitle()
     targetText := (shortTarget != "") ? StrReplace(L("LC_FocusTarget"), "{title}", shortTarget) : L("LC_FocusNoTarget")
     Gui, Font, s8.5 Norm c005FB8, Segoe UI
-    Gui, Add, Text, x48 y%yTarget% w342 vCenterFocusTargetTxt, %targetText%
+    Gui, Add, Text, x50 y%yTarget% w390 h20 +0x200 vCenterFocusTargetTxt, %targetText%
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
     ; Nhóm 2: Thời gian & Lặp lại (ẩn khi chọn Focus Lock)
-    ySec2 := yOffset + 134
+    ySec2 := yOffset + 156
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x15 y%ySec2% w390 h136 vCenterTimerGroup, % "  ⏱️ " . L("LC_GroupTiming")
+    Gui, Add, GroupBox, x15 y%ySec2% w440 h148 vCenterTimerGroup, % "  ⏱️ " . L("LC_GroupTiming")
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
-    yT1 := ySec2 + 26
-    yT2 := ySec2 + 54
-    yPre := ySec2 + 83
-    yRep := ySec2 + 111
+    yT1 := ySec2 + 28
+    yT2 := ySec2 + 58
+    yPre := ySec2 + 89
+    yRep := ySec2 + 119
 
-    Gui, Add, Radio, x30 y%yT1% w360 vCenterTimingNow gOnLockCenterTimingChange Group Checked%chkTimeNow%, % "⚡ " . L("LC_TimingNow")
-    Gui, Add, Radio, x30 y%yT2% w155 vCenterTimingTimer gOnLockCenterTimingChange Checked%chkTimeSet%, % "⏱️ " . L("LC_TimingTimer")
-    Gui, Add, Edit, x190 y%yT2% w68 h24 Number vCenterMinutesInput gOnLockCenterMinEdit
+    Gui, Add, Radio, x30 y%yT1% w410 h22 vCenterTimingNow gOnLockCenterTimingChange Group Checked%chkTimeNow%, % "⚡ " . L("LC_TimingNow")
+    Gui, Add, Radio, x30 y%yT2% w165 h24 vCenterTimingTimer gOnLockCenterTimingChange Checked%chkTimeSet%, % "⏱️ " . L("LC_TimingTimer")
+    Gui, Add, Edit, x200 y%yT2% w72 h24 Number vCenterMinutesInput gOnLockCenterMinEdit
     Gui, Add, UpDown, vCenterMinutesUpDown Range1-1440, %dispMinutes%
-    Gui, Add, Text, x264 y%yT2% w60 h24 +0x200 vCenterMinUnitTxt, % L("LC_UnitMin")
+    Gui, Add, Text, x278 y%yT2% w60 h24 +0x200 vCenterMinUnitTxt, % L("LC_UnitMin")
 
     Gui, Font, s8.5 Norm, Segoe UI
-    Gui, Add, Button, x190 y%yPre% w45 h22 gOnLockCenterPreset5 vCenterPreset5, 5p
-    Gui, Add, Button, x240 y%yPre% w45 h22 gOnLockCenterPreset15 vCenterPreset15, 15p
-    Gui, Add, Button, x290 y%yPre% w45 h22 gOnLockCenterPreset30 vCenterPreset30, 30p
-    Gui, Add, Button, x340 y%yPre% w45 h22 gOnLockCenterPreset60 vCenterPreset60, 60p
+    Gui, Add, Button, x200 y%yPre% w46 h23 gOnLockCenterPreset5 vCenterPreset5, 5p
+    Gui, Add, Button, x252 y%yPre% w46 h23 gOnLockCenterPreset15 vCenterPreset15, 15p
+    Gui, Add, Button, x304 y%yPre% w46 h23 gOnLockCenterPreset30 vCenterPreset30, 30p
+    Gui, Add, Button, x356 y%yPre% w46 h23 gOnLockCenterPreset60 vCenterPreset60, 60p
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
-    Gui, Add, Checkbox, x30 y%yRep% w360 vCenterRepeatCheck Checked%dispRepeat%, % "🔁 " . L("LC_RepeatCheck")
+    Gui, Add, Checkbox, x30 y%yRep% w410 h22 vCenterRepeatCheck Checked%dispRepeat%, % "🔁 " . L("LC_RepeatCheck")
 
     ; Nhóm 2b: Thông tin & Chọn cửa sổ Focus Lock (hiển thị thay cho Thời gian khi chọn Focus Lock)
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x15 y%ySec2% w390 h136 vCenterFocusInfoGroup, % "  🎯 " . L("LC_GroupFocusInfo")
+    Gui, Add, GroupBox, x15 y%ySec2% w440 h148 vCenterFocusInfoGroup, % "  🎯 " . L("LC_GroupFocusInfo")
     Gui, Font, s9 Norm c222222, Segoe UI
-    yFSel := ySec2 + 27
-    yFInfo := ySec2 + 60
-    Gui, Add, Text, x30 y%yFSel% w108 h24 +0x200 vCenterFocusSelectLbl, % L("LC_FocusSelectLabel")
+    yFSel := ySec2 + 30
+    yFInfo := ySec2 + 66
+    Gui, Add, Text, x30 y%yFSel% w115 h24 +0x200 vCenterFocusSelectLbl, % L("LC_FocusSelectLabel")
     ddlOpt := (focusData.list != "") ? ("Choose" . focusData.sel) : "Disabled"
     ddlContent := (focusData.list != "") ? focusData.list : L("LC_FocusNoTarget")
-    Gui, Add, DropDownList, x142 y%yFSel% w248 vCenterFocusWndChoice gOnFocusTargetChoiceChange AltSubmit %ddlOpt%, %ddlContent%
+    Gui, Add, DropDownList, x150 y%yFSel% w290 vCenterFocusWndChoice gOnFocusTargetChoiceChange AltSubmit %ddlOpt%, %ddlContent%
     Gui, Font, s8.5 Norm c555555, Segoe UI
-    Gui, Add, Text, x30 y%yFInfo% w360 h66 vCenterFocusInfoTxt, % L("LC_FocusDesc")
+    Gui, Add, Text, x30 y%yFInfo% w410 h72 vCenterFocusInfoTxt, % L("LC_FocusDesc")
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
-    yNext := ySec2 + 146
+    yNext := ySec2 + 158
 
     ; Nhóm 3 (Tùy chọn): Yêu cầu mã mở khóa khi đang chạy hẹn giờ
     if (lockTimerActive && requireCodeForTimerEdit) {
         Gui, Font, s9.5 Bold c9C4A00, Segoe UI
-        Gui, Add, GroupBox, x15 y%yNext% w390 h84 vCenterAuthGroup, % "  🔑 " . L("LC_AuthPrompt")
+        Gui, Add, GroupBox, x15 y%yNext% w440 h86 vCenterAuthGroup, % "  🔑 " . L("LC_AuthPrompt")
         Gui, Font, s9.5 Norm c222222, Segoe UI
         yAuthCtrl := yNext + 36
-        Gui, Add, Edit, x30 y%yAuthCtrl% w240 h25 Password vCenterAuthInput
-        Gui, Add, Button, x280 y%yAuthCtrl% w110 h26 gOnVerifyCenterAuth vCenterAuthBtn Default, % L("LC_AuthUnlockBtn")
-        yBtn := yNext + 96
+        Gui, Add, Edit, x30 y%yAuthCtrl% w285 h25 Password vCenterAuthInput
+        Gui, Add, Button, x325 y%yAuthCtrl% w115 h26 gOnVerifyCenterAuth vCenterAuthBtn Default, % L("LC_AuthUnlockBtn")
+        yBtn := yNext + 98
     } else {
         yBtn := yNext
     }
@@ -467,18 +505,18 @@ ShowLockCenterGUI() {
     ; Nút hành động chân trang
     if (lockTimerActive) {
         defOpt := centerEditUnlocked ? "Default" : ""
-        Gui, Add, Button, x95 y%yBtn% w100 h32 gOnLockCenterApply vCenterBtnApply %defOpt%, % "✔ " . L("LC_BtnUpdate")
-        Gui, Add, Button, x203 y%yBtn% w110 h32 gOnLockCenterCancelTimer vCenterBtnCancelTimer, % "⏹ " . L("LC_BtnCancelTimer")
-        Gui, Add, Button, x321 y%yBtn% w84 h32 gLockCenterGuiClose vCenterBtnClose, % L("LC_BtnClose")
+        Gui, Add, Button, x130 y%yBtn% w100 h32 gOnLockCenterApply vCenterBtnApply %defOpt%, % "✔ " . L("LC_BtnUpdate")
+        Gui, Add, Button, x238 y%yBtn% w115 h32 gOnLockCenterCancelTimer vCenterBtnCancelTimer, % "⏹ " . L("LC_BtnCancelTimer")
+        Gui, Add, Button, x361 y%yBtn% w94 h32 gLockCenterGuiClose vCenterBtnClose, % L("LC_BtnClose")
     } else {
-        Gui, Add, Button, x195 y%yBtn% w115 h32 gOnLockCenterApply vCenterBtnApply Default, % "🔒 " . L("LC_BtnStart")
-        Gui, Add, Button, x320 y%yBtn% w85 h32 gLockCenterGuiClose vCenterBtnClose, % L("LC_BtnCancel")
+        Gui, Add, Button, x235 y%yBtn% w120 h32 gOnLockCenterApply vCenterBtnApply Default, % "🔒 " . L("LC_BtnStart")
+        Gui, Add, Button, x363 y%yBtn% w92 h32 gLockCenterGuiClose vCenterBtnClose, % L("LC_BtnCancel")
     }
 
     totalH := yBtn + 46
     UpdateLockCenterUIState()
 
-    Gui, Show, w420 h%totalH% Center, % L("LC_Title")
+    Gui, Show, w470 h%totalH% Center, % L("LC_Title")
     if (IsFunc("SetGuiYellowIcon"))
         SetGuiYellowIcon(hLockCenterGui)
 
@@ -779,19 +817,20 @@ CreateCountdownGui() {
 
     Gui, LockCountdown:Destroy
     Gui, LockCountdown:New, +LastFound +AlwaysOnTop -Caption +ToolWindow +E0x20 +HwndhLockCountdownGui
-    Gui, Margin, 14, 8
-    Gui, Color, 1E293B
-    Gui, Font, s10 Norm cF8FAFC, Segoe UI
+    Gui, Margin, 16, 10
+    Gui, Font, s9.5 Norm, Segoe UI
+    Gui, Color, FFF9C4, 2B1E00 ; Nền vàng nhạt nổi bật, chữ nâu sẫm dễ đọc
+    Gui, Font, c2B1E00
     Gui, Add, Text, vLockCountdownText w290 Center, ...
     Gui, Show, Hide
     WinGetPos,,, gw, gh, ahk_id %hLockCountdownGui%
     if (!gw)
-        gw := 318, gh := 36
+        gw := 322, gh := 38
     posX := A_ScreenWidth - gw - 16
     posY := A_ScreenHeight - gh - hTaskbar - 16
     Gui, Show, x%posX% y%posY% NoActivate
-    WinSet, Transparent, 215, ahk_id %hLockCountdownGui%
-    WinSet, Region, 0-0 w%gw% h%gh% R10-10, ahk_id %hLockCountdownGui%
+    WinSet, Transparent, 240, ahk_id %hLockCountdownGui%
+    WinSet, Region, 0-0 w%gw% h%gh% R12-12, ahk_id %hLockCountdownGui%
 }
 
 UpdateLockCountdown:
@@ -958,9 +997,13 @@ ActivateLock(mode := 0, targetHwnd := 0) {
     Buffer := ""
 
     if (lockMode == 1) {
-        hFocusWnd := (targetHwnd && WinExist("ahk_id " . targetHwnd)) ? targetHwnd : WinExist("A")
+        hFocusWnd := (targetHwnd && WinExist("ahk_id " . targetHwnd)) ? targetHwnd : FindBestFocusTarget(WinExist("A"))
         if (hFocusWnd) {
+            WinGet, mmState, MinMax, ahk_id %hFocusWnd%
+            if (mmState = -1)
+                WinRestore, ahk_id %hFocusWnd%
             WinActivate, ahk_id %hFocusWnd%
+            Sleep, 80
             WinGetTitle, focusWndTitle, ahk_id %hFocusWnd%
             WinGetPos, fX, fY, fW, fH, ahk_id %hFocusWnd%
             if (fW > 0 && fH > 0) {
