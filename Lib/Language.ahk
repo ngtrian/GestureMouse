@@ -296,11 +296,11 @@ InitLanguage() {
     v["LC_TimerCancelled"]      := "Đã hủy hẹn giờ khóa"
 
     ; Sidebar điều hướng Settings
-    v["Nav_General"]            := "Cài đặt chung"
-    v["Nav_ScrollAndGesture"]   := "Cuộn && Cử chỉ chuột"
-    v["Nav_Lock"]               := "Khóa phím && chuột"
-    v["Nav_Shortcuts"]          := "Phím tắt && Tiện ích"
-    v["Nav_About"]              := "Giới thiệu"
+    v["Nav_General"]            := "Chung"
+    v["Nav_ScrollAndGesture"]   := "Cử chỉ"
+    v["Nav_Lock"]               := "Khóa"
+    v["Nav_Shortcuts"]          := "Phím tắt"
+    v["Nav_About"]              := "Thông tin"
     v["Set_HeaderGeneral"]      := "Cài đặt chung && Hệ thống"
     v["Set_SubGeneral"]         := "Tùy chỉnh khởi động cùng Windows, ngôn ngữ hiển thị và đặc quyền hệ thống"
     v["Set_HeaderScrollGesture"]:= "Cuộn chuột && Cử chỉ nâng cao"
@@ -603,9 +603,9 @@ InitLanguage() {
 
     ; Sidebar navigation Settings
     e["Nav_General"]            := "General"
-    e["Nav_ScrollAndGesture"]   := "Scroll && Gestures"
-    e["Nav_Lock"]               := "Lock Keys && Mouse"
-    e["Nav_Shortcuts"]          := "Shortcuts && Utilities"
+    e["Nav_ScrollAndGesture"]   := "Gestures"
+    e["Nav_Lock"]               := "Lock"
+    e["Nav_Shortcuts"]          := "Shortcuts"
     e["Nav_About"]              := "About"
     e["Set_HeaderGeneral"]      := "General && System Settings"
     e["Set_SubGeneral"]         := "Configure Windows startup, display language, and system privilege"

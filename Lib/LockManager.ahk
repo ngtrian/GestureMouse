@@ -437,8 +437,8 @@ ShowLockCenterGUI() {
     Gui, Add, Radio, x30 y%yR1% w236 h22 vCenterType0 gOnLockCenterTypeChange Group Checked%chkType0%, % "🔒 " . L("LC_ModeFull")
     Gui, Add, Radio, x30 y%yR2% w410 h22 vCenterType1 gOnLockCenterTypeChange Checked%chkType1%, % "🖥️ " . L("LC_ModeScreen")
     Gui, Add, Radio, x30 y%yR3% w410 h22 vCenterType2 gOnLockCenterTypeChange Checked%chkType2%, % "🎯 " . L("LC_ModeFocus")
-    Gui, Font, s9 Norm c005FB8, Segoe UI
-    Gui, Add, Text, x268 y%yR1% w64 h22 +0x200 Right vCenterDeviceIcons, % GetLockDeviceStatusIcons()
+    Gui, Font, s10 Norm c222222, Segoe UI
+    Gui, Add, Text, x268 y%yR1% w64 h22 +0x200 Center vCenterDeviceIcons, % GetLockDeviceStatusIcons()
     Gui, Font, s8.5 Norm, Segoe UI
     Gui, Add, Button, x336 y%yR1Btn% w106 h24 gOnOpenLockSettingsFromCenter vCenterBtnLockSettings, % "⚙️ " . L("LC_BtnSettings")
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -532,11 +532,9 @@ GetLockDeviceStatusIcons() {
     global lockKeyboardEnabled, mouseLockEnabled
     icons := ""
     if (lockKeyboardEnabled)
-        icons .= "⌨️🔒"
+        icons .= "⌨️"
     if (mouseLockEnabled)
-        icons .= (icons != "" ? " " : "") . "🖱️🔒"
-    if (icons = "")
-        icons := "⚠️"
+        icons .= (icons != "" ? "  " : "") . "🖱️"
     return icons
 }
 
