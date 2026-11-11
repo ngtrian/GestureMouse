@@ -30,6 +30,7 @@ global disableAutoLockScreen     := 1
 global UNLOCK_KEYWORD            := "unlock"
 global KEYWORD_LENGTH            := 6
 global requireCodeForTimerEdit   := 1         ; Yêu cầu mã mở khóa khi sửa/hủy hẹn giờ đang chạy
+global windowsLogonOnly          := 0         ; Chỉ dùng màn hình khóa Windows để mở khóa (bỏ qua mã riêng)
 
 ; Cấu hình Trung tâm Khóa gần nhất
 global centerLockType            := 0         ; 0: Full Lock, 1: Windows Screen Lock, 2: Focus Lock
@@ -145,6 +146,9 @@ LoadLockSettings() {
 
     RegRead, val, %regPath%, RequireCodeForTimerEdit
     requireCodeForTimerEdit := (val != "") ? val : 1
+
+    RegRead, val, %regPath%, WindowsLogonOnly
+    windowsLogonOnly := (val != "") ? (val ? 1 : 0) : 0
 
     RegRead, val, %regPath%, CenterLockType
     centerLockType := (val != "" && val >= 0 && val <= 2) ? val + 0 : 0
@@ -396,7 +400,7 @@ ShowLockCenterGUI() {
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
     ; Xác định trạng thái bảo vệ khi đang có hẹn giờ đếm ngược
-    centerEditUnlocked := (lockTimerActive && requireCodeForTimerEdit) ? 0 : 1
+    centerEditUnlocked := (lockTimerActive && requireCodeForTimerEdit && !windowsLogonOnly) ? 0 : 1
 
     ; Nếu đang chạy đếm ngược: ưu tiên hiển thị cấu hình đang chạy
     dispType := lockTimerActive ? lockTimerType : centerLockType
@@ -493,7 +497,7 @@ ShowLockCenterGUI() {
     yNext := ySec2 + 158
 
     ; Nhóm 3 (Tùy chọn): Yêu cầu mã mở khóa khi đang chạy hẹn giờ
-    if (lockTimerActive && requireCodeForTimerEdit) {
+    if (lockTimerActive && requireCodeForTimerEdit && !windowsLogonOnly) {
         Gui, Font, s9.5 Bold c9C4A00, Segoe UI
         Gui, Add, GroupBox, x15 y%yNext% w440 h86 vCenterAuthGroup, % "  🔑 " . L("LC_AuthPrompt")
         Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -524,7 +528,7 @@ ShowLockCenterGUI() {
         SetGuiYellowIcon(hLockCenterGui)
     WinActivate, ahk_id %hLockCenterGui%
 
-    if (lockTimerActive && requireCodeForTimerEdit && !centerEditUnlocked)
+    if (lockTimerActive && requireCodeForTimerEdit && !windowsLogonOnly && !centerEditUnlocked)
         GuiControl, LockCenter:Focus, CenterAuthInput
 }
 
@@ -976,14 +980,16 @@ ShowToastBanner(msg, autoHideMs := 0) {
 }
 
 ShowNotification() {
-    global isLocked, lockMode, focusWndTitle
+    global isLocked, lockMode, focusWndTitle, windowsLogonOnly
 
     if (isLocked) {
         if (lockMode == 1) {
             shortTitle := (focusWndTitle != "") ? (SubStr(focusWndTitle, 1, 35) . (StrLen(focusWndTitle) > 35 ? "..." : "")) : ""
-            msg := "🎯 " . L("Lock_NotificationFocus") . shortTitle . "`n" . L("Lock_FocusToastHint")
+            hint := windowsLogonOnly ? L("Lock_FocusToastHintWinOnly") : L("Lock_FocusToastHint")
+            msg := "🎯 " . L("Lock_NotificationFocus") . shortTitle . "`n" . hint
         } else {
-            msg := "🔒 " . L("Lock_NotificationFull") . "`n" . L("Lock_ToastHint")
+            hint := windowsLogonOnly ? L("Lock_ToastHintWinOnly") : L("Lock_ToastHint")
+            msg := "🔒 " . L("Lock_NotificationFull") . "`n" . hint
         }
         ShowToastBanner(msg, 0)
     } else {
@@ -1133,16 +1139,62 @@ UnlockKeyboard(fromWindowsSession := false) {
 ; ========================================================
 ; LOW-LEVEL KEYBOARD HOOK
 ; ========================================================
+; Lấy ký tự thật đang gõ theo layout bàn phím, Shift, CapsLock và NumLock
+GetRealTypedChar(vkCode, scanCode, isShift) {
+    ; Bỏ qua phím bổ trợ / phím trạng thái đơn lẻ
+    if (vkCode = 0x10 || vkCode = 0x11 || vkCode = 0x12 || vkCode = 0x14
+        || vkCode = 0x5B || vkCode = 0x5C || vkCode = 0x90 || vkCode = 0x91
+        || (vkCode >= 0xA0 && vkCode <= 0xA5))
+        return ""
+
+    VarSetCapacity(keyState, 256, 0)
+    VarSetCapacity(outBuff, 8, 0)
+    DllCall("GetKeyboardState", "Ptr", &keyState)
+
+    ; Đồng bộ trạng thái Shift / CapsLock / NumLock thực tế trong ngữ cảnh hook
+    NumPut(isShift ? 0x80 : 0, keyState, 0x10, "UChar")
+    NumPut(isShift ? 0x80 : 0, keyState, 0xA0, "UChar")
+    NumPut(isShift ? 0x80 : 0, keyState, 0xA1, "UChar")
+    NumPut(GetKeyState("CapsLock", "T") ? 0x01 : 0, keyState, 0x14, "UChar")
+    NumPut(GetKeyState("NumLock", "T") ? 0x01 : 0, keyState, 0x90, "UChar")
+
+    ; Xóa bit Ctrl/Alt sót lại để ToUnicodeEx không biến chữ cái thành ký tự điều khiển
+    NumPut(0, keyState, 0x11, "UChar")
+    NumPut(0, keyState, 0xA2, "UChar")
+    NumPut(0, keyState, 0xA3, "UChar")
+    NumPut(0, keyState, 0x12, "UChar")
+    NumPut(0, keyState, 0xA4, "UChar")
+    NumPut(0, keyState, 0xA5, "UChar")
+
+    fgWnd := WinExist("A")
+    tid := fgWnd ? DllCall("GetWindowThreadProcessId", "Ptr", fgWnd, "Ptr", 0, "UInt") : 0
+    kbLayout := DllCall("GetKeyboardLayout", "UInt", tid, "Ptr")
+    if (!kbLayout)
+        kbLayout := DllCall("GetKeyboardLayout", "UInt", 0, "Ptr")
+
+    res := DllCall("ToUnicodeEx", "UInt", vkCode, "UInt", scanCode, "Ptr", &keyState, "Ptr", &outBuff, "Int", 4, "UInt", 0, "Ptr", kbLayout)
+    if (res > 0) {
+        ch := StrGet(&outBuff, res, "UTF-16")
+        if (ch != "" && Asc(SubStr(ch, 1, 1)) >= 32)
+            return ch
+    }
+    return ""
+}
+
 KeyboardProc(nCode, wParam, lParam) {
-    global isLocked, Buffer, UNLOCK_KEYWORD, KEYWORD_LENGTH
+    global isLocked, Buffer, UNLOCK_KEYWORD, KEYWORD_LENGTH, windowsLogonOnly
     global lockMode, hFocusWnd, hFocusUnlockGui, lockKeyboardEnabled, allowSpace, allowMedia, allowNav
     static ctrlState := 0
     static altState := 0
+    static lShiftState := 0
+    static rShiftState := 0
     Critical
 
     if (nCode < 0 || !isLocked) {
         ctrlState := 0
         altState := 0
+        lShiftState := 0
+        rShiftState := 0
         return DllCall("CallNextHookEx", "Ptr", 0, "Int", nCode, "Ptr", wParam, "Ptr", lParam)
     }
 
@@ -1156,9 +1208,18 @@ KeyboardProc(nCode, wParam, lParam) {
         ctrlState := isKeyDown
     if (vkCode = 0x12 || vkCode = 0xA4 || vkCode = 0xA5)
         altState := isKeyDown
+    if (vkCode = 0xA0)
+        lShiftState := isKeyDown
+    else if (vkCode = 0xA1)
+        rShiftState := isKeyDown
+    else if (vkCode = 0x10) {
+        lShiftState := isKeyDown
+        rShiftState := isKeyDown
+    }
 
-    isCtrl := ctrlState || ((DllCall("GetAsyncKeyState", "Int", 0x11) & 0x8000) != 0) || GetKeyState("Ctrl", "P")
-    isAlt  := altState || isAltDown || ((DllCall("GetAsyncKeyState", "Int", 0x12) & 0x8000) != 0) || GetKeyState("Alt", "P")
+    isCtrl  := ctrlState || ((DllCall("GetAsyncKeyState", "Int", 0x11) & 0x8000) != 0) || GetKeyState("Ctrl", "P")
+    isAlt   := altState || isAltDown || ((DllCall("GetAsyncKeyState", "Int", 0x12) & 0x8000) != 0) || GetKeyState("Alt", "P")
+    isShift := lShiftState || rShiftState || ((DllCall("GetAsyncKeyState", "Int", 0x10) & 0x8000) != 0) || GetKeyState("Shift", "P")
 
     ; 1. ƯU TIÊN SỐ 1: Bấm Ctrl + Alt + L khi đang khóa
     if (isKeyDown && vkCode = 0x4C && isCtrl && isAlt) {
@@ -1167,8 +1228,10 @@ KeyboardProc(nCode, wParam, lParam) {
             lastHotkeyPress := A_TickCount
             ctrlState := 0
             altState := 0
+            lShiftState := 0
+            rShiftState := 0
             Buffer := ""
-            if (lockMode == 1 && !(hFocusUnlockGui && WinExist("ahk_id " . hFocusUnlockGui)))
+            if (lockMode == 1 && !windowsLogonOnly && !(hFocusUnlockGui && WinExist("ahk_id " . hFocusUnlockGui)))
                 SetTimer, TriggerFocusUnlockPrompt, -1
             else
                 SetTimer, TriggerWindowsAuthPrompt, -1
@@ -1196,30 +1259,14 @@ KeyboardProc(nCode, wParam, lParam) {
         }
     }
 
-    ; 3. Bắt mã mở khóa trực tiếp cho Full Lock
-    if (isKeyDown) {
-        char := ""
-        if (vkCode >= 0x30 && vkCode <= 0x39) {
-            char := Chr(vkCode)
-        } else if (vkCode >= 0x60 && vkCode <= 0x69) {
-            char := Chr(vkCode - 0x30)
-        } else if (vkCode >= 0x41 && vkCode <= 0x5A) {
-            char := Chr(vkCode + 32)
-        } else {
-            VarSetCapacity(keyState, 256, 0)
-            VarSetCapacity(outBuff, 4, 0)
-            DllCall("GetKeyboardState", "Ptr", &keyState)
-            kbLayout := DllCall("GetKeyboardLayout", "UInt", 0, "Ptr")
-            res := DllCall("ToUnicodeEx", "UInt", vkCode, "UInt", scanCode, "Ptr", &keyState, "Ptr", &outBuff, "Int", 2, "UInt", 0, "Ptr", kbLayout)
-            if (res > 0)
-                char := StrGet(&outBuff, res, "UTF-16")
-        }
-
+    ; 3. Bắt mã mở khóa trực tiếp cho Full Lock (lấy ký tự thật, phân biệt hoa/thường đồng nhất với hộp thoại)
+    if (!windowsLogonOnly && isKeyDown && !(isCtrl && !isAlt)) {
+        char := GetRealTypedChar(vkCode, scanCode, isShift)
         if (char != "") {
             Buffer .= char
             if (StrLen(Buffer) >= KEYWORD_LENGTH) {
                 lastChars := SubStr(Buffer, -KEYWORD_LENGTH + 1)
-                if (lastChars = UNLOCK_KEYWORD) {
+                if (lastChars == UNLOCK_KEYWORD) {
                     Buffer := ""
                     SetTimer, TriggerDirectUnlock, -1
                     return 1

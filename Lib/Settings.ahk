@@ -311,29 +311,33 @@ Settings:
     Gui, Add, GroupBox, x228 y198 w535 h264, % "  🔑 " . L("Lock_Card2Title")
     Gui, Font, s9 Norm c222222, Segoe UI
 
-    ; Hàng 1: Mã mở khóa bảo mật (Mask Password + Xem/Ẩn + Đổi mã)
-    Gui, Add, Text, x243 y226 w20 h18 Center, 🔑
-    Gui, Add, Text, x266 y227 w90, % L("Lock_KeyPrompt")
-    Gui, Add, Edit, x360 y224 w115 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
-    Gui, Add, Button, x480 y223 w36 h25 gToggleRevealCode vBtnToggleReveal Center, 👁️
-    Gui, Add, Button, x522 y223 w110 h25 gOpenChangeCodeGui, % L("Lock_ChangeCodeBtn")
+    ; Hàng 1: Chỉ dùng màn hình khóa Windows (bỏ qua mã mở khóa riêng)
+    Gui, Add, Text, x243 y223 w20 h18 Center, 🛡️
+    Gui, Add, Checkbox, x266 y222 w485 vwindowsLogonOnly gOnToggleWindowsLogonOnly Checked%windowsLogonOnly%, % L("Lock_WinLogonOnly")
 
-    ; Hàng 2: Yêu cầu mã khi chỉnh sửa/hủy hẹn giờ đang chạy
-    Gui, Add, Text, x243 y263 w20 h18 Center, 🛡️
-    Gui, Add, Checkbox, x266 y262 w485 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
+    ; Hàng 2: Mã mở khóa bảo mật (Mask Password + Xem/Ẩn + Đổi mã)
+    Gui, Add, Text, x243 y253 w20 h18 Center, 🔑
+    Gui, Add, Text, x266 y254 w90 vLockKeyPromptLbl, % L("Lock_KeyPrompt")
+    Gui, Add, Edit, x360 y251 w115 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
+    Gui, Add, Button, x480 y250 w36 h25 gToggleRevealCode vBtnToggleReveal Center, 👁️
+    Gui, Add, Button, x522 y250 w110 h25 gOpenChangeCodeGui vBtnChangeCode, % L("Lock_ChangeCodeBtn")
+
+    ; Hàng 3: Yêu cầu mã khi chỉnh sửa/hủy hẹn giờ đang chạy
+    Gui, Add, Text, x243 y286 w20 h18 Center, ⏱️
+    Gui, Add, Checkbox, x266 y285 w485 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
 
     Gui, Font, s8 Norm c666666, Segoe UI
-    Gui, Add, Text, x266 y290 w480 h32, % ("• " . L("Lock_MethodHint"))
+    Gui, Add, Text, x266 y312 w480 h30 vLockMethodHintTxt, % ("• " . (windowsLogonOnly ? L("Lock_MethodHintWinOnly") : L("Lock_MethodHint")))
 
-    Gui, Add, Text, x243 y330 w505 h1 0x10
+    Gui, Add, Text, x243 y346 w505 h1 0x10
 
-    ; Hàng 3: Nút mở Trung tâm Khóa hợp nhất
+    ; Hàng 4: Nút mở Trung tâm Khóa hợp nhất
     Gui, Font, s9.5 Bold c004499, Segoe UI
-    Gui, Add, Button, x243 y346 w505 h40 gActionOpenLockCenter, % L("Lock_CenterBtn")
+    Gui, Add, Button, x243 y358 w505 h38 gActionOpenLockCenter, % L("Lock_CenterBtn")
 
     Gui, Font, s8 Norm c777777, Segoe UI
     lockActionTip := (CurrentLang = "en") ? "• Tip: Press Ctrl+Alt+L anytime (even when gestures are disabled) to open Lock Center, manage active timers, or lock Windows." : "• Mẹo: Bấm Ctrl+Alt+L bất kỳ lúc nào (kể cả khi tắt cử chỉ) để mở Trung tâm Khóa, quản lý hẹn giờ hoặc khóa màn hình."
-    Gui, Add, Text, x243 y398 w505 h34 Center, %lockActionTip%
+    Gui, Add, Text, x243 y405 w505 h34 Center, %lockActionTip%
 
     ; --------------------------------------------------------
     ; TAB 4: PHÍM TẮT && TIỆN ÍCH
@@ -422,6 +426,7 @@ Settings:
 
     ; Khởi tạo trạng thái Enable/Disable của dropdown theo checkbox
     GuiControl, Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
+    UpdateLockAuthControlsState(windowsLogonOnly)
 
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
     SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1)
@@ -481,8 +486,10 @@ UpdateSettingsGuiControls() {
     GuiControl, Settings:Choose, autoLockIdleMinutesChoice, %selIdleIdx%
 
     GuiControl, Settings:, disableAutoLockScreen, %disableAutoLockScreen%
+    GuiControl, Settings:, windowsLogonOnly, %windowsLogonOnly%
     GuiControl, Settings:, requireCodeForTimerEdit, %requireCodeForTimerEdit%
     GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
+    UpdateLockAuthControlsState(windowsLogonOnly)
 
     chkVI := (CurrentLang = "vi") ? 1 : 0
     chkEN := (CurrentLang = "en") ? 1 : 0
@@ -581,7 +588,7 @@ SubmitChangeCode:
         GuiControl, Focus, NewUnlockCodeInput
         return
     }
-    if (NewUnlockCodeInput != ConfirmUnlockCodeInput) {
+    if !(NewUnlockCodeInput == ConfirmUnlockCodeInput) {
         MsgBox, 48, GestureMouse, % L("Lock_CodeMismatch")
         GuiControl,, ConfirmUnlockCodeInput,
         GuiControl, Focus, ConfirmUnlockCodeInput
@@ -635,6 +642,30 @@ OnToggleIdleCheck:
     GuiControl, Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
     Gosub, SaveSettings
 return
+
+OnToggleWindowsLogonOnly:
+    Gui, Settings:Submit, NoHide
+    UpdateLockAuthControlsState(windowsLogonOnly)
+    Gosub, SaveSettings
+return
+
+UpdateLockAuthControlsState(winOnly) {
+    global isCodeRevealed, UNLOCK_KEYWORD
+    enableCustom := !winOnly
+    if (winOnly && isCodeRevealed) {
+        isCodeRevealed := 0
+        GuiControl, Settings:+Password, UnlockCodeDisplay
+        GuiControl, Settings:, BtnToggleReveal, 👁️
+        GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
+    }
+    GuiControl, Settings:Enable%enableCustom%, LockKeyPromptLbl
+    GuiControl, Settings:Enable%enableCustom%, UnlockCodeDisplay
+    GuiControl, Settings:Enable%enableCustom%, BtnToggleReveal
+    GuiControl, Settings:Enable%enableCustom%, BtnChangeCode
+    GuiControl, Settings:Enable%enableCustom%, requireCodeForTimerEdit
+    hintTxt := "• " . (winOnly ? L("Lock_MethodHintWinOnly") : L("Lock_MethodHint"))
+    GuiControl, Settings:, LockMethodHintTxt, %hintTxt%
+}
 
 OnLangRadio:
     Gui, Settings:Submit, NoHide
@@ -711,7 +742,10 @@ Save:
     if (IsFunc("InitAutoLockTimer"))
         InitAutoLockTimer()
 
-    ; Lưu tùy chọn yêu cầu mã khi chỉnh sửa / hủy hẹn giờ đang chạy
+    ; Lưu tùy chọn chỉ dùng Windows Logon & yêu cầu mã khi chỉnh sửa hẹn giờ
+    windowsLogonOnly := windowsLogonOnly ? 1 : 0
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WindowsLogonOnly, %windowsLogonOnly%
+
     requireCodeForTimerEdit := requireCodeForTimerEdit ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, RequireCodeForTimerEdit, %requireCodeForTimerEdit%
 
