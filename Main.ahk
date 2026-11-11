@@ -849,6 +849,10 @@ OnSessionChange(wParam, lParam) {
             hMouseHook := 0
         }
         DllCall("ClipCursor", "Ptr", 0)
+        if (IsFunc("ClearLockPowerPolicy"))
+            ClearLockPowerPolicy()
+        else
+            DllCall("SetThreadExecutionState", "UInt", 0x80000000)
     }
 
     ; 0x8 = WTS_SESSION_UNLOCK (Chỉ kích hoạt khi người dùng mở khóa màn hình Windows)

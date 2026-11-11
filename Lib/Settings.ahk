@@ -50,9 +50,15 @@ Settings:
     chkS1 := (ScrollStyle = 1) ? 1 : 0
     chkS2 := (ScrollStyle = 2) ? 1 : 0
 
-    ; Đọc trạng thái giữ màn hình sáng khi khóa
-    RegRead, valDisableSleep, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, DisableAutoLockScreen
-    disableAutoLockScreen := (valDisableSleep != "") ? valDisableSleep : 1
+    ; Đọc trạng thái ngăn tắt màn hình & ngăn Sleep khi khóa (chỉ dùng cho Khóa phím/chuột & Focus Lock)
+    RegRead, valLegacyDisableSleep, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, DisableAutoLockScreen
+    RegRead, valScreenOff, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventScreenOff
+    preventScreenOff := (valScreenOff != "") ? (valScreenOff ? 1 : 0) : 0
+    RegRead, valSleep, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleep
+    if (valSleep != "")
+        preventSleep := valSleep ? 1 : 0
+    else
+        preventSleep := (valLegacyDisableSleep != "") ? (valLegacyDisableSleep ? 1 : 0) : 1
 
     ; Danh sách phút tự động khóa khi rảnh rỗi (Idle)
     if (CurrentLang = "en") {
@@ -181,19 +187,22 @@ Settings:
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Picture, x246 y77 w24 h24 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x276 y78 w122 h22 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
-    Gui, Add, Picture, x412 y77 w24 h24 Icon32, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x442 y78 w108 h22 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
+    Gui, Add, Checkbox, x274 y78 w118 h22 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
+    Gui, Add, Picture, x398 y77 w24 h24 Icon32, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x426 y78 w96 h22 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x562 y76 w184 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
+    Gui, Add, Button, x528 y76 w218 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y117 w306 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
+    Gui, Add, Checkbox, x246 y117 w276 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, DropDownList, x562 y114 w184 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+    Gui, Add, DropDownList, x528 y114 w218 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y148 w500 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
+    Gui, Add, Checkbox, x246 y148 w172 h22 vpreventScreenOff gSaveSettings Checked%preventScreenOff%, % L("Lock_PreventScreenOff")
+    Gui, Add, Checkbox, x426 y148 w142 h22 vpreventSleep gSaveSettings Checked%preventSleep%, % L("Lock_PreventSleep")
+    Gui, Font, s8.5 Norm c666666, Segoe UI
+    Gui, Add, Text, x574 y151 w172 h18 +Right, % L("Lock_PowerScopeHint")
 
     ; Card 2: Bảo mật & Mở khóa
     Gui, Font, s9.5 Bold c222222, Segoe UI
@@ -549,7 +558,8 @@ UpdateSettingsGuiControls() {
     selIdleIdx := GetIdleMinuteIndex(autoLockIdleMinutes)
     GuiControl, Settings:Choose, autoLockIdleMinutesChoice, %selIdleIdx%
 
-    GuiControl, Settings:, disableAutoLockScreen, %disableAutoLockScreen%
+    GuiControl, Settings:, preventScreenOff, %preventScreenOff%
+    GuiControl, Settings:, preventSleep, %preventSleep%
     GuiControl, Settings:, windowsLogonOnly, %windowsLogonOnly%
     GuiControl, Settings:, requireCodeForTimerEdit, %requireCodeForTimerEdit%
     GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
@@ -817,9 +827,13 @@ Save:
     requireCodeForTimerEdit := requireCodeForTimerEdit ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, RequireCodeForTimerEdit, %requireCodeForTimerEdit%
 
-    ; Lưu trạng thái giữ màn hình luôn sáng khi khóa
-    disableAutoLockScreen := disableAutoLockScreen ? 1 : 0
-    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, DisableAutoLockScreen, %disableAutoLockScreen%
+    ; Lưu trạng thái ngăn tắt màn hình & ngăn Sleep khi khóa
+    preventScreenOff := preventScreenOff ? 1 : 0
+    preventSleep := preventSleep ? 1 : 0
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventScreenOff, %preventScreenOff%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleep, %preventSleep%
+    if (IsFunc("ApplyLockPowerPolicy"))
+        ApplyLockPowerPolicy()
 
     ; Cập nhật tray tip
     fnTip := "UpdateTrayTip"

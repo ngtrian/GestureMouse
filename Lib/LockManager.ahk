@@ -26,7 +26,8 @@ global allowMedia                := 0
 global allowNav                  := 0
 global autoLockIdleEnabled       := 1
 global autoLockIdleMinutes       := 5
-global disableAutoLockScreen     := 1
+global preventScreenOff          := 0
+global preventSleep              := 1
 global UNLOCK_KEYWORD            := "unlock"
 global KEYWORD_LENGTH            := 6
 global requireCodeForTimerEdit   := 1         ; Yêu cầu mã mở khóa khi sửa/hủy hẹn giờ đang chạy
@@ -141,8 +142,18 @@ LoadLockSettings() {
         UNLOCK_KEYWORD := "unlock"
     KEYWORD_LENGTH := StrLen(UNLOCK_KEYWORD)
 
-    RegRead, val, %regPath%, DisableAutoLockScreen
-    disableAutoLockScreen := (val != "") ? val : 1
+    RegRead, valLegacy, %regPath%, DisableAutoLockScreen
+    RegRead, valScreenOff, %regPath%, PreventScreenOff
+    if (valScreenOff != "")
+        preventScreenOff := valScreenOff ? 1 : 0
+    else
+        preventScreenOff := 0
+
+    RegRead, valSleep, %regPath%, PreventSleep
+    if (valSleep != "")
+        preventSleep := valSleep ? 1 : 0
+    else
+        preventSleep := (valLegacy != "") ? (valLegacy ? 1 : 0) : 1
 
     RegRead, val, %regPath%, RequireCodeForTimerEdit
     requireCodeForTimerEdit := (val != "") ? val : 1
@@ -746,6 +757,7 @@ OnLockCenterApply:
         ; Khóa ngay lập tức (Full Lock hoặc Windows Screen Lock)
         CancelLockCountdown(false)
         if (selType == 1) {
+            ClearLockPowerPolicy()
             DllCall("user32.dll\LockWorkStation")
         } else {
             ActivateLock(0)
@@ -831,30 +843,71 @@ StartLockCountdown(type, minutes, repeat := 0) {
         %fnTip%()
 }
 
+MeasureToastTextWidth(hwndCtrl, text) {
+    VarSetCapacity(sz, 8, 0)
+    hdc := DllCall("GetDC", "Ptr", hwndCtrl, "Ptr")
+    hFont := DllCall("SendMessage", "Ptr", hwndCtrl, "UInt", 0x0031, "Ptr", 0, "Ptr", 0, "Ptr")
+    hOld := hFont ? DllCall("SelectObject", "Ptr", hdc, "Ptr", hFont, "Ptr") : 0
+    DllCall("GetTextExtentPoint32", "Ptr", hdc, "Str", text, "Int", StrLen(text), "Ptr", &sz)
+    if (hOld)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", hOld, "Ptr")
+    DllCall("ReleaseDC", "Ptr", hwndCtrl, "Ptr", hdc)
+    return NumGet(sz, 0, "Int")
+}
+
 ShowCountdownToast(msg) {
     global hLockCountdownGui
+    static LockCountdownText := "", hCountdownText := 0, sPadX := 0, sCurCW := 0, sCurCH := 0, sGw := 0, sGh := 0
+
     hTaskbar := 60
     if (WinExist("ahk_class Shell_TrayWnd"))
         WinGetPos,,,, hTaskbar, ahk_class Shell_TrayWnd
 
-    Gui, LockCountdown:Destroy
-    Gui, LockCountdown:New, +LastFound +AlwaysOnTop -Caption +ToolWindow +E0x20 +HwndhLockCountdownGui
-    Gui, Margin, 16, 10
-    Gui, Font, s9.5 Norm, Segoe UI
-    Gui, Color, FFF9C4, 2B1E00 ; Nền vàng nhạt nổi bật, chữ nâu sẫm dễ đọc
-    Gui, Font, c2B1E00
-    Gui, Add, Text, Center, %msg%
-    Gui, Show, Hide
-    WinGetPos,,, gw, gh, ahk_id %hLockCountdownGui%
-    if (!gw || !gh)
-        gw := 300, gh := 38
+    if (!hLockCountdownGui || !WinExist("ahk_id " . hLockCountdownGui) || !hCountdownText) {
+        Gui, LockCountdown:Destroy
+        Gui, LockCountdown:New, +LastFound +AlwaysOnTop -Caption +ToolWindow +E0x20 +HwndhLockCountdownGui
+        Gui, Margin, 16, 10
+        Gui, Font, s9.5 Norm, Segoe UI
+        Gui, Color, FFF9C4, 2B1E00 ; Nền vàng nhạt nổi bật, chữ nâu sẫm dễ đọc
+        Gui, Font, c2B1E00
+        Gui, Add, Text, Center +0x80 vLockCountdownText +HwndhCountdownText, %msg%
+        Gui, Show, Hide
+        dhw := A_DetectHiddenWindows
+        DetectHiddenWindows, On
+        WinGetPos,,, gw, gh, ahk_id %hLockCountdownGui%
+        ControlGetPos,,, cw, ch,, ahk_id %hCountdownText%
+        DetectHiddenWindows, %dhw%
+        if (!gw || !gh)
+            gw := 300, gh := 38
+        if (!cw || !ch)
+            cw := gw - 32, ch := gh - 20
 
-    posX := A_ScreenWidth - gw - 16
-    posY := A_ScreenHeight - gh - hTaskbar - 16
+        sPadX := gw - cw
+        sCurCW := cw
+        sCurCH := ch
+        sGw := gw
+        sGh := gh
 
-    Gui, Show, x%posX% y%posY% NoActivate
-    WinSet, Transparent, 240, ahk_id %hLockCountdownGui%
-    WinSet, Region, 0-0 w%gw% h%gh% R12-12, ahk_id %hLockCountdownGui%
+        posX := A_ScreenWidth - sGw - 16
+        posY := A_ScreenHeight - sGh - hTaskbar - 16
+
+        WinSet, Transparent, 240, ahk_id %hLockCountdownGui%
+        WinSet, Region, 0-0 w%sGw% h%sGh% R12-12, ahk_id %hLockCountdownGui%
+        Gui, Show, x%posX% y%posY% NoActivate
+        return
+    }
+
+    wantCW := MeasureToastTextWidth(hCountdownText, msg) + 6
+    if (wantCW > sCurCW || (sCurCW - wantCW) > 16) {
+        sCurCW := wantCW + 8
+        sGw := sCurCW + sPadX
+        DllCall("SetWindowPos", "Ptr", hCountdownText, "Ptr", 0, "Int", 0, "Int", 0, "Int", sCurCW, "Int", sCurCH, "UInt", 0x16)
+        posX := A_ScreenWidth - sGw - 16
+        posY := A_ScreenHeight - sGh - hTaskbar - 16
+        WinMove, ahk_id %hLockCountdownGui%,, %posX%, %posY%, %sGw%, %sGh%
+        WinSet, Region, 0-0 w%sGw% h%sGh% R12-12, ahk_id %hLockCountdownGui%
+    }
+    GuiControl, LockCountdown:, LockCountdownText, %msg%
 }
 
 UpdateLockCountdown:
@@ -892,6 +945,7 @@ UpdateLockCountdown:
             fnTip := "UpdateTrayTip"
             if (IsFunc(fnTip))
                 %fnTip%()
+            ClearLockPowerPolicy()
             DllCall("user32.dll\LockWorkStation")
         } else {
             if (execRepeat) {
@@ -964,16 +1018,16 @@ ShowToastBanner(msg, autoHideMs := 0) {
     Gui, Font, s9.5 Norm, Segoe UI
     Gui, Color, FFF9C4, 2B1E00
     Gui, Font, c2B1E00
-    Gui, Add, Text, Center, %msg%
+    Gui, Add, Text, Center +0x80, %msg%
     Gui, Show, Hide
     WinGetPos,,, GuiWidth, GuiHeight
 
     posX := A_ScreenWidth - GuiWidth - 16
     posY := A_ScreenHeight - GuiHeight - hTaskbar - 16
 
-    Gui, Show, x%posX% y%posY% NoActivate
     WinSet, Transparent, 240
     WinSet, Region, 0-0 w%GuiWidth% h%GuiHeight% R12-12
+    Gui, Show, x%posX% y%posY% NoActivate
 
     if (autoHideMs > 0)
         SetTimer, HideNotification, % -autoHideMs
@@ -984,12 +1038,12 @@ ShowNotification() {
 
     if (isLocked) {
         if (lockMode == 1) {
-            shortTitle := (focusWndTitle != "") ? (SubStr(focusWndTitle, 1, 35) . (StrLen(focusWndTitle) > 35 ? "..." : "")) : ""
+            shortTitle := (focusWndTitle != "") ? (": " . SubStr(focusWndTitle, 1, 24) . (StrLen(focusWndTitle) > 24 ? "..." : "")) : ""
             hint := windowsLogonOnly ? L("Lock_FocusToastHintWinOnly") : L("Lock_FocusToastHint")
-            msg := "🎯 " . L("Lock_NotificationFocus") . shortTitle . "`n" . hint
+            msg := "🎯 " . L("Lock_NotificationFocus") . shortTitle . " — " . hint
         } else {
             hint := windowsLogonOnly ? L("Lock_ToastHintWinOnly") : L("Lock_ToastHint")
-            msg := "🔒 " . L("Lock_NotificationFull") . "`n" . hint
+            msg := "🔒 " . L("Lock_NotificationFull") . " — " . hint
         }
         ShowToastBanner(msg, 0)
     } else {
@@ -1023,9 +1077,28 @@ ApplyFocusClipCursor() {
     }
 }
 
+ApplyLockPowerPolicy() {
+    global isLocked, lockMode, preventScreenOff, preventSleep
+    ; Chỉ áp dụng cho Khóa bàn phím & chuột (lockMode = 0) và Focus Lock (lockMode = 1)
+    if (!isLocked || (lockMode != 0 && lockMode != 1)) {
+        ClearLockPowerPolicy()
+        return
+    }
+    flags := 0x80000000 ; ES_CONTINUOUS
+    if (preventSleep)
+        flags |= 0x00000001 ; ES_SYSTEM_REQUIRED
+    if (preventScreenOff)
+        flags |= 0x00000002 ; ES_DISPLAY_REQUIRED
+    DllCall("SetThreadExecutionState", "UInt", flags)
+}
+
+ClearLockPowerPolicy() {
+    DllCall("SetThreadExecutionState", "UInt", 0x80000000) ; ES_CONTINUOUS
+}
+
 ActivateLock(mode := 0, targetHwnd := 0) {
     global isLocked, hKeyboardHook, hMouseHook, lockMode, hFocusWnd, focusWndTitle
-    global lockKeyboardEnabled, mouseLockEnabled, disableAutoLockScreen, Buffer
+    global lockKeyboardEnabled, mouseLockEnabled, Buffer
 
     LoadLockSettings()
 
@@ -1070,8 +1143,7 @@ ActivateLock(mode := 0, targetHwnd := 0) {
             , "UInt", 0, "Ptr")
     }
 
-    if (disableAutoLockScreen)
-        DllCall("SetThreadExecutionState", "UInt", 0x80000003)
+    ApplyLockPowerPolicy()
 
     ShowNotification()
 }
@@ -1115,7 +1187,7 @@ UnlockKeyboard(fromWindowsSession := false) {
         hMouseHook := 0
     }
 
-    DllCall("SetThreadExecutionState", "UInt", 0x80000000)
+    ClearLockPowerPolicy()
 
     SendLevel, 1
     SendInput, {Ctrl Up}{Alt Up}
@@ -1384,6 +1456,7 @@ TriggerWindowsAuthPrompt:
         hMouseHook := 0
     }
     DllCall("ClipCursor", "Ptr", 0)
+    ClearLockPowerPolicy()
     DllCall("user32.dll\LockWorkStation")
 return
 
@@ -1448,5 +1521,5 @@ LockCleanup() {
         DllCall("UnhookWindowsHookEx", "Ptr", hKeyboardHook)
     if (hMouseHook)
         DllCall("UnhookWindowsHookEx", "Ptr", hMouseHook)
-    DllCall("SetThreadExecutionState", "UInt", 0x80000000)
+    ClearLockPowerPolicy()
 }
