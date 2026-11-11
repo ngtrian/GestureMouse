@@ -156,18 +156,18 @@ Settings:
     Gui, Font, s9.5 Bold c222222, Segoe UI
     Gui, Add, GroupBox, x228 y170 w536 h224, % L("Set_GroupMouseActions")
 
-    AddMouseActionRow(192, "image\scroll_manual.ico", 314, "Set_ManualScroll", "Set_ManualScrollBtn")
+    AddMouseActionRow(191, "image\scroll_manual.ico", 314, "Set_ManualScroll", "Set_ManualScrollBtn")
     AddMouseActionRow(217, "image\scroll_auto.ico",   315, "Set_AutoScroll",   "Set_AutoScrollBtn")
-    AddMouseActionRow(242, "image\scroll_page.ico",   316, "Set_PgScroll",     "Set_PgScrollBtn")
-    AddMouseActionRow(267, "image\mouse_volume.ico",  317, "Set_MouseVolume",  "Set_MouseVolumeBtn")
+    AddMouseActionRow(243, "image\scroll_page.ico",   316, "Set_PgScroll",     "Set_PgScrollBtn")
+    AddMouseActionRow(269, "image\mouse_volume.ico",  317, "Set_MouseVolume",  "Set_MouseVolumeBtn")
 
     Gui, Font, s9 Bold c004499, Segoe UI
-    Gui, Add, Text, x246 y297 w500, % L("Set_BrowserGesturesTitle")
+    Gui, Add, Text, x246 y299 w500, % L("Set_BrowserGesturesTitle")
 
     gestureBadges := CreateGestureBadgeBitmaps(32, 22)
-    AddBrowserGestureRow(322, gestureBadges["L"],  "Set_Back",     "Set_TipGestureL",  gestureBadges["R"],  "Set_Forward", "Set_TipGestureR")
-    AddBrowserGestureRow(346, gestureBadges["LU"], "Set_PrevTab",  "Set_TipGestureLU", gestureBadges["LD"], "Set_NextTab", "Set_TipGestureLD")
-    AddBrowserGestureRow(370, gestureBadges["RU"], "Set_CloseTab", "Set_TipGestureRU", gestureBadges["RD"], "Set_Refresh", "Set_TipGestureRD")
+    AddBrowserGestureRow(323, gestureBadges["L"],  "Set_Back",     "Set_TipGestureL",  gestureBadges["R"],  "Set_Forward", "Set_TipGestureR")
+    AddBrowserGestureRow(347, gestureBadges["LU"], "Set_PrevTab",  "Set_TipGestureLU", gestureBadges["LD"], "Set_NextTab", "Set_TipGestureLD")
+    AddBrowserGestureRow(371, gestureBadges["RU"], "Set_CloseTab", "Set_TipGestureRU", gestureBadges["RD"], "Set_Refresh", "Set_TipGestureRD")
 
     ; --------------------------------------------------------
     ; TAB 3: KHÓA BÀN PHÍM && CHUỘT
@@ -180,15 +180,17 @@ Settings:
     Gui, Add, GroupBox, x228 y58 w536 h122, % L("Lock_Card1Title")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y81 w130 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
-    Gui, Add, Checkbox, x382 y81 w120 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
+    Gui, Add, Picture, x246 y77 w24 h24 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x274 y81 w118 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
+    Gui, Add, Picture, x396 y77 w24 h24 Icon32, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x424 y81 w92 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x516 y76 w230 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
+    Gui, Add, Button, x520 y76 w226 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y117 w260 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
+    Gui, Add, Checkbox, x246 y117 w266 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, DropDownList, x516 y114 w230 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+    Gui, Add, DropDownList, x520 y114 w226 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Checkbox, x246 y148 w500 vdisableAutoLockScreen gSaveSettings Checked%disableAutoLockScreen%, % L("Lock_PreventSleep")
@@ -331,10 +333,10 @@ AddSettingsIcon(x, y, w, h, relPath, resId := 0) {
 }
 
 AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
-    icoY := yPos - 1
-    AddSettingsIcon(246, icoY, 18, 18, icoRelPath, resId)
+    icoY := yPos - 3
+    AddSettingsIcon(246, icoY, 24, 24, icoRelPath, resId)
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x272 y%yPos% w160, % L(labelKey)
+    Gui, Settings:Add, Text, x278 y%yPos% w154, % L(labelKey)
     Gui, Settings:Font, s8.5 Norm c555555, Segoe UI
     Gui, Settings:Add, Text, x436 y%yPos% w310, % "→ " . L(descKey)
 }
