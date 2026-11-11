@@ -44,6 +44,10 @@ if (A_Args.Length()) {
 ;@Ahk2Exe-AddResource image\RU.ico, 306
 ;@Ahk2Exe-AddResource image\flag_vn.ico, 312
 ;@Ahk2Exe-AddResource image\flag_en.ico, 313
+;@Ahk2Exe-AddResource image\scroll_manual.ico, 314
+;@Ahk2Exe-AddResource image\scroll_auto.ico, 315
+;@Ahk2Exe-AddResource image\scroll_page.ico, 316
+;@Ahk2Exe-AddResource image\mouse_volume.ico, 317
 
 
 ; Khai báo phiên bản ứng dụng (Nguồn chân lý duy nhất cho toàn bộ hệ thống)
