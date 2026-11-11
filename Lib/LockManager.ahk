@@ -634,10 +634,8 @@ UpdateLockCenterUIState() {
     isFocus := (selType == 2)
     canEdit := centerEditUnlocked ? 1 : 0
 
-    ; Hiện các icon trạng thái & nút Tùy chọn chỉ khi chọn Khóa bàn phím & chuột (Full Lock)
-    visSettingsBtn := isFull ? "Show" : "Hide"
-    GuiControl, LockCenter:%visSettingsBtn%, CenterBtnLockSettings
-    UpdateLockCenterDeviceStatusIcons(isFull)
+    ; Luôn hiển thị icon trạng thái thiết bị khóa; nút Tùy chọn chỉ bật khi chọn Khóa bàn phím & chuột
+    UpdateLockCenterDeviceStatusIcons(true)
 
     ; Ẩn/Hiện nhóm Thời gian vs Thông tin Focus Lock
     visTimer := isFocus ? "Hide" : "Show"
@@ -665,7 +663,8 @@ UpdateLockCenterUIState() {
     GuiControl, LockCenter:%enMode%, CenterType0
     GuiControl, LockCenter:%enMode%, CenterType1
     GuiControl, LockCenter:%enMode%, CenterType2
-    GuiControl, LockCenter:%enMode%, CenterBtnLockSettings
+    enSettings := (canEdit && isFull) ? "Enable" : "Disable"
+    GuiControl, LockCenter:%enSettings%, CenterBtnLockSettings
     GuiControl, LockCenter:%enMode%, CenterTimingNow
     GuiControl, LockCenter:%enMode%, CenterTimingTimer
     GuiControl, LockCenter:%enMode%, CenterPreset5

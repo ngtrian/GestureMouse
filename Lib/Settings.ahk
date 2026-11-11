@@ -8,6 +8,8 @@ global isCodeRevealed       := 0
 global hChangeCodeGui       := 0
 global SettingsTooltips     := {}
 global LastSettingsTipHwnd  := 0
+global SidebarNavBitmaps    := {}
+global SidebarIconHwnds     := {}
 
 ; Tạo GUI cài đặt - Settings (Giao diện Fluent Cards gọn gàng, Singleton pattern)
 Settings:
@@ -30,6 +32,9 @@ Settings:
     isCodeRevealed := 0
     SettingsTooltips := {}
     LastSettingsTipHwnd := 0
+    SidebarIconHwnds := {}
+    if (!SidebarNavBitmaps.HasKey(1))
+        SidebarNavBitmaps := CreateSidebarNavBitmaps(20)
 
     Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
     SetGuiYellowIcon(hSettingsGui)
@@ -237,13 +242,15 @@ Settings:
     Gui, Add, GroupBox, x228 y58 w536 h232, % L("Set_GroupSystemHotkeys")
 
     AddShortcutRow(82,  "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",   "ActionOpenLockCenter")
-    AddShortcutRow(116, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V", "ActionPastePlain")
-    AddShortcutRow(150, "Icon3",   A_WinDir . "\System32\SndVol.exe",  "Set_Mute",       "Ctrl + Shift + M", "ActionMute")
-    AddShortcutRow(184, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"),  "ActionVolDown")
-    AddShortcutRow(218, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp")
+    AddShortcutRow(114, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V", "ActionPastePlain")
+    Gui, Font, s8.5 Norm c666666, Segoe UI
+    Gui, Add, Text, x274 y137 w472 h18, % L("Set_PastePlainDesc")
+    AddShortcutRow(162, "Icon3",   A_WinDir . "\System32\SndVol.exe",  "Set_Mute",       "Ctrl + Shift + M", "ActionMute")
+    AddShortcutRow(194, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"),  "ActionVolDown")
+    AddShortcutRow(226, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp")
 
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y258 w500 h24, % L("Set_ShortcutsTip")
+    Gui, Add, Text, x246 y260 w500 h22, % L("Set_ShortcutsTip")
 
     ; Card 2: Thao tác nhanh trên khay hệ thống
     Gui, Font, s9.5 Bold c222222, Segoe UI
@@ -254,37 +261,65 @@ Settings:
     Gui, Add, Text, x246 y358 w500 h26, % "• " . L("Set_TrayDblClickTip")
 
     ; --------------------------------------------------------
-    ; TAB 5: THÔNG TIN && BẢN QUYỀN
+    ; TAB 5: THÔNG TIN && BẢN QUYỀN (HERO BANNER HIỆN ĐẠI)
     ; --------------------------------------------------------
     Gui, Tab, TabAbout
-    AddSettingsTabHeader("Set_HeaderAbout", "Set_SubAbout")
 
-    ; Card 1: Thông tin ứng dụng & Liên kết nhanh
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h126, GestureMouse
-    Gui, Add, Picture, x246 y78 w44 h44 Icon1, %aboutIcon%
+    ; Hero Card nền xanh nhạt (#EEF5FC) với viền nhẹ & thanh nhấn xanh
+    Gui, Add, Progress, x228 y14 w536 h108 BackgroundD0E3F7 cD0E3F7 -Theme Disabled, 100
+    Gui, Add, Progress, x229 y15 w534 h106 BackgroundEEF5FC cEEF5FC -Theme Disabled, 100
+    Gui, Add, Progress, x229 y15 w4 h106 Background0067C0 c0067C0 -Theme Disabled, 100
 
-    Gui, Font, s13 Bold c004499, Segoe UI
-    Gui, Add, Text, x302 y76 w300, GestureMouse
-    Gui, Font, s9 Norm c333333, Segoe UI
-    Gui, Add, Text, x302 y99 w300, % L("About_Headline")
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x302 y118 w300, % L("About_Version")
+    hHeroBmp := CreateAboutHeroIconBitmap(56, 0xEEF5FC)
+    if (hHeroBmp)
+        Gui, Add, Picture, x248 y40, HBITMAP:%hHeroBmp%
+    else
+        AddSettingsIcon(248, 40, 56, 56, "image\unnamed.ico", 1)
 
+    Gui, Font, s15 Bold c004499, Segoe UI
+    Gui, Add, Text, x318 y30 w285 +BackgroundTrans, GestureMouse
+    Gui, Font, s9.5 Norm c2C3E50, Segoe UI
+    Gui, Add, Text, x318 y58 w288 +BackgroundTrans, % L("About_Headline")
+    Gui, Font, s8.5 Norm c5A6B7C, Segoe UI
+    Gui, Add, Text, x318 y82 w288 +BackgroundTrans, % L("About_HeroMeta")
+
+    Gui, Font, s9.5 Norm c222222, Segoe UI
+    Gui, Add, Button, x616 y52 w130 h32 gOpenDonateLink, % "❤ " . L("About_Donate")
+
+    ; Dải 3 nút hành động nhanh
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x616 y78 w130 h30 gOpenDonateLink, % "❤ " . L("About_Donate")
+    Gui, Add, Button, x228 y134 w172 h30 gCheckForUpdates, % L("Tray_CheckUpdate")
+    Gui, Add, Button, x410 y134 w172 h30 gOpenGitHubLink, GitHub Releases
+    Gui, Add, Button, x592 y134 w172 h30 gOpenEmailLink, % L("About_ContactBtn")
 
-    Gui, Add, Button, x246 y144 w160 h28 gCheckForUpdates, % L("Tray_CheckUpdate")
-    Gui, Add, Button, x416 y144 w160 h28 gOpenGitHubLink, GitHub Releases
-    Gui, Add, Button, x586 y144 w160 h28 gOpenEmailLink, % L("About_ContactBtn")
+    Gui, Add, Text, x228 y178 w536 h1 0x10
 
-    ; Card 2: Giới thiệu & Bản quyền (Hiển thị trọn vẹn, bôi đen copy và nhấp link trực tiếp)
+    ; Đoạn giới thiệu ngắn gọn (bôi đen copy được, không thanh cuộn)
+    Gui, Font, s9.5 Norm c333333, Segoe UI
+    Gui, Add, Edit, x228 y192 w536 h46 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_ShortDesc")
+
+    Gui, Add, Text, x228 y246 w536 h1 0x10
+
+    ; Bảng thông tin 2 cột (Tác giả, Giấy phép, Email, Mã nguồn)
+    Gui, Font, s9 Norm c666666, Segoe UI
+    Gui, Add, Text, x228 y262 w108, % L("About_LblAuthor")
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y194 w536 h200, % L("About_GroupDetails")
-    Gui, Font, s9 Norm c333333, Segoe UI
-    Gui, Add, Edit, x246 y216 w500 h118 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_DetailText")
-    Gui, Add, Link, x246 y340 w500 h20 gOnAboutLinkClick, % L("About_LinkEmail")
-    Gui, Add, Link, x246 y364 w500 h20 gOnAboutLinkClick, % L("About_LinkRepo")
+    Gui, Add, Edit, x340 y261 w424 h20 ReadOnly -E0x200 -VScroll -Tabstop, % L("About_ValAuthor")
+
+    Gui, Font, s9 Norm c666666, Segoe UI
+    Gui, Add, Text, x228 y290 w108, % L("About_LblLicense")
+    Gui, Font, s9.5 Norm c333333, Segoe UI
+    Gui, Add, Text, x340 y290 w424 h20, % L("About_ValLicense")
+
+    Gui, Font, s9 Norm c666666, Segoe UI
+    Gui, Add, Text, x228 y318 w108, % L("About_LblEmail")
+    Gui, Font, s9.5 Norm c333333, Segoe UI
+    Gui, Add, Link, x340 y318 w424 h20 gOnAboutLinkClick, <a href="mailto:nguyentrian87@gmail.com">nguyentrian87@gmail.com</a>
+
+    Gui, Font, s9 Norm c666666, Segoe UI
+    Gui, Add, Text, x228 y346 w108, % L("About_LblRepo")
+    Gui, Font, s9.5 Norm c333333, Segoe UI
+    Gui, Add, Link, x340 y346 w424 h20 gOnAboutLinkClick, <a href="https://github.com/ngtrian/GestureMouse">https://github.com/ngtrian/GestureMouse</a>
 
     ; ========================================================
     ; CHÂN TRANG GỌN GÀNG (AUTO-SAVE + NÚT ĐÓNG)
@@ -316,12 +351,171 @@ return
 AddSidebarNav(idx, yPos, iconChar, labelText) {
     global NavBg1, NavBg2, NavBg3, NavBg4, NavBg5
     global NavInd1, NavInd2, NavInd3, NavInd4, NavInd5
+    global NavIco1, NavIco2, NavIco3, NavIco4, NavIco5
     global NavTxt1, NavTxt2, NavTxt3, NavTxt4, NavTxt5
+    global SidebarNavBitmaps, SidebarIconHwnds
     indY := yPos + 7
     Gui, Settings:Font, s9.5 Norm c444444, Segoe UI
     Gui, Settings:Add, Progress, x10 y%yPos% w192 h34 BackgroundE5F1FB cE5F1FB vNavBg%idx% -Theme Disabled, 100
     Gui, Settings:Add, Progress, x10 y%indY% w3 h20 Background0067C0 c0067C0 vNavInd%idx% -Theme Disabled, 100
-    Gui, Settings:Add, Text, x20 y%yPos% w180 h34 +0x200 +BackgroundTrans gOnNav%idx% vNavTxt%idx%, % "  " . iconChar . "  " . labelText
+    if (SidebarNavBitmaps.HasKey(idx)) {
+        hBmpInit := SidebarNavBitmaps[idx].inactive
+        Gui, Settings:Add, Picture, x22 y%indY% +0x100 gOnNav%idx% vNavIco%idx% +HwndhIco, HBITMAP:*%hBmpInit%
+        SidebarIconHwnds[idx] := hIco
+        Gui, Settings:Add, Text, x48 y%yPos% w150 h34 +0x200 +BackgroundTrans gOnNav%idx% vNavTxt%idx%, %labelText%
+    } else {
+        Gui, Settings:Add, Text, x20 y%yPos% w180 h34 +0x200 +BackgroundTrans gOnNav%idx% vNavTxt%idx%, % "  " . iconChar . "  " . labelText
+    }
+}
+
+CreateSidebarNavBitmaps(iconSize := 20) {
+    result := {}
+    hGdip := DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
+    if (!hGdip)
+        return result
+
+    VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0)
+    NumPut(1, si, 0, "UInt")
+    pToken := 0
+    if (DllCall("gdiplus\GdiplusStartup", "Ptr*", pToken, "Ptr", &si, "Ptr", 0) != 0) {
+        DllCall("FreeLibrary", "Ptr", hGdip)
+        return result
+    }
+
+    scale := A_ScreenDPI / 96.0
+    pix := Round(iconSize * scale)
+
+    bgr := DllCall("GetSysColor", "Int", 15, "UInt")
+    argbWin := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
+    argbActiveBg := 0xFFE5F1FB
+    argbActiveFg := 0xFF005FB8
+    argbNormFg := 0xFF4A5568
+
+    Loop, 5 {
+        idx := A_Index
+        result[idx] := {}
+        for stateIdx, stateName in ["inactive", "active"] {
+            bgCol := (stateName = "active") ? argbActiveBg : argbWin
+            fgCol := (stateName = "active") ? argbActiveFg : argbNormFg
+
+            pBitmap := 0, pGraphics := 0, hBmp := 0
+            DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", pix, "Int", pix, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", pBitmap)
+            DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmap, "Ptr*", pGraphics)
+            DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", pGraphics, "Int", 4)
+            DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", pGraphics, "Int", 2)
+            DllCall("gdiplus\GdipGraphicsClear", "Ptr", pGraphics, "UInt", bgCol)
+
+            DrawSidebarVectorIcon(pGraphics, idx, fgCol, bgCol, scale)
+
+            DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", bgCol)
+            result[idx][stateName] := hBmp
+            DllCall("gdiplus\GdipDeleteGraphics", "Ptr", pGraphics)
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
+        }
+    }
+
+    DllCall("gdiplus\GdiplusShutdown", "Ptr", pToken)
+    DllCall("FreeLibrary", "Ptr", hGdip)
+    return result
+}
+
+DrawSidebarVectorIcon(pGraphics, idx, fgCol, bgCol, scale) {
+    DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 1.7 * scale, "Int", 2, "Ptr*", pPen)
+    DllCall("gdiplus\GdipCreateSolidFill", "UInt", fgCol, "Ptr*", pBrush)
+    DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pPen, "Int", 2)
+
+    if (idx == 1) {
+        ; Cài đặt chung: bánh răng sắc nét 8 răng
+        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 2.2 * scale, "Int", 2, "Ptr*", pPenTooth)
+        Loop, 8 {
+            ang := (A_Index - 1) * 45.0 * 0.01745329252
+            x1 := (10.0 + 5.2 * Cos(ang)) * scale
+            y1 := (10.0 + 5.2 * Sin(ang)) * scale
+            x2 := (10.0 + 8.3 * Cos(ang)) * scale
+            y2 := (10.0 + 8.3 * Sin(ang)) * scale
+            DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenTooth, "Float", x1, "Float", y1, "Float", x2, "Float", y2)
+        }
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenTooth)
+        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 2.1 * scale, "Int", 2, "Ptr*", pPenRing)
+        DllCall("gdiplus\GdipDrawEllipse", "Ptr", pGraphics, "Ptr", pPenRing, "Float", 4.9 * scale, "Float", 4.9 * scale, "Float", 10.2 * scale, "Float", 10.2 * scale)
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenRing)
+        DllCall("gdiplus\GdipCreateSolidFill", "UInt", bgCol, "Ptr*", pBrushHole)
+        DllCall("gdiplus\GdipFillEllipse", "Ptr", pGraphics, "Ptr", pBrushHole, "Float", 7.3 * scale, "Float", 7.3 * scale, "Float", 5.4 * scale, "Float", 5.4 * scale)
+        DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushHole)
+        DllCall("gdiplus\GdipDrawEllipse", "Ptr", pGraphics, "Ptr", pPen, "Float", 7.5 * scale, "Float", 7.5 * scale, "Float", 5.0 * scale, "Float", 5.0 * scale)
+    } else if (idx == 2) {
+        ; Cuộn & Cử chỉ: chuột hiện đại với con lăn
+        DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pPath)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", 5.0 * scale, "Float", 2.0 * scale, "Float", 10.0 * scale, "Float", 10.0 * scale, "Float", 180.0, "Float", 180.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", 5.0 * scale, "Float", 8.0 * scale, "Float", 10.0 * scale, "Float", 10.0 * scale, "Float", 0.0, "Float", 180.0)
+        DllCall("gdiplus\GdipClosePathFigure", "Ptr", pPath)
+        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPen, "Ptr", pPath)
+        DllCall("gdiplus\GdipDeletePath", "Ptr", pPath)
+
+        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 1.3 * scale, "Int", 2, "Ptr*", pPenThin)
+        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenThin, "Float", 5.2 * scale, "Float", 8.5 * scale, "Float", 14.8 * scale, "Float", 8.5 * scale)
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenThin)
+
+        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 2.2 * scale, "Int", 2, "Ptr*", pPenWheel)
+        DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPenWheel, "Int", 2)
+        DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenWheel, "Int", 2)
+        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenWheel, "Float", 10.0 * scale, "Float", 4.4 * scale, "Float", 10.0 * scale, "Float", 7.0 * scale)
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenWheel)
+    } else if (idx == 3) {
+        ; Khóa: ổ khóa rõ nét
+        DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pShackle)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pShackle, "Float", 6.8 * scale, "Float", 2.4 * scale, "Float", 6.4 * scale, "Float", 6.4 * scale, "Float", 180.0, "Float", 180.0)
+        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPen, "Ptr", pShackle)
+        DllCall("gdiplus\GdipDeletePath", "Ptr", pShackle)
+        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPen, "Float", 6.8 * scale, "Float", 5.6 * scale, "Float", 6.8 * scale, "Float", 8.5 * scale)
+        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPen, "Float", 13.2 * scale, "Float", 5.6 * scale, "Float", 13.2 * scale, "Float", 8.5 * scale)
+
+        DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pBody)
+        d := 3.6 * scale
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pBody, "Float", 4.5 * scale, "Float", 8.5 * scale, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pBody, "Float", 15.5 * scale - d, "Float", 8.5 * scale, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pBody, "Float", 15.5 * scale - d, "Float", 17.5 * scale - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pBody, "Float", 4.5 * scale, "Float", 17.5 * scale - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
+        DllCall("gdiplus\GdipClosePathFigure", "Ptr", pBody)
+        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPen, "Ptr", pBody)
+        DllCall("gdiplus\GdipDeletePath", "Ptr", pBody)
+
+        DllCall("gdiplus\GdipFillEllipse", "Ptr", pGraphics, "Ptr", pBrush, "Float", 8.9 * scale, "Float", 11.1 * scale, "Float", 2.2 * scale, "Float", 2.2 * scale)
+        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 1.8 * scale, "Int", 2, "Ptr*", pPenSlot)
+        DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenSlot, "Int", 2)
+        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenSlot, "Float", 10.0 * scale, "Float", 12.2 * scale, "Float", 10.0 * scale, "Float", 14.9 * scale)
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenSlot)
+    } else if (idx == 4) {
+        ; Phím tắt: bàn phím gọn rõ nét
+        DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pKb)
+        d := 3.6 * scale
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pKb, "Float", 2.0 * scale, "Float", 4.8 * scale, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pKb, "Float", 18.0 * scale - d, "Float", 4.8 * scale, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pKb, "Float", 18.0 * scale - d, "Float", 15.2 * scale - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pKb, "Float", 2.0 * scale, "Float", 15.2 * scale - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
+        DllCall("gdiplus\GdipClosePathFigure", "Ptr", pKb)
+        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPen, "Ptr", pKb)
+        DllCall("gdiplus\GdipDeletePath", "Ptr", pKb)
+
+        Loop, 4 {
+            kx := (4.4 + (A_Index - 1) * 3.1) * scale
+            DllCall("gdiplus\GdipFillRectangle", "Ptr", pGraphics, "Ptr", pBrush, "Float", kx, "Float", 7.3 * scale, "Float", 1.9 * scale, "Float", 1.7 * scale)
+            DllCall("gdiplus\GdipFillRectangle", "Ptr", pGraphics, "Ptr", pBrush, "Float", kx, "Float", 9.9 * scale, "Float", 1.9 * scale, "Float", 1.7 * scale)
+        }
+        DllCall("gdiplus\GdipFillRectangle", "Ptr", pGraphics, "Ptr", pBrush, "Float", 5.8 * scale, "Float", 12.5 * scale, "Float", 8.4 * scale, "Float", 1.6 * scale)
+    } else if (idx == 5) {
+        ; Thông tin: vòng tròn chữ i
+        DllCall("gdiplus\GdipDrawEllipse", "Ptr", pGraphics, "Ptr", pPen, "Float", 2.5 * scale, "Float", 2.5 * scale, "Float", 15.0 * scale, "Float", 15.0 * scale)
+        DllCall("gdiplus\GdipFillEllipse", "Ptr", pGraphics, "Ptr", pBrush, "Float", 8.85 * scale, "Float", 5.5 * scale, "Float", 2.3 * scale, "Float", 2.3 * scale)
+        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 2.1 * scale, "Int", 2, "Ptr*", pPenI)
+        DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPenI, "Int", 2)
+        DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenI, "Int", 2)
+        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenI, "Float", 10.0 * scale, "Float", 9.2 * scale, "Float", 10.0 * scale, "Float", 14.3 * scale)
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenI)
+    }
+
+    DllCall("gdiplus\GdipDeletePen", "Ptr", pPen)
+    DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrush)
 }
 
 AddSettingsTabHeader(titleKey, subKey) {
@@ -339,6 +533,46 @@ AddSettingsIcon(x, y, w, h, relPath, resId := 0) {
         if (FileExist(fullPath))
             Gui, Settings:Add, Picture, x%x% y%y% w%w% h%h%, %fullPath%
     }
+}
+
+CreateAboutHeroIconBitmap(iconSize := 56, bgRgb := 0xEEF5FC) {
+    scale := A_ScreenDPI / 96.0
+    pix := Round(iconSize * scale)
+
+    hIcon := 0
+    if (A_IsCompiled) {
+        hMod := DllCall("GetModuleHandle", "Ptr", 0, "Ptr")
+        hIcon := DllCall("LoadImage", "Ptr", hMod, "UInt", 159, "UInt", 1, "Int", pix, "Int", pix, "UInt", 0, "Ptr")
+        if (!hIcon)
+            DllCall("Shell32\ExtractIconEx", "Str", A_ScriptFullPath, "Int", 0, "Ptr*", hIcon, "Ptr", 0, "UInt", 1)
+    } else {
+        icoPath := A_ScriptDir . "\image\unnamed.ico"
+        if (FileExist(icoPath))
+            hIcon := DllCall("LoadImage", "Ptr", 0, "Str", icoPath, "UInt", 1, "Int", pix, "Int", pix, "UInt", 0x10, "Ptr")
+    }
+    if (!hIcon)
+        return 0
+
+    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
+    hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
+    hBmp := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", pix, "Int", pix, "Ptr")
+    hOld := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hBmp, "Ptr")
+
+    bgr := ((bgRgb & 0xFF) << 16) | (bgRgb & 0xFF00) | ((bgRgb >> 16) & 0xFF)
+    hBrush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
+    VarSetCapacity(rc, 16, 0)
+    NumPut(pix, rc, 8, "Int")
+    NumPut(pix, rc, 12, "Int")
+    DllCall("FillRect", "Ptr", hdcMem, "Ptr", &rc, "Ptr", hBrush)
+    DllCall("DeleteObject", "Ptr", hBrush)
+
+    DllCall("DrawIconEx", "Ptr", hdcMem, "Int", 0, "Int", 0, "Ptr", hIcon, "Int", pix, "Int", pix, "UInt", 0, "Ptr", 0, "UInt", 0x3)
+
+    DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hOld, "Ptr")
+    DllCall("DeleteDC", "Ptr", hdcMem)
+    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
+    DllCall("DestroyIcon", "Ptr", hIcon)
+    return hBmp
 }
 
 AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
@@ -591,7 +825,7 @@ OnNav5:
 return
 
 SwitchSettingsTab(tabNum) {
-    global currentSettingsTab, hSettingsGui
+    global currentSettingsTab, hSettingsGui, SidebarNavBitmaps, SidebarIconHwnds
     ClearSettingsTooltip()
     currentSettingsTab := tabNum
     if (!hSettingsGui)
@@ -599,20 +833,23 @@ SwitchSettingsTab(tabNum) {
     Gui, Settings:Default
     GuiControl, Settings:Choose, SettingsTabNav, %tabNum%
     Loop 5 {
-        if (A_Index == tabNum) {
+        isActive := (A_Index == tabNum)
+        if (isActive) {
             GuiControl, Settings:Show, NavBg%A_Index%
             GuiControl, Settings:Show, NavInd%A_Index%
             Gui, Settings:Font, s9.5 Bold c005FB8, Segoe UI
-            GuiControl, Settings:Font, NavTxt%A_Index%
-            GuiControl, Settings:+BackgroundTrans, NavTxt%A_Index%
-            GuiControl, Settings:MoveDraw, NavTxt%A_Index%
         } else {
             GuiControl, Settings:Hide, NavBg%A_Index%
             GuiControl, Settings:Hide, NavInd%A_Index%
             Gui, Settings:Font, s9.5 Norm c444444, Segoe UI
-            GuiControl, Settings:Font, NavTxt%A_Index%
-            GuiControl, Settings:+BackgroundTrans, NavTxt%A_Index%
-            GuiControl, Settings:MoveDraw, NavTxt%A_Index%
+        }
+        GuiControl, Settings:Font, NavTxt%A_Index%
+        GuiControl, Settings:+BackgroundTrans, NavTxt%A_Index%
+        GuiControl, Settings:MoveDraw, NavTxt%A_Index%
+        if (SidebarIconHwnds.HasKey(A_Index) && SidebarNavBitmaps.HasKey(A_Index)) {
+            hBmp := isActive ? SidebarNavBitmaps[A_Index].active : SidebarNavBitmaps[A_Index].inactive
+            DllCall("SendMessage", "Ptr", SidebarIconHwnds[A_Index], "UInt", 0x0172, "Ptr", 0, "Ptr", hBmp)
+            GuiControl, Settings:MoveDraw, NavIco%A_Index%
         }
     }
 }
