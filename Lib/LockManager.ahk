@@ -59,10 +59,14 @@ global hFocusUnlockGui           := 0
 global centerEditUnlocked        := 1
 global focusCandidateHwnds       := []
 global focusCandidateTitles      := []
+global LockCenterTooltips        := {}
+global LastLockCenterTipHwnd     := 0
+global isLockCenterBuilding      := 0
 
 ; Biến control của GUI Trung tâm Khóa & Mở khóa Focus Lock
 global FocusUnlockCodeInput, FocusUnlockErrorTxt
-global CenterActiveBanner, CenterType0, CenterType1, CenterType2, CenterDeviceIcons, CenterFocusTargetTxt, CenterBtnLockSettings
+global CenterActiveBanner, CenterType0, CenterType1, CenterType2, CenterIconKB, CenterIconMouse, CenterIconWarn, CenterBtnLockSettings
+global hCenterIconKB, hCenterIconMouse, hCenterIconWarn
 global CenterTimerGroup, CenterTimingNow, CenterTimingTimer, CenterMinutesInput, CenterMinutesUpDown, CenterMinUnitTxt
 global CenterPreset5, CenterPreset15, CenterPreset30, CenterPreset60, CenterRepeatCheck
 global CenterFocusInfoGroup, CenterFocusSelectLbl, CenterFocusWndChoice, CenterFocusInfoTxt
@@ -195,7 +199,7 @@ InitAutoLockTimer() {
 }
 
 CheckAutoLockIdle:
-    if (isLocked)
+    if (isLocked || lockTimerActive)
         return
     if (autoLockIdleEnabled && autoLockIdleMinutes > 0) {
         idleSeconds := A_TimeIdlePhysical // 1000
@@ -403,10 +407,15 @@ ShowLockCenterGUI() {
         return
     }
 
+    ClearLockCenterTooltip()
     Gui, LockCenter:Destroy
     Gui, LockCenter:New, -MaximizeBox -MinimizeBox +HwndhLockCenterGui, % L("LC_Title")
     if (IsFunc("SetGuiYellowIcon"))
         SetGuiYellowIcon(hLockCenterGui)
+
+    isLockCenterBuilding := 1
+    LockCenterTooltips := {}
+    LastLockCenterTipHwnd := 0
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
@@ -440,33 +449,35 @@ ShowLockCenterGUI() {
 
     ; Nhóm 1: Kiểu khóa
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x15 y%yOffset% w440 h146, % "  🔐 " . L("LC_GroupMode")
+    Gui, Add, GroupBox, x15 y%yOffset% w440 h118, % "  🔐 " . L("LC_GroupMode")
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
     yR1 := yOffset + 26
     yR1Btn := yOffset + 24
-    yR2 := yOffset + 56
-    yR3 := yOffset + 86
-    yTarget := yOffset + 114
+    yR1Icon := yOffset + 27
+    yR2 := yOffset + 55
+    yR3 := yOffset + 84
 
-    Gui, Add, Radio, x30 y%yR1% w236 h22 vCenterType0 gOnLockCenterTypeChange Group Checked%chkType0%, % "🔒 " . L("LC_ModeFull")
+    Gui, Add, Radio, x30 y%yR1% w232 h22 vCenterType0 gOnLockCenterTypeChange Group Checked%chkType0%, % "🔒 " . L("LC_ModeFull")
     Gui, Add, Radio, x30 y%yR2% w410 h22 vCenterType1 gOnLockCenterTypeChange Checked%chkType1%, % "🖥️ " . L("LC_ModeScreen")
     Gui, Add, Radio, x30 y%yR3% w410 h22 vCenterType2 gOnLockCenterTypeChange Checked%chkType2%, % "🎯 " . L("LC_ModeFocus")
-    Gui, Font, s10 Norm c222222, Segoe UI
-    Gui, Add, Text, x268 y%yR1% w64 h22 +0x200 Center vCenterDeviceIcons, % GetLockDeviceStatusIcons()
+
+    ; Icon trạng thái thiết bị khóa (chỉ hiển thị khi chọn Khóa bàn phím & chuột, có tooltip giải thích)
+    Gui, Add, Picture, x266 y%yR1Icon% w20 h20 +0x100 vCenterIconKB +HwndhCenterIconKB Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Picture, x292 y%yR1Icon% w20 h20 +0x100 vCenterIconMouse +HwndhCenterIconMouse Icon32, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Picture, x266 y%yR1Icon% w20 h20 +0x100 vCenterIconWarn +HwndhCenterIconWarn Icon2, %A_WinDir%\System32\user32.dll
+    LockCenterTooltips[hCenterIconKB] := L("LC_TipIconKB")
+    LockCenterTooltips[hCenterIconMouse] := L("LC_TipIconMouse")
+    LockCenterTooltips[hCenterIconWarn] := L("LC_TipNoDevice")
+
     Gui, Font, s8.5 Norm, Segoe UI
-    Gui, Add, Button, x336 y%yR1Btn% w106 h24 gOnOpenLockSettingsFromCenter vCenterBtnLockSettings, % "⚙️ " . L("LC_BtnSettings")
+    Gui, Add, Button, x324 y%yR1Btn% w118 h24 gOnOpenLockSettingsFromCenter vCenterBtnLockSettings, % "⚙️ " . L("LC_BtnSettings")
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
     focusData := PopulateFocusCandidates(hPendingFocusWnd)
-    shortTarget := GetShortFocusTargetTitle()
-    targetText := (shortTarget != "") ? StrReplace(L("LC_FocusTarget"), "{title}", shortTarget) : L("LC_FocusNoTarget")
-    Gui, Font, s8.5 Norm c005FB8, Segoe UI
-    Gui, Add, Text, x50 y%yTarget% w390 h20 +0x200 vCenterFocusTargetTxt, %targetText%
-    Gui, Font, s9.5 Norm c222222, Segoe UI
 
     ; Nhóm 2: Thời gian & Lặp lại (ẩn khi chọn Focus Lock)
-    ySec2 := yOffset + 156
+    ySec2 := yOffset + 128
     Gui, Font, s9.5 Bold c222222, Segoe UI
     Gui, Add, GroupBox, x15 y%ySec2% w440 h148 vCenterTimerGroup, % "  ⏱️ " . L("LC_GroupTiming")
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -482,11 +493,12 @@ ShowLockCenterGUI() {
     Gui, Add, UpDown, vCenterMinutesUpDown Range1-1440, %dispMinutes%
     Gui, Add, Text, x278 y%yT2% w60 h24 +0x200 vCenterMinUnitTxt, % L("LC_UnitMin")
 
+    presetUnit := L("LC_PresetSuffix")
     Gui, Font, s8.5 Norm, Segoe UI
-    Gui, Add, Button, x200 y%yPre% w46 h23 gOnLockCenterPreset5 vCenterPreset5, 5p
-    Gui, Add, Button, x252 y%yPre% w46 h23 gOnLockCenterPreset15 vCenterPreset15, 15p
-    Gui, Add, Button, x304 y%yPre% w46 h23 gOnLockCenterPreset30 vCenterPreset30, 30p
-    Gui, Add, Button, x356 y%yPre% w46 h23 gOnLockCenterPreset60 vCenterPreset60, 60p
+    Gui, Add, Button, x200 y%yPre% w46 h23 gOnLockCenterPreset5 vCenterPreset5, % "5" . presetUnit
+    Gui, Add, Button, x252 y%yPre% w46 h23 gOnLockCenterPreset15 vCenterPreset15, % "15" . presetUnit
+    Gui, Add, Button, x304 y%yPre% w46 h23 gOnLockCenterPreset30 vCenterPreset30, % "30" . presetUnit
+    Gui, Add, Button, x356 y%yPre% w46 h23 gOnLockCenterPreset60 vCenterPreset60, % "60" . presetUnit
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
     Gui, Add, Checkbox, x30 y%yRep% w410 h22 vCenterRepeatCheck Checked%dispRepeat%, % "🔁 " . L("LC_RepeatCheck")
@@ -532,8 +544,10 @@ ShowLockCenterGUI() {
     }
 
     totalH := yBtn + 46
+    isLockCenterBuilding := 0
     UpdateLockCenterUIState()
 
+    OnMessage(0x200, "WM_MOUSEMOVE_LOCKCENTER")
     Gui, Show, w470 h%totalH% Center, % L("LC_Title")
     if (IsFunc("SetGuiYellowIcon"))
         SetGuiYellowIcon(hLockCenterGui)
@@ -543,35 +557,72 @@ ShowLockCenterGUI() {
         GuiControl, LockCenter:Focus, CenterAuthInput
 }
 
-GetLockDeviceStatusIcons() {
+UpdateLockCenterDeviceStatusIcons(showIcons) {
     global lockKeyboardEnabled, mouseLockEnabled
-    icons := ""
-    if (lockKeyboardEnabled)
-        icons .= "⌨️"
-    if (mouseLockEnabled)
-        icons .= (icons != "" ? "  " : "") . "🖱️"
-    return icons
+    if (!showIcons) {
+        GuiControl, LockCenter:Hide, CenterIconKB
+        GuiControl, LockCenter:Hide, CenterIconMouse
+        GuiControl, LockCenter:Hide, CenterIconWarn
+        return
+    }
+
+    if (lockKeyboardEnabled && mouseLockEnabled) {
+        GuiControl, LockCenter:MoveDraw, CenterIconKB, x266
+        GuiControl, LockCenter:MoveDraw, CenterIconMouse, x292
+        GuiControl, LockCenter:Show, CenterIconKB
+        GuiControl, LockCenter:Show, CenterIconMouse
+        GuiControl, LockCenter:Hide, CenterIconWarn
+    } else if (lockKeyboardEnabled) {
+        GuiControl, LockCenter:MoveDraw, CenterIconKB, x266
+        GuiControl, LockCenter:Show, CenterIconKB
+        GuiControl, LockCenter:Hide, CenterIconMouse
+        GuiControl, LockCenter:Hide, CenterIconWarn
+    } else if (mouseLockEnabled) {
+        GuiControl, LockCenter:MoveDraw, CenterIconMouse, x266
+        GuiControl, LockCenter:Hide, CenterIconKB
+        GuiControl, LockCenter:Show, CenterIconMouse
+        GuiControl, LockCenter:Hide, CenterIconWarn
+    } else {
+        GuiControl, LockCenter:Hide, CenterIconKB
+        GuiControl, LockCenter:Hide, CenterIconMouse
+        GuiControl, LockCenter:Show, CenterIconWarn
+    }
 }
 
-GetShortFocusTargetTitle() {
-    global focusCandidateTitles, hPendingFocusWnd, pendingFocusTitle
-    title := ""
-    if (focusCandidateTitles.MaxIndex() >= 1)
-        title := focusCandidateTitles[1]
-    else if (hPendingFocusWnd && WinExist("ahk_id " . hPendingFocusWnd)) {
-        title := pendingFocusTitle
-        if (title = "")
-            WinGetTitle, title, ahk_id %hPendingFocusWnd%
+WM_MOUSEMOVE_LOCKCENTER(wParam, lParam, msg, hwnd) {
+    global LockCenterTooltips, LastLockCenterTipHwnd, hLockCenterGui
+    if (!hLockCenterGui || !WinExist("ahk_id " . hLockCenterGui))
+        return
+
+    MouseGetPos, , , idUnderMouse, ctrlUnderMouse, 2
+    if (idUnderMouse == hLockCenterGui && ctrlUnderMouse && LockCenterTooltips.HasKey(ctrlUnderMouse)) {
+        if (LastLockCenterTipHwnd != ctrlUnderMouse) {
+            LastLockCenterTipHwnd := ctrlUnderMouse
+            ToolTip, % LockCenterTooltips[ctrlUnderMouse]
+            SetTimer, CheckLockCenterTooltipLeave, 120
+        }
+    } else if (LastLockCenterTipHwnd) {
+        ClearLockCenterTooltip()
     }
-    if (title = "")
-        return ""
-    if (StrLen(title) > 40)
-        return SubStr(title, 1, 40) . "..."
-    return title
 }
+
+ClearLockCenterTooltip() {
+    global LastLockCenterTipHwnd
+    if (LastLockCenterTipHwnd) {
+        ToolTip
+        LastLockCenterTipHwnd := 0
+    }
+    SetTimer, CheckLockCenterTooltipLeave, Off
+}
+
+CheckLockCenterTooltipLeave:
+    MouseGetPos, , , idUnderMouse, ctrlUnderMouse, 2
+    if (!hLockCenterGui || idUnderMouse != hLockCenterGui || !LockCenterTooltips.HasKey(ctrlUnderMouse))
+        ClearLockCenterTooltip()
+return
 
 UpdateLockCenterUIState() {
-    global lockTimerActive, centerEditUnlocked, focusCandidateHwnds
+    global lockTimerActive, centerEditUnlocked, focusCandidateHwnds, lockKeyboardEnabled, mouseLockEnabled
     Gui, LockCenter:Submit, NoHide
     GuiControlGet, t0, LockCenter:, CenterType0
     GuiControlGet, t1, LockCenter:, CenterType1
@@ -583,9 +634,10 @@ UpdateLockCenterUIState() {
     isFocus := (selType == 2)
     canEdit := centerEditUnlocked ? 1 : 0
 
-    ; Hiện nút Tùy chọn Settings chỉ khi chọn Lock Keyboard & Mouse (Full Lock)
+    ; Hiện các icon trạng thái & nút Tùy chọn chỉ khi chọn Khóa bàn phím & chuột (Full Lock)
     visSettingsBtn := isFull ? "Show" : "Hide"
     GuiControl, LockCenter:%visSettingsBtn%, CenterBtnLockSettings
+    UpdateLockCenterDeviceStatusIcons(isFull)
 
     ; Ẩn/Hiện nhóm Thời gian vs Thông tin Focus Lock
     visTimer := isFocus ? "Hide" : "Show"
@@ -620,33 +672,33 @@ UpdateLockCenterUIState() {
     GuiControl, LockCenter:%enMode%, CenterPreset15
     GuiControl, LockCenter:%enMode%, CenterPreset30
     GuiControl, LockCenter:%enMode%, CenterPreset60
-    GuiControl, LockCenter:%enMode%, CenterBtnApply
+
+    canStart := (canEdit && !(isFull && !lockKeyboardEnabled && !mouseLockEnabled)) ? "Enable" : "Disable"
+    GuiControl, LockCenter:%canStart%, CenterBtnApply
+
     if (focusCandidateHwnds.MaxIndex() >= 1)
         GuiControl, LockCenter:%enMode%, CenterFocusWndChoice
 
     if (lockTimerActive)
         GuiControl, LockCenter:%enMode%, CenterBtnCancelTimer
 
-    ; Ô nhập phút và checkbox lặp lại chỉ bật khi cho phép sửa AND đang chọn Hẹn giờ
-    enMin := (canEdit && !isFocus && isTimer) ? "Enable" : "Disable"
-    GuiControl, LockCenter:%enMin%, CenterMinutesInput
-    GuiControl, LockCenter:%enMin%, CenterMinutesUpDown
-    GuiControl, LockCenter:%enMin%, CenterRepeatCheck
+    ; Ô nhập phút luôn cho nhập để tự chuyển sang Hẹn giờ (trừ khi đang khóa mã / Focus Lock)
+    enMinEdit := (canEdit && !isFocus) ? "Enable" : "Disable"
+    GuiControl, LockCenter:%enMinEdit%, CenterMinutesInput
+    GuiControl, LockCenter:%enMinEdit%, CenterMinutesUpDown
+
+    enRep := (canEdit && !isFocus && isTimer) ? "Enable" : "Disable"
+    GuiControl, LockCenter:%enRep%, CenterRepeatCheck
 }
 
 OnFocusTargetChoiceChange:
     Gui, LockCenter:Submit, NoHide
-    if (CenterFocusWndChoice >= 1 && CenterFocusWndChoice <= focusCandidateTitles.MaxIndex()) {
-        selTitle := focusCandidateTitles[CenterFocusWndChoice]
-        if (StrLen(selTitle) > 40)
-            selTitle := SubStr(selTitle, 1, 40) . "..."
-        GuiControl, LockCenter:, CenterFocusTargetTxt, % StrReplace(L("LC_FocusTarget"), "{title}", selTitle)
-    }
 return
 
 OnOpenLockSettingsFromCenter:
     if (lockTimerActive && !centerEditUnlocked)
         return
+    ClearLockCenterTooltip()
     currentSettingsTab := 3
     Gosub, Settings
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
@@ -659,11 +711,12 @@ return
 RefreshLockCenterDeviceIcons() {
     global hLockCenterGui
     if (hLockCenterGui && WinExist("ahk_id " . hLockCenterGui)) {
-        GuiControl, LockCenter:, CenterDeviceIcons, % GetLockDeviceStatusIcons()
+        UpdateLockCenterUIState()
     }
 }
 
 OnLockCenterTypeChange:
+    ClearLockCenterTooltip()
     UpdateLockCenterUIState()
 return
 
@@ -672,6 +725,13 @@ OnLockCenterTimingChange:
 return
 
 OnLockCenterMinEdit:
+    if (isLockCenterBuilding)
+        return
+    GuiControlGet, isTimerNow, LockCenter:, CenterTimingTimer
+    if (!isTimerNow) {
+        GuiControl, LockCenter:, CenterTimingTimer, 1
+        UpdateLockCenterUIState()
+    }
 return
 
 OnLockCenterPreset5:
@@ -688,8 +748,11 @@ OnLockCenterPreset60:
 return
 
 SetLockCenterPreset(mins) {
+    global isLockCenterBuilding
+    isLockCenterBuilding := 1
     GuiControl, LockCenter:, CenterTimingTimer, 1
     GuiControl, LockCenter:, CenterMinutesInput, %mins%
+    isLockCenterBuilding := 0
     UpdateLockCenterUIState()
 }
 
@@ -734,6 +797,9 @@ OnLockCenterApply:
         return
     }
 
+    if (selType == 0 && !lockKeyboardEnabled && !mouseLockEnabled)
+        return
+
     ; Lưu lựa chọn gần nhất
     centerLockType := selType
     centerUseTimer := (selType == 2) ? 0 : selTimer
@@ -742,6 +808,7 @@ OnLockCenterApply:
     centerRepeat := (selType == 2 || !selTimer) ? 0 : selRepeat
     SaveLockCenterPreferences()
 
+    ClearLockCenterTooltip()
     Gui, LockCenter:Destroy
     hLockCenterGui := 0
 
@@ -773,12 +840,14 @@ OnLockCenterCancelTimer:
     if (lockTimerActive && !centerEditUnlocked)
         return
     CancelLockCountdown(true)
+    ClearLockCenterTooltip()
     Gui, LockCenter:Destroy
     hLockCenterGui := 0
 return
 
 LockCenterGuiClose:
 LockCenterGuiEscape:
+    ClearLockCenterTooltip()
     Gui, LockCenter:Destroy
     hLockCenterGui := 0
 return

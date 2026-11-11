@@ -324,6 +324,10 @@ InitLanguage() {
     v["LC_ModeNameFull"]        := "Khóa phím & chuột"
     v["LC_ModeNameScreen"]      := "Khóa màn hình"
     v["LC_TimerCancelled"]      := "Đã hủy hẹn giờ khóa"
+    v["LC_PresetSuffix"]        := "p"
+    v["LC_TipIconKB"]           := "Bàn phím sẽ bị khóa (bấm Tùy chọn... để chỉnh)"
+    v["LC_TipIconMouse"]        := "Chuột sẽ bị khóa (bấm Tùy chọn... để chỉnh)"
+    v["LC_TipNoDevice"]         := "Chưa bật khóa Bàn phím hay Chuột — bấm Tùy chọn... để bật ít nhất 1 thiết bị"
 
     ; Sidebar điều hướng Settings
     v["Nav_General"]            := "Chung"
@@ -660,6 +664,10 @@ InitLanguage() {
     e["LC_ModeNameFull"]        := "Device Lock"
     e["LC_ModeNameScreen"]      := "Screen Lock"
     e["LC_TimerCancelled"]      := "Lock timer cancelled"
+    e["LC_PresetSuffix"]        := "m"
+    e["LC_TipIconKB"]           := "Keyboard will be locked (click Options... to change)"
+    e["LC_TipIconMouse"]        := "Mouse will be locked (click Options... to change)"
+    e["LC_TipNoDevice"]         := "Neither Keyboard nor Mouse lock is enabled — click Options... to enable at least one"
 
     ; Sidebar navigation Settings
     e["Nav_General"]            := "General"
