@@ -286,26 +286,40 @@ Settings:
 
     ; Card 1: Phím tắt hệ thống
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h232, % L("Set_GroupSystemHotkeys")
+    Gui, Add, GroupBox, x228 y54 w536 h202, % L("Set_GroupSystemHotkeys")
 
-    AddShortcutRow(82,  "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",   "ActionOpenLockCenter")
-    AddShortcutRow(114, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V", "ActionPastePlain")
+    AddShortcutRow(74,  "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",   "ActionOpenLockCenter")
+    AddShortcutRow(102, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V", "ActionPastePlain")
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x274 y137 w472 h18, % L("Set_PastePlainDesc")
-    AddShortcutRow(162, "Icon3",   A_WinDir . "\System32\SndVol.exe",  "Set_Mute",       "Ctrl + Shift + M", "ActionMute")
-    AddShortcutRow(194, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"),  "ActionVolDown")
-    AddShortcutRow(226, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp")
+    Gui, Add, Text, x274 y124 w472 h18, % L("Set_PastePlainDesc")
+    AddShortcutRow(146, "Icon3",   A_WinDir . "\System32\SndVol.exe",  "Set_Mute",       "Ctrl + Shift + M", "ActionMute")
+    AddShortcutRow(174, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"),  "ActionVolDown")
+    AddShortcutRow(202, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp")
 
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y260 w500 h22, % L("Set_ShortcutsTip")
+    Gui, Add, Text, x246 y233 w500 h18, % L("Set_ShortcutsTip")
 
-    ; Card 2: Thao tác nhanh trên khay hệ thống
+    ; Card 2: Ghim cửa sổ luôn nổi (Always On Top)
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y300 w536 h94, % L("Set_GroupTrayActions")
+    Gui, Add, GroupBox, x228 y262 w536 h78, % L("Set_GroupAOT")
+    Gui, Font, s9.5 Norm c222222, Segoe UI
+    Gui, Add, Checkbox, x246 y283 w214 h22 vAOTEnabled gOnToggleAOTEnabled Checked%AOTEnabled%, % L("AOT_EnableChk")
+    Gui, Font, s9 Norm c555555, Segoe UI
+    Gui, Add, Text, x464 y286 w56 h18, % L("AOT_HotkeyLbl")
+    Gui, Font, s9 Norm c222222, Segoe UI
+    aotHkDisplay := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Win + Ctrl + T"
+    Gui, Add, Button, x522 y281 w120 h25 vAOTHotkeyBtn gOnChangeAOTHotkey, %aotHkDisplay%
+    Gui, Add, Button, x648 y281 w104 h25 vAOTUnpinAllBtn gOnUnpinAllAOT, % L("AOT_UnpinAllBtn")
+    Gui, Font, s9.5 Norm c222222, Segoe UI
+    Gui, Add, Checkbox, x246 y310 w500 h22 vAOTBorderEnabled gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
 
-    AddShortcutRow(324, "Icon1", aboutIcon, "Set_TrayToggleLabel", L("Set_TrayToggleBtn"), "ActionToggleGestures")
+    ; Card 3: Thao tác nhanh trên khay hệ thống
+    Gui, Font, s9.5 Bold c222222, Segoe UI
+    Gui, Add, GroupBox, x228 y344 w536 h60, % L("Set_GroupTrayActions")
+
+    AddShortcutRow(362, "Icon1", aboutIcon, "Set_TrayToggleLabel", L("Set_TrayToggleBtn"), "ActionToggleGestures")
     Gui, Font, s8.5 Norm c555555, Segoe UI
-    Gui, Add, Text, x246 y358 w500 h26, % "• " . L("Set_TrayDblClickTip")
+    Gui, Add, Text, x246 y385 w500 h16, % "• " . L("Set_TrayDblClickTip")
 
     ; --------------------------------------------------------
     ; TAB 5: THÔNG TIN && BẢN QUYỀN (HERO BANNER HIỆN ĐẠI)
@@ -383,6 +397,9 @@ Settings:
     ; Khởi tạo trạng thái Enable/Disable của control
     GuiControl, Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
     UpdateLockAuthControlsState(windowsLogonOnly)
+    GuiControl, Enable%AOTEnabled%, AOTHotkeyBtn
+    GuiControl, Enable%AOTEnabled%, AOTBorderEnabled
+    GuiControl, Enable%AOTEnabled%, AOTUnpinAllBtn
 
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
     SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1, true)
@@ -572,6 +589,14 @@ UpdateSettingsGuiControls() {
     chkEN := (CurrentLang = "en") ? 1 : 0
     GuiControl, Settings:, LangVI, %chkVI%
     GuiControl, Settings:, LangEN, %chkEN%
+
+    GuiControl, Settings:, AOTEnabled, %AOTEnabled%
+    GuiControl, Settings:, AOTBorderEnabled, %AOTBorderEnabled%
+    if (IsFunc("FormatAOTHotkeyText"))
+        GuiControl, Settings:, AOTHotkeyBtn, % FormatAOTHotkeyText(AOTHotkey)
+    GuiControl, Settings:Enable%AOTEnabled%, AOTHotkeyBtn
+    GuiControl, Settings:Enable%AOTEnabled%, AOTBorderEnabled
+    GuiControl, Settings:Enable%AOTEnabled%, AOTUnpinAllBtn
 }
 
 ; ========================================================
@@ -865,6 +890,98 @@ Save:
     fnTip := "UpdateTrayTip"
     if (IsFunc(fnTip))
         %fnTip%()
+return
+
+; ========================================================
+; CÀI ĐẶT ALWAYS ON TOP
+; ========================================================
+OnToggleAOTEnabled:
+    Gui, Settings:Submit, NoHide
+    AOTEnabled := AOTEnabled ? 1 : 0
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTEnabled, %AOTEnabled%
+    GuiControl, Settings:Enable%AOTEnabled%, AOTHotkeyBtn
+    GuiControl, Settings:Enable%AOTEnabled%, AOTBorderEnabled
+    GuiControl, Settings:Enable%AOTEnabled%, AOTUnpinAllBtn
+    if (IsFunc("ApplyAOTHotkey"))
+        ApplyAOTHotkey()
+    if (!AOTEnabled && IsFunc("UnpinAllAlwaysOnTop"))
+        UnpinAllAlwaysOnTop()
+return
+
+OnToggleAOTBorder:
+    Gui, Settings:Submit, NoHide
+    AOTBorderEnabled := AOTBorderEnabled ? 1 : 0
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTBorderEnabled, %AOTBorderEnabled%
+    if (IsFunc("RefreshAllAOTBorders"))
+        RefreshAllAOTBorders()
+return
+
+OnUnpinAllAOT:
+    if (IsFunc("UnpinAllAlwaysOnTop"))
+        UnpinAllAlwaysOnTop()
+return
+
+OnChangeAOTHotkey:
+    ShowAOTHotkeyDialog()
+return
+
+ShowAOTHotkeyDialog() {
+    global AOTHotkey, hSettingsGui, hAOTHotkeyGui
+    global AOTNewWinMod, AOTNewKeyCtrl
+
+    if (hAOTHotkeyGui && WinExist("ahk_id " . hAOTHotkeyGui)) {
+        WinActivate, ahk_id %hAOTHotkeyGui%
+        return
+    }
+
+    hasWin := InStr(AOTHotkey, "#") ? 1 : 0
+    baseHk := StrReplace(AOTHotkey, "#")
+
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
+        Gui, Settings:+Disabled
+
+    ownerOpt := (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) ? "+Owner" . hSettingsGui : ""
+    Gui, AOTHotkeyDlg:New, -MaximizeBox -MinimizeBox %ownerOpt% +HwndhAOTHotkeyGui, % L("AOT_ChangeHotkeyBtn")
+    if (IsFunc("SetGuiYellowIcon"))
+        SetGuiYellowIcon(hAOTHotkeyGui)
+    Gui, AOTHotkeyDlg:Color, FFFFFF
+    Gui, AOTHotkeyDlg:Font, s9.5 Norm c222222, Segoe UI
+    Gui, AOTHotkeyDlg:Add, Text, x16 y14 w310, % L("AOT_HotkeyPrompt")
+    Gui, AOTHotkeyDlg:Add, Checkbox, x16 y44 w70 h24 vAOTNewWinMod Checked%hasWin%, Win +
+    Gui, AOTHotkeyDlg:Add, Hotkey, x92 y43 w234 h24 vAOTNewKeyCtrl, %baseHk%
+    Gui, AOTHotkeyDlg:Add, Button, x16 y82 w110 h28 gOnResetAOTHotkey, Win + Ctrl + T
+    Gui, AOTHotkeyDlg:Add, Button, x176 y82 w72 h28 Default gOnSaveAOTHotkey, OK
+    Gui, AOTHotkeyDlg:Add, Button, x254 y82 w72 h28 gAOTHotkeyDlgGuiClose, % L("Set_Close")
+    Gui, AOTHotkeyDlg:Show, w342 h124 Center
+}
+
+OnResetAOTHotkey:
+    GuiControl, AOTHotkeyDlg:, AOTNewWinMod, 1
+    GuiControl, AOTHotkeyDlg:, AOTNewKeyCtrl, ^t
+return
+
+OnSaveAOTHotkey:
+    Gui, AOTHotkeyDlg:Submit, NoHide
+    if (AOTNewKeyCtrl = "")
+        return
+    newHk := (AOTNewWinMod ? "#" : "") . AOTNewKeyCtrl
+    AOTHotkey := newHk
+    RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTHotkey, %AOTHotkey%
+    if (IsFunc("ApplyAOTHotkey"))
+        ApplyAOTHotkey()
+    if (IsFunc("FormatAOTHotkeyText"))
+        GuiControl, Settings:, AOTHotkeyBtn, % FormatAOTHotkeyText(AOTHotkey)
+    Gosub, AOTHotkeyDlgGuiClose
+return
+
+AOTHotkeyDlgGuiClose:
+AOTHotkeyDlgGuiEscape:
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+        Gui, Settings:-Disabled
+        WinActivate, ahk_id %hSettingsGui%
+    }
+    Gui, AOTHotkeyDlg:Destroy
+    hAOTHotkeyGui := 0
 return
 
 OpenGitHubLink:

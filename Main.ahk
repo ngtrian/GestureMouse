@@ -124,6 +124,7 @@ SetTimer, PreloadSettingsGui, -1500 ; Dựng sẵn Settings GUI ẩn ở nền �
 #Include %A_ScriptDir%\Lib\AutoScroll.ahk ; AutoScroll
 #Include %A_ScriptDir%\Lib\LockManager.ahk ; Trung tâm Khóa hợp nhất (Khóa phím/chuột, Màn hình, Focus Lock, Hẹn giờ)
 #Include %A_ScriptDir%\Lib\Volume.ahk
+#Include %A_ScriptDir%\Lib\AlwaysOnTop.ahk ; Ghim cửa sổ luôn nổi (Always On Top)
 
 
 

@@ -9,6 +9,8 @@ Menu:
     InitExcludedApps()
     if (IsFunc("InitLockManager"))
         InitLockManager()
+    if (IsFunc("InitAlwaysOnTop"))
+        InitAlwaysOnTop()
 
     ; Xây dựng menu khay hệ thống ban đầu
     RebuildTrayMenu()
@@ -48,6 +50,8 @@ UpdateTrayTip() {
     ; Độ sáng
     BrightnessPercent := Round((255 - Brightness) / 255 * 100)
     TrayTip .= L("Tip_Brightness") . BrightnessPercent . "%" . (GuiOn ? L("Tip_GuiOn") : L("Tip_GuiOff"))
+    if (IsObject(AOTPinnedWindows) && AOTPinnedWindows.Count() > 0)
+        TrayTip .= "`n" . L("AOT_TrayCount") . AOTPinnedWindows.Count()
     Menu, Tray, Tip, %TrayTip%
 }
 
