@@ -191,67 +191,72 @@ Settings:
     ; TAB 3: KHÓA BÀN PHÍM && CHUỘT
     ; --------------------------------------------------------
     Gui, Tab, TabLock
-    AddSettingsTabHeader("Set_HeaderLock", "Set_SubLock")
+    AddSettingsTabHeader("Set_HeaderLock", "Set_SubLock", 364)
+    Gui, Font, s9 Bold c004499, Segoe UI
+    Gui, Add, Button, x598 y9 w166 h25 gActionOpenLockCenter +HwndhBtnLockCenterHeader, % L("Lock_CenterBtnShort")
+    SettingsTooltips[hBtnLockCenterHeader] := L("Lock_CenterBtnTip")
 
     ; Card 1: Thiết lập khóa thiết bị
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y56 w536 h138, % L("Lock_Card1Title")
+    Gui, Add, GroupBox, x228 y58 w536 h88, % L("Lock_Card1Title")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Picture, x246 y74 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x272 y75 w120 h22 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
-    Gui, Add, Picture, x398 y74 w22 h22 Icon32, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x424 y75 w98 h22 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
+    Gui, Add, Picture, x246 y78 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x272 y79 w120 h22 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
+    Gui, Add, Picture, x398 y78 w22 h22 Icon32, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x424 y79 w98 h22 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x528 y73 w218 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
+    Gui, Add, Button, x528 y77 w218 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
     if (LockTabIcons["idle"])
-        Gui, Add, Picture, x246 y105 w20 h20, % "HICON:*" . LockTabIcons["idle"]
-    Gui, Add, Checkbox, x272 y106 w250 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
+        Gui, Add, Picture, x246 y112 w20 h20, % "HICON:*" . LockTabIcons["idle"]
+    Gui, Add, Checkbox, x272 y113 w250 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, DropDownList, x528 y103 w218 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+    Gui, Add, DropDownList, x528 y110 w218 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+
+    ; Card 2: Hành vi khi đang khóa
+    Gui, Font, s9.5 Bold c222222, Segoe UI
+    Gui, Add, GroupBox, x228 y156 w536 h82, % L("Lock_Card2BehaviorTitle")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y136 w174 h22 vpreventScreenOff gSaveSettings Checked%preventScreenOff%, % L("Lock_PreventScreenOff")
-    Gui, Add, Checkbox, x426 y136 w142 h22 vpreventSleep gSaveSettings Checked%preventSleep%, % L("Lock_PreventSleep")
+    Gui, Add, Checkbox, x246 y176 w174 h22 vpreventScreenOff gSaveSettings Checked%preventScreenOff%, % L("Lock_PreventScreenOff")
+    Gui, Add, Checkbox, x426 y176 w142 h22 vpreventSleep gSaveSettings Checked%preventSleep%, % L("Lock_PreventSleep")
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x574 y139 w172 h18 +Right, % L("Lock_PowerScopeHint")
+    Gui, Add, Text, x574 y179 w172 h18 +Right, % L("Lock_PowerScopeHint")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
     if (LockTabIcons["toast"])
-        Gui, Add, Picture, x246 y163 w20 h20, % "HICON:*" . LockTabIcons["toast"]
-    Gui, Add, Checkbox, x272 y163 w474 h24 valwaysShowLockToast gSaveSettings Checked%alwaysShowLockToast%, % L("Lock_AlwaysShowToast")
+        Gui, Add, Picture, x246 y205 w20 h20, % "HICON:*" . LockTabIcons["toast"]
+    Gui, Add, Checkbox, x272 y205 w474 h22 valwaysShowLockToast gSaveSettings Checked%alwaysShowLockToast%, % L("Lock_AlwaysShowToast")
 
-    ; Card 2: Bảo mật & Mở khóa
+    ; Card 3: Bảo mật & Mở khóa
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y202 w536 h196, % L("Lock_Card2Title")
+    Gui, Add, GroupBox, x228 y248 w536 h150, % L("Lock_Card2Title")
 
+    chkCustomMode := windowsLogonOnly ? 0 : 1
+    chkWinOnlyMode := windowsLogonOnly ? 1 : 0
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    if (LockTabIcons["winlock"])
-        Gui, Add, Picture, x246 y221 w20 h20, % "HICON:*" . LockTabIcons["winlock"]
-    Gui, Add, Checkbox, x272 y221 w474 h24 vwindowsLogonOnly gOnToggleWindowsLogonOnly Checked%windowsLogonOnly%, % L("Lock_WinLogonOnly")
-
     if (LockTabIcons["key"])
-        Gui, Add, Picture, x246 y253 w20 h20, % "HICON:*" . LockTabIcons["key"]
-    Gui, Add, Text, x272 y255 w96 vLockKeyPromptLbl, % L("Lock_KeyPrompt")
+        Gui, Add, Picture, x246 y269 w20 h20, % "HICON:*" . LockTabIcons["key"]
+    Gui, Add, Radio, x272 y269 w474 h22 vUnlockModeCustom gOnSelectUnlockModeCustom Checked%chkCustomMode%, % L("Lock_ModeCustom")
+
+    Gui, Add, Text, x288 y301 w94 vLockKeyPromptLbl, % L("Lock_KeyPrompt")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Edit, x372 y252 w196 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
-    Gui, Add, Button, x574 y251 w34 h26 +0x0040 gToggleRevealCode vBtnToggleReveal +HwndhBtnToggleReveal
+    Gui, Add, Edit, x384 y298 w184 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
+    Gui, Add, Button, x574 y297 w34 h26 +0x0040 gToggleRevealCode vBtnToggleReveal +HwndhBtnToggleReveal
     if (LockTabIcons["eye_show"]) {
         DllCall("SendMessage", "Ptr", hBtnToggleReveal, "UInt", 0x00F7, "Ptr", 1, "Ptr", LockTabIcons["eye_show"])
         SettingsTooltips[hBtnToggleReveal] := L("Lock_RevealShowTip")
     }
-    Gui, Add, Button, x614 y251 w132 h26 gOpenChangeCodeGui vBtnChangeCode, % L("Lock_ChangeCodeBtn")
+    Gui, Add, Button, x614 y297 w132 h26 gOpenChangeCodeGui vBtnChangeCode, % L("Lock_ChangeCodeBtn")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y285 w500 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
+    Gui, Add, Checkbox, x288 y331 w458 h22 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
 
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y311 w500 h28 vLockMethodHintTxt, % ("• " . (windowsLogonOnly ? L("Lock_MethodHintWinOnly") : L("Lock_MethodHint")))
-
-    Gui, Font, s9.5 Bold c004499, Segoe UI
-    Gui, Add, Button, x246 y350 w500 h34 gActionOpenLockCenter, % L("Lock_CenterBtn")
+    if (LockTabIcons["winlock"])
+        Gui, Add, Picture, x246 y362 w20 h20, % "HICON:*" . LockTabIcons["winlock"]
+    Gui, Add, Radio, x272 y362 w474 h22 vUnlockModeWinOnly gOnSelectUnlockModeWinOnly Checked%chkWinOnlyMode%, % L("Lock_ModeWinOnly")
 
     ; --------------------------------------------------------
     ; TAB 4: PHÍM TẮT && TIỆN ÍCH
@@ -393,9 +398,9 @@ AddSidebarNav(idx, yPos, iconChar, labelText) {
     }
 }
 
-AddSettingsTabHeader(titleKey, subKey) {
+AddSettingsTabHeader(titleKey, subKey, titleWidth := 536) {
     Gui, Settings:Font, s13 Bold c004499, Segoe UI
-    Gui, Settings:Add, Text, x228 y12 w536, % L(titleKey)
+    Gui, Settings:Add, Text, x228 y12 w%titleWidth%, % L(titleKey)
     Gui, Settings:Font, s8.5 Norm c666666, Segoe UI
     Gui, Settings:Add, Text, x228 y35 w536, % L(subKey)
 }
@@ -533,7 +538,6 @@ UpdateSettingsGuiControls() {
     GuiControl, Settings:, preventScreenOff, %preventScreenOff%
     GuiControl, Settings:, preventSleep, %preventSleep%
     GuiControl, Settings:, alwaysShowLockToast, %alwaysShowLockToast%
-    GuiControl, Settings:, windowsLogonOnly, %windowsLogonOnly%
     GuiControl, Settings:, requireCodeForTimerEdit, %requireCodeForTimerEdit%
     GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
     UpdateLockAuthControlsState(windowsLogonOnly)
@@ -706,16 +710,25 @@ OnToggleIdleCheck:
     Gosub, SaveSettings
 return
 
-OnToggleWindowsLogonOnly:
-    Gui, Settings:Submit, NoHide
-    UpdateLockAuthControlsState(windowsLogonOnly)
+OnSelectUnlockModeCustom:
+    windowsLogonOnly := 0
+    UpdateLockAuthControlsState(0)
+    Gosub, SaveSettings
+return
+
+OnSelectUnlockModeWinOnly:
+    windowsLogonOnly := 1
+    UpdateLockAuthControlsState(1)
     Gosub, SaveSettings
 return
 
 UpdateLockAuthControlsState(winOnly) {
     global isCodeRevealed, UNLOCK_KEYWORD
-    enableCustom := !winOnly
-    if (winOnly && isCodeRevealed) {
+    winOnlyFlag := winOnly ? 1 : 0
+    enableCustom := winOnlyFlag ? 0 : 1
+    GuiControl, Settings:, UnlockModeCustom, %enableCustom%
+    GuiControl, Settings:, UnlockModeWinOnly, %winOnlyFlag%
+    if (winOnlyFlag && isCodeRevealed) {
         isCodeRevealed := 0
         GuiControl, Settings:+Password, UnlockCodeDisplay
         UpdateRevealButtonVisual(false)
@@ -726,8 +739,6 @@ UpdateLockAuthControlsState(winOnly) {
     GuiControl, Settings:Enable%enableCustom%, BtnToggleReveal
     GuiControl, Settings:Enable%enableCustom%, BtnChangeCode
     GuiControl, Settings:Enable%enableCustom%, requireCodeForTimerEdit
-    hintTxt := "• " . (winOnly ? L("Lock_MethodHintWinOnly") : L("Lock_MethodHint"))
-    GuiControl, Settings:, LockMethodHintTxt, %hintTxt%
 }
 
 OnLangRadio:
@@ -806,7 +817,7 @@ Save:
         InitAutoLockTimer()
 
     ; Lưu tùy chọn chỉ dùng Windows Logon & yêu cầu mã khi chỉnh sửa hẹn giờ
-    windowsLogonOnly := windowsLogonOnly ? 1 : 0
+    windowsLogonOnly := UnlockModeWinOnly ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WindowsLogonOnly, %windowsLogonOnly%
 
     requireCodeForTimerEdit := requireCodeForTimerEdit ? 1 : 0
