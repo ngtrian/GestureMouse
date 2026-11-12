@@ -11,6 +11,7 @@ global LastSettingsTipHwnd  := 0
 global SidebarNavBitmaps    := {}
 global SidebarIconHwnds     := {}
 global LockTabIcons         := {}
+global GestureBadgeBitmaps  := {}
 global hBtnToggleReveal     := 0
 global hAboutHeroBmp        := 0
 
@@ -40,6 +41,8 @@ Settings:
         SidebarNavBitmaps := CreateSidebarNavBitmaps(20)
     if (!LockTabIcons.HasKey("idle"))
         LockTabIcons := CreateLockTabIcons()
+    if (!GestureBadgeBitmaps.HasKey("L"))
+        GestureBadgeBitmaps := CreateGestureBadgeBitmaps(32, 22)
 
     Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
     SetGuiYellowIcon(hSettingsGui)
@@ -180,10 +183,9 @@ Settings:
     Gui, Font, s9 Bold c004499, Segoe UI
     Gui, Add, Text, x246 y299 w500, % L("Set_BrowserGesturesTitle")
 
-    gestureBadges := CreateGestureBadgeBitmaps(32, 22)
-    AddBrowserGestureRow(323, gestureBadges["L"],  "Set_Back",     "Set_TipGestureL",  gestureBadges["R"],  "Set_Forward", "Set_TipGestureR")
-    AddBrowserGestureRow(347, gestureBadges["LU"], "Set_PrevTab",  "Set_TipGestureLU", gestureBadges["LD"], "Set_NextTab", "Set_TipGestureLD")
-    AddBrowserGestureRow(371, gestureBadges["RU"], "Set_CloseTab", "Set_TipGestureRU", gestureBadges["RD"], "Set_Refresh", "Set_TipGestureRD")
+    AddBrowserGestureRow(323, GestureBadgeBitmaps["L"],  "Set_Back",     "Set_TipGestureL",  GestureBadgeBitmaps["R"],  "Set_Forward", "Set_TipGestureR")
+    AddBrowserGestureRow(347, GestureBadgeBitmaps["LU"], "Set_PrevTab",  "Set_TipGestureLU", GestureBadgeBitmaps["LD"], "Set_NextTab", "Set_TipGestureLD")
+    AddBrowserGestureRow(371, GestureBadgeBitmaps["RU"], "Set_CloseTab", "Set_TipGestureRU", GestureBadgeBitmaps["RD"], "Set_Refresh", "Set_TipGestureRD")
 
     ; --------------------------------------------------------
     ; TAB 3: KHÓA BÀN PHÍM && CHUỘT
@@ -423,14 +425,14 @@ AddBrowserGestureRow(yPos, hBmp1, labelKey1, tipKey1, hBmp2, labelKey2, tipKey2)
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
     Gui, Settings:Add, Text, x246 y%yPos% w160, % L(labelKey1)
     if (hBmp1) {
-        Gui, Settings:Add, Picture, x412 y%badgeY% +0x100 HwndhBadge1, HBITMAP:%hBmp1%
+        Gui, Settings:Add, Picture, x412 y%badgeY% +0x100 HwndhBadge1, HBITMAP:*%hBmp1%
         SettingsTooltips[hBadge1] := L(tipKey1)
     }
 
     Gui, Settings:Font, s9 Norm c222222, Segoe UI
     Gui, Settings:Add, Text, x500 y%yPos% w170, % L(labelKey2)
     if (hBmp2) {
-        Gui, Settings:Add, Picture, x676 y%badgeY% +0x100 HwndhBadge2, HBITMAP:%hBmp2%
+        Gui, Settings:Add, Picture, x676 y%badgeY% +0x100 HwndhBadge2, HBITMAP:*%hBmp2%
         SettingsTooltips[hBadge2] := L(tipKey2)
     }
 }
@@ -923,3 +925,32 @@ WhitelistGuiEscape:
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
         WinActivate, ahk_id %hSettingsGui%
 return
+
+; Giải phóng các GDI HBITMAP và HICON đã cache của giao diện Cài đặt khi thoát ứng dụng
+CleanupSettingsIcons() {
+    global SidebarNavBitmaps, LockTabIcons, GestureBadgeBitmaps, hAboutHeroBmp
+    for idx, states in SidebarNavBitmaps {
+        if (states.inactive)
+            DllCall("DeleteObject", "Ptr", states.inactive)
+        if (states.active)
+            DllCall("DeleteObject", "Ptr", states.active)
+    }
+    SidebarNavBitmaps := {}
+
+    for dirKey, hBmp in GestureBadgeBitmaps {
+        if (hBmp)
+            DllCall("DeleteObject", "Ptr", hBmp)
+    }
+    GestureBadgeBitmaps := {}
+
+    for iconKey, hIcon in LockTabIcons {
+        if (hIcon)
+            DllCall("DestroyIcon", "Ptr", hIcon)
+    }
+    LockTabIcons := {}
+
+    if (hAboutHeroBmp) {
+        DllCall("DeleteObject", "Ptr", hAboutHeroBmp)
+        hAboutHeroBmp := 0
+    }
+}

@@ -109,7 +109,7 @@ global IconHandles := {}  ; Mảng lưu HICON
 LoadIcons()  ; Gọi hàm tải biểu tượng
 OnExit("CleanupIcons")  ; Đăng ký hàm giải phóng tài nguyên khi thoát
 InitPowerAndSessionWatch() ; Khởi tạo theo dõi sleep, unlock màn hình, chống drop hook
-SetTimer, UpdateExplorerSelectionState, 300 ; Timer kiểm tra nền selection của Explorer ngoài hook thread
+SetTimer, UpdateExplorerSelectionState, 500 ; Timer kiểm tra nền selection của Explorer ngoài hook thread
 
 #Include %A_ScriptDir%\Lib\Language.ahk ; Quản lý đa ngôn ngữ (chỉ gồm các hàm)
 #Include %A_ScriptDir%\Lib\Menu.ahk ; Menu, UpdateTrayTip, ExitMenu
@@ -150,13 +150,18 @@ LoadIcons() {
     }
 }
 
-; Hàm giải phóng tất cả HICON khi thoát
+; Hàm giải phóng tất cả HICON và tài nguyên đồ họa khi thoát
 CleanupIcons() {
     global IconHandles
     if (A_IsCompiled) {
         for gesture, hIcon in IconHandles {
-            DllCall("DestroyIcon", "Ptr", hIcon)
+            if (hIcon)
+                DllCall("DestroyIcon", "Ptr", hIcon)
         }
+    }
+    if (IsFunc("CleanupSettingsIcons")) {
+        fnCleanup := "CleanupSettingsIcons"
+        %fnCleanup%()
     }
 }
 
@@ -256,9 +261,15 @@ HasUIAccessOrAdmin() {
 
 ; Timer định kỳ cập nhật trạng thái chọn file trong Explorer ngoài hook thread (chạy độc lập, không làm trễ hook)
 UpdateExplorerSelectionState:
-    ; Chỉ kiểm tra khi cửa sổ active là Explorer để tiết kiệm CPU tối đa
+    ; Chỉ kiểm tra khi cửa sổ active là Explorer và chuột đang hover trên Explorer để tiết kiệm CPU/COM tối đa
     if (WinActive("ahk_class CabinetWClass") || WinActive("ahk_class ExploreWClass")) {
-        ExplorerHasSelection := CheckExplorerHasSelectedItems()
+        MouseGetPos, , , hoverExplorerHwnd
+        WinGetClass, hoverExplorerClass, ahk_id %hoverExplorerHwnd%
+        if (hoverExplorerClass ~= "^(CabinetWClass|ExploreWClass)$") {
+            ExplorerHasSelection := CheckExplorerHasSelectedItems()
+        } else {
+            ExplorerHasSelection := false
+        }
     } else {
         ExplorerHasSelection := false
     }
@@ -266,6 +277,7 @@ return
 
 ; Hàm kiểm tra có file/thư mục nào đang được chọn trong File Explorer không
 CheckExplorerHasSelectedItems() {
+    static shellApp := ""
     hwnd := WinExist("A")
     if (!hwnd)
         return false
@@ -276,7 +288,8 @@ CheckExplorerHasSelectedItems() {
         activeTab := 0
     }
     try {
-        shellApp := ComObjCreate("Shell.Application")
+        if (!IsObject(shellApp))
+            shellApp := ComObjCreate("Shell.Application")
         for w in shellApp.Windows {
             if (w.hwnd != hwnd)
                 continue
@@ -293,6 +306,7 @@ CheckExplorerHasSelectedItems() {
                 return true
         }
     } catch {
+        shellApp := ""
         return false
     }
     return false
@@ -735,10 +749,9 @@ ShowGestureHint(Gesture) {
         if (ImageKey && CurrentText) { ; Cử chỉ hợp lệ
             ; Hiển thị lại Icon nếu nó đang bị ẩn
             GuiControl, GestureHint:Show, GestureIcon
-            ; Cập nhật hình ảnh
+            ; Cập nhật hình ảnh (dùng HICON:* để AHK tự quản lý bản sao và giải phóng handle cũ, tránh rò rỉ)
             if (A_IsCompiled) {
-                hIconCopy := DllCall("CopyIcon", "Ptr", hIcon)
-                GuiControl, GestureHint:, GestureIcon, *Icon HICON:%hIconCopy%
+                GuiControl, GestureHint:, GestureIcon, HICON:*%hIcon%
             } else {
                 GuiControl, GestureHint:, GestureIcon, %hIcon%
             }
@@ -765,15 +778,13 @@ ShowGestureHint(Gesture) {
         ; Thêm các control với tên biến (v-option)
         if (ImageKey && CurrentText) { ; Cử chỉ hợp lệ ban đầu
             if (A_IsCompiled) {
-                hIconCopy := DllCall("CopyIcon", "Ptr", hIcon)
-                Gui, GestureHint:Add, Picture, w64 h64 x28 y5 vGestureIcon, HICON:%hIconCopy% 
-                DllCall("DestroyIcon", "Ptr", hIconCopy)
+                Gui, GestureHint:Add, Picture, w64 h64 x28 y5 vGestureIcon, HICON:*%hIcon% 
             } else {
                 Gui, GestureHint:Add, Picture, w64 h64 x28 y5 vGestureIcon, %hIcon% 
             }
             Gui, GestureHint:Add, Text, cFFFFFF x10 y64 w100 h140 Center vGestureText, %CurrentText% 
         } else { ; Cử chỉ không hợp lệ ban đầu
-            Gui, GestureHint:Add, Picture, vGestureIcon Hidden 
+            Gui, GestureHint:Add, Picture, w64 h64 x28 y5 vGestureIcon Hidden 
             Gui, GestureHint:Add, Text, cFFFFFF x10 y30 w100 Center vGestureText, % L("Hint_Invalid")
         }
 
