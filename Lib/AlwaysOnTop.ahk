@@ -5,7 +5,7 @@
 InitAlwaysOnTop() {
     global AOTEnabled, AOTHotkey, AOTBorderEnabled, AOTBorderAlpha, AOTBorderThickness
     global AOTPinnedWindows, AOTGuiCounter, AOTWinEventHooks, AOTWinEventCallback
-    global AOTGdipModule, AOTGdipToken, AOTLastSyncTick, AOTSyncPending, AOTCachedAccentRgb
+    global AOTGdipModule, AOTGdipToken, AOTLastSyncTick, AOTSyncPending, AOTCachedAccentRgb, AOTBorderHwnds
 
     AOTEnabled := 1
     AOTHotkey := "^!t" ; Mặc định: Ctrl + Alt + T
@@ -13,6 +13,7 @@ InitAlwaysOnTop() {
     AOTBorderAlpha := 165 ; Độ mờ dịu (~65% opacity) cho nét vẽ 1px khử răng cưa
     AOTBorderThickness := 1.2 ; Viền siêu mảnh ~1px
     AOTPinnedWindows := {}
+    AOTBorderHwnds := {}
     AOTGuiCounter := 0
     AOTWinEventHooks := []
     AOTWinEventCallback := 0
@@ -220,12 +221,14 @@ StopAOTTracking() {
 }
 
 AOTWinEventProc(hWinEventHook, event, hWnd, idObject, idChild, dwEventThread, dwmsEventTime) {
-    global AOTPinnedWindows, AOTLastSyncTick, AOTSyncPending
+    global AOTPinnedWindows, AOTBorderHwnds, AOTLastSyncTick, AOTSyncPending
 
     if (event >= 0x8000 && idObject != 0)
         return
     if (!AOTPinnedWindows.Count())
         return
+
+    SetBatchLines, -1
 
     if (event = 0x0003 || event = 0x0016 || event = 0x0017) {
         ScheduleAOTSync(15)
@@ -233,22 +236,43 @@ AOTWinEventProc(hWinEventHook, event, hWnd, idObject, idChild, dwEventThread, dw
     }
 
     hWnd := hWnd + 0
-    if (!AOTPinnedWindows.HasKey(hWnd))
-        return
-
-    if (event = 0x800B) { ; EVENT_OBJECT_LOCATIONCHANGE
-        ; Nếu chỉ có 1 cửa sổ ghim và chỉ đổi vị trí (kéo), di chuyển viền ngay không qua timer
-        if (AOTPinnedWindows.Count() = 1 && TryFastMoveSingleAOTBorder(hWnd))
-            return
-        ; Nhiều cửa sổ ghim hoặc đổi kích thước: throttle ~60 FPS (16ms)
-        elapsed := A_TickCount - AOTLastSyncTick
-        if (elapsed >= 16)
-            SyncAllAOTBorders()
-        else
-            ScheduleAOTSync(16 - elapsed)
-    } else if (event = 0x8001) { ; EVENT_OBJECT_DESTROY
-        ScheduleAOTSync(10)
+    if (AOTPinnedWindows.HasKey(hWnd)) {
+        if (event = 0x800B) { ; EVENT_OBJECT_LOCATIONCHANGE
+            ; Di chuyển viền ngay lập tức không chờ timer để bám sát khi kéo nhanh
+            movedOnly := TryFastMoveAOTBorder(hWnd)
+            if (movedOnly && AOTPinnedWindows.Count() = 1 && !HasOtherTopmostOccluders(hWnd))
+                return
+            elapsed := A_TickCount - AOTLastSyncTick
+            if (elapsed >= 16)
+                SyncAllAOTBorders()
+            else
+                ScheduleAOTSync(16 - elapsed)
+        } else if (event = 0x8001) { ; EVENT_OBJECT_DESTROY
+            ScheduleAOTSync(10)
+        }
+    } else if (event = 0x800B && !AOTBorderHwnds.HasKey(hWnd) && (GetWindowLongPtrCompat(hWnd, -20) & 0x8)) {
+        ; Cửa sổ On Top từ app khác (vd: PowerToys) vừa di chuyển -> đồng bộ lại vùng cắt
+        ScheduleAOTSync(16)
     }
+}
+
+HasOtherTopmostOccluders(hWnd) {
+    global AOTBorderHwnds
+    curr := DllCall("GetTopWindow", "Ptr", 0, "Ptr")
+    while (curr) {
+        currInt := curr + 0
+        if (currInt = hWnd)
+            return false
+        if (!AOTBorderHwnds.HasKey(currInt) && DllCall("IsWindowVisible", "Ptr", curr)) {
+            if (GetWindowLongPtrCompat(curr, -20) & 0x8) {
+                WinGetClass, cls, ahk_id %curr%
+                if (cls != "Shell_TrayWnd" && cls != "Shell_SecondaryTrayWnd")
+                    return true
+            }
+        }
+        curr := DllCall("GetWindow", "Ptr", curr, "UInt", 2, "Ptr")
+    }
+    return false
 }
 
 ScheduleAOTSync(delayMs) {
@@ -264,8 +288,8 @@ AOTSyncSoonTimer:
     SyncAllAOTBorders()
 return
 
-; Đường nhanh: chỉ dịch chuyển tọa độ (x, y) của viền khi kéo 1 cửa sổ mà kích thước giữ nguyên
-TryFastMoveSingleAOTBorder(hWnd) {
+; Đường nhanh: chỉ dịch chuyển tọa độ (x, y) của viền ngay lập tức khi kéo mà kích thước giữ nguyên
+TryFastMoveAOTBorder(hWnd) {
     global AOTPinnedWindows, AOTBorderEnabled
     if (!AOTBorderEnabled)
         return false
@@ -341,6 +365,7 @@ return
 
 SyncAllAOTBorders() {
     global AOTPinnedWindows, AOTLastSyncTick, AOTSyncPending
+    SetBatchLines, -1
     AOTSyncPending := false
     AOTLastSyncTick := A_TickCount
 
@@ -376,7 +401,7 @@ SyncAllAOTBorders() {
         return
     }
 
-    zRanks := GetAOTPinnedZOrderRanks(belowNormalList)
+    zRanks := GetAOTPinnedZOrderRanks(belowNormalList, topmostOccluders)
     hMenu := WinExist("ahk_class #32768")
     menuOpen := (hMenu && DllCall("IsWindowVisible", "Ptr", hMenu)) ? true : false
     shellOverlay := IsAOTShellOverlayActive()
@@ -387,7 +412,7 @@ SyncAllAOTBorders() {
             if (AOTPinnedWindows.HasKey(hTarget))
                 AOTPinnedWindows[hTarget].forceZ := true
         }
-        zRanks := GetAOTPinnedZOrderRanks(belowNormalList)
+        zRanks := GetAOTPinnedZOrderRanks(belowNormalList, topmostOccluders)
     }
 
     if (shellOverlay) {
@@ -398,7 +423,7 @@ SyncAllAOTBorders() {
 
     accentRgb := GetWindowsAccentRgb()
     for hWnd in AOTPinnedWindows
-        UpdateAOTBorderForWindow(hWnd, zRanks, accentRgb)
+        UpdateAOTBorderForWindow(hWnd, zRanks, accentRgb, topmostOccluders[hWnd])
 }
 
 ; Kiểm tra xem Start Menu / Search / Quick Settings của Windows có đang mở không
@@ -416,12 +441,13 @@ IsAOTShellOverlayActive() {
     return false
 }
 
-; Duyệt Z-order hệ thống từ trên xuống để xếp hạng các cửa sổ đang ghim
-; Đồng thời phát hiện cửa sổ ghim nào bị lọt xuống dưới cửa sổ thường
-GetAOTPinnedZOrderRanks(ByRef belowNormalList := "") {
-    global AOTPinnedWindows
+; Duyệt Z-order hệ thống từ trên xuống để xếp hạng cửa sổ ghim và thu thập MỌI cửa sổ TOPMOST nằm trên chúng
+; (bao gồm cả cửa sổ được ghim bởi app khác như PowerToys)
+GetAOTPinnedZOrderRanks(ByRef belowNormalList := "", ByRef topmostOccluders := "") {
+    global AOTPinnedWindows, AOTBorderHwnds
     ranks := {}
     belowNormalList := []
+    topmostOccluders := {}
     total := AOTPinnedWindows.Count()
     if (!total)
         return ranks
@@ -429,18 +455,31 @@ GetAOTPinnedZOrderRanks(ByRef belowNormalList := "") {
     curr := DllCall("GetTopWindow", "Ptr", 0, "Ptr")
     rank := 0
     sawNormalWindow := false
+    topmostAbove := []
     while (curr) {
         currInt := curr + 0
         if (AOTPinnedWindows.HasKey(currInt)) {
             rank++
             ranks[currInt] := rank
+            ; Sao chép danh sách các cửa sổ TOPMOST đang nằm phía trên currInt
+            occCopy := []
+            for _, hOcc in topmostAbove
+                occCopy.Push(hOcc)
+            topmostOccluders[currInt] := occCopy
+
             if (sawNormalWindow || !(GetWindowLongPtrCompat(currInt, -20) & 0x8))
                 belowNormalList.Push(currInt)
+            topmostAbove.Push(currInt)
             if (rank >= total)
                 break
-        } else if (DllCall("IsWindowVisible", "Ptr", curr)) {
-            if (!(GetWindowLongPtrCompat(curr, -20) & 0x8))
+        } else if (!AOTBorderHwnds.HasKey(currInt) && DllCall("IsWindowVisible", "Ptr", curr)) {
+            if (GetWindowLongPtrCompat(curr, -20) & 0x8) {
+                WinGetClass, cls, ahk_id %curr%
+                if (cls != "Shell_TrayWnd" && cls != "Shell_SecondaryTrayWnd")
+                    topmostAbove.Push(currInt)
+            } else {
                 sawNormalWindow := true
+            }
         }
         curr := DllCall("GetWindow", "Ptr", curr, "UInt", 2, "Ptr") ; GW_HWNDNEXT = 2
     }
@@ -448,8 +487,8 @@ GetAOTPinnedZOrderRanks(ByRef belowNormalList := "") {
 }
 
 ; Cập nhật viền GDI+ bo góc cho 1 cửa sổ cụ thể
-UpdateAOTBorderForWindow(hWnd, zRanks := "", accentRgb := -1) {
-    global AOTPinnedWindows, AOTBorderEnabled, AOTBorderAlpha, AOTBorderThickness, AOTGuiCounter
+UpdateAOTBorderForWindow(hWnd, zRanks := "", accentRgb := -1, occList := "") {
+    global AOTPinnedWindows, AOTBorderHwnds, AOTBorderEnabled, AOTBorderAlpha, AOTBorderThickness, AOTGuiCounter
 
     info := AOTPinnedWindows[hWnd]
     if (!info)
@@ -492,17 +531,15 @@ UpdateAOTBorderForWindow(hWnd, zRanks := "", accentRgb := -1) {
     if (accentRgb < 0)
         accentRgb := GetWindowsAccentRgb()
 
-    ; Thu thập vùng che khuất của các cửa sổ ghim nằm PHÍA TRÊN hWnd trong Z-order
-    if (!IsObject(zRanks))
-        zRanks := GetAOTPinnedZOrderRanks()
-    myRank := zRanks.HasKey(hWnd) ? zRanks[hWnd] : 999999
+    ; Thu thập vùng che khuất của MỌI cửa sổ TOPMOST nằm PHÍA TRÊN hWnd trong Z-order
+    if (!IsObject(occList)) {
+        GetAOTPinnedZOrderRanks(dummyBelow, topmostOccluders)
+        occList := topmostOccluders.HasKey(hWnd) ? topmostOccluders[hWnd] : []
+    }
     occluders := []
     clipKey := ""
-    for otherHwnd in AOTPinnedWindows {
+    for _, otherHwnd in occList {
         if (otherHwnd = hWnd)
-            continue
-        otherRank := zRanks.HasKey(otherHwnd) ? zRanks[otherHwnd] : 999999
-        if (otherRank >= myRank)
             continue
         WinGet, oMinMax, MinMax, ahk_id %otherHwnd%
         if (oMinMax = -1 || !DllCall("IsWindowVisible", "Ptr", otherHwnd))
@@ -530,6 +567,7 @@ UpdateAOTBorderForWindow(hWnd, zRanks := "", accentRgb := -1) {
         Gui, %guiName%:Show, NoActivate Hide x%bx% y%by% w%bw% h%bh%
         info.borderName := guiName
         info.borderHwnd := hBorder
+        AOTBorderHwnds[hBorder + 0] := 1
         info.x := -99999
         info.y := -99999
         info.w := 0
@@ -716,7 +754,10 @@ HideAOTBorderGui(info) {
 }
 
 DestroyAOTBorderGui(info) {
+    global AOTBorderHwnds
     if (info && info.borderName != "") {
+        if (info.borderHwnd)
+            AOTBorderHwnds.Delete(info.borderHwnd + 0)
         guiName := info.borderName
         try Gui, %guiName%:Destroy
         info.borderName := ""
