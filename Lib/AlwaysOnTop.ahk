@@ -11,7 +11,7 @@ InitAlwaysOnTop() {
     AOTHotkey := "^!t" ; Mặc định: Ctrl + Alt + T
     AOTBorderEnabled := 1
     AOTBorderAlpha := 165 ; Độ mờ dịu (~65% opacity) cho nét vẽ 1px khử răng cưa
-    AOTBorderThickness := 1.2 ; Viền siêu mảnh ~1px
+    AOTBorderThickness := 1.3 ; Viền siêu mảnh ~1px
     AOTPinnedWindows := {}
     AOTBorderHwnds := {}
     AOTGuiCounter := 0
@@ -37,7 +37,23 @@ InitAlwaysOnTop() {
         AOTBorderEnabled := valBorder ? 1 : 0
 
     ApplyAOTHotkey()
+    OnMessage(0x0003, "OnAOTOwnGuiMove") ; WM_MOVE: bám viền tức thì cho GUI nội bộ (như Settings) khi được ghim
+    OnMessage(0x0232, "OnAOTOwnGuiExitSizeMove") ; WM_EXITSIZEMOVE: đồng bộ lại vùng cắt khi thả chuột sau khi kéo GUI nội bộ
     OnExit("CleanupAlwaysOnTop")
+}
+
+OnAOTOwnGuiMove(wParam, lParam, msg, hwnd) {
+    global AOTPinnedWindows
+    hwnd := hwnd + 0
+    if (AOTPinnedWindows.HasKey(hwnd))
+        TryFastMoveAOTBorder(hwnd)
+}
+
+OnAOTOwnGuiExitSizeMove(wParam, lParam, msg, hwnd) {
+    global AOTPinnedWindows
+    hwnd := hwnd + 0
+    if (AOTPinnedWindows.HasKey(hwnd))
+        ScheduleAOTSync(15)
 }
 
 ; Lấy màu Accent từ cache (tự cập nhật khi Windows đổi màu Accent qua WM_DWMCOLORIZATIONCOLORCHANGED)
@@ -105,6 +121,8 @@ ApplyAOTHotkey() {
 }
 
 ToggleAlwaysOnTopLabel:
+    ; Gửi phím nhả {Blind}{vkE8} để triệt tiêu việc Windows kích hoạt thanh menu (Alt key menu activation)
+    Send, {Blind}{vkE8}
     ToggleAlwaysOnTop()
 return
 
@@ -152,13 +170,14 @@ GetWindowLongPtrCompat(hWnd, idx) {
     return DllCall("GetWindowLong", "Ptr", hWnd, "Int", idx, "Int")
 }
 
-; Kiểm tra cửa sổ có hợp lệ để ghim không (loại trừ cửa sổ con, hệ thống, kích thước 0 và GUI nội bộ)
+; Kiểm tra cửa sổ có hợp lệ để ghim không (loại trừ cửa sổ con, hệ thống, viền AOT, tooltip và cửa sổ kích thước 0)
 IsAOTAllowedWindow(hWnd) {
+    global AOTBorderHwnds
     if (!hWnd || !DllCall("IsWindow", "Ptr", hWnd))
         return false
 
-    WinGet, winPid, PID, ahk_id %hWnd%
-    if (winPid = DllCall("GetCurrentProcessId", "UInt"))
+    ; Tuyệt đối không ghim chính các GUI viền AlwaysOnTop
+    if (AOTBorderHwnds.HasKey(hWnd + 0))
         return false
 
     ; Bỏ qua cửa sổ con (WS_CHILD = 0x40000000)

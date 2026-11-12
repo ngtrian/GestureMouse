@@ -935,7 +935,7 @@ ShowAOTHotkeyDialog() {
         return
     }
 
-    ; Tạm tắt phím tắt hiện tại để người dùng có thể bấm lại chính tổ hợp đó vào ô nhập
+    ; Tạm tắt phím tắt hiện tại để có thể bấm chính tổ hợp đó vào ô nhập
     if (AOTHotkey != "")
         try Hotkey, %AOTHotkey%, ToggleAlwaysOnTopLabel, Off
 
@@ -948,12 +948,11 @@ ShowAOTHotkeyDialog() {
         SetGuiYellowIcon(hAOTHotkeyGui)
     Gui, AOTHotkeyDlg:Color, FFFFFF
     Gui, AOTHotkeyDlg:Font, s9.5 Norm c222222, Segoe UI
-    Gui, AOTHotkeyDlg:Add, Text, x16 y14 w310, % L("AOT_HotkeyPrompt")
-    Gui, AOTHotkeyDlg:Add, Hotkey, x16 y42 w310 h26 vAOTNewKeyCtrl, %AOTHotkey%
-    Gui, AOTHotkeyDlg:Add, Button, x16 y80 w115 h28 gOnResetAOTHotkey, Ctrl + Alt + T
-    Gui, AOTHotkeyDlg:Add, Button, x176 y80 w72 h28 Default gOnSaveAOTHotkey, OK
-    Gui, AOTHotkeyDlg:Add, Button, x254 y80 w72 h28 gAOTHotkeyDlgGuiClose, % L("Set_Close")
-    Gui, AOTHotkeyDlg:Show, w342 h122 Center
+    Gui, AOTHotkeyDlg:Add, Hotkey, x16 y16 w280 h26 vAOTNewKeyCtrl, %AOTHotkey%
+    Gui, AOTHotkeyDlg:Add, Button, x16 y52 w68 h26 Default gOnSaveAOTHotkey, OK
+    Gui, AOTHotkeyDlg:Add, Button, x90 y52 w104 h26 gOnResetAOTHotkey, Ctrl + Alt + T
+    Gui, AOTHotkeyDlg:Add, Button, x228 y52 w68 h26 gAOTHotkeyDlgGuiClose, % L("Set_Close")
+    Gui, AOTHotkeyDlg:Show, w312 h90 Center
 }
 
 OnResetAOTHotkey:
