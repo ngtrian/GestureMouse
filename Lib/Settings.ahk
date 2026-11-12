@@ -10,6 +10,8 @@ global SettingsTooltips     := {}
 global LastSettingsTipHwnd  := 0
 global SidebarNavBitmaps    := {}
 global SidebarIconHwnds     := {}
+global LockTabIcons         := {}
+global hBtnToggleReveal     := 0
 global hAboutHeroBmp        := 0
 
 ; Tạo GUI cài đặt - Settings (Giao diện Fluent Cards gọn gàng, Singleton pattern)
@@ -36,6 +38,8 @@ Settings:
     SidebarIconHwnds := {}
     if (!SidebarNavBitmaps.HasKey(1))
         SidebarNavBitmaps := CreateSidebarNavBitmaps(20)
+    if (!LockTabIcons.HasKey("idle"))
+        LockTabIcons := CreateLockTabIcons()
 
     Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
     SetGuiYellowIcon(hSettingsGui)
@@ -189,48 +193,63 @@ Settings:
 
     ; Card 1: Thiết lập khóa thiết bị
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h122, % L("Lock_Card1Title")
+    Gui, Add, GroupBox, x228 y56 w536 h138, % L("Lock_Card1Title")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Picture, x246 y77 w24 h24 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x274 y78 w118 h22 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
-    Gui, Add, Picture, x398 y77 w24 h24 Icon32, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x426 y78 w96 h22 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
+    Gui, Add, Picture, x246 y74 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x272 y75 w120 h22 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
+    Gui, Add, Picture, x398 y74 w22 h22 Icon32, %A_WinDir%\System32\ddores.dll
+    Gui, Add, Checkbox, x424 y75 w98 h22 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x528 y76 w218 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
+    Gui, Add, Button, x528 y73 w218 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y117 w276 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
+    if (LockTabIcons["idle"])
+        Gui, Add, Picture, x246 y105 w20 h20, % "HICON:*" . LockTabIcons["idle"]
+    Gui, Add, Checkbox, x272 y106 w250 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, DropDownList, x528 y114 w218 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
+    Gui, Add, DropDownList, x528 y103 w218 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y148 w172 h22 vpreventScreenOff gSaveSettings Checked%preventScreenOff%, % L("Lock_PreventScreenOff")
-    Gui, Add, Checkbox, x426 y148 w142 h22 vpreventSleep gSaveSettings Checked%preventSleep%, % L("Lock_PreventSleep")
+    Gui, Add, Checkbox, x246 y136 w174 h22 vpreventScreenOff gSaveSettings Checked%preventScreenOff%, % L("Lock_PreventScreenOff")
+    Gui, Add, Checkbox, x426 y136 w142 h22 vpreventSleep gSaveSettings Checked%preventSleep%, % L("Lock_PreventSleep")
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x574 y151 w172 h18 +Right, % L("Lock_PowerScopeHint")
+    Gui, Add, Text, x574 y139 w172 h18 +Right, % L("Lock_PowerScopeHint")
+
+    Gui, Font, s9.5 Norm c222222, Segoe UI
+    if (LockTabIcons["toast"])
+        Gui, Add, Picture, x246 y163 w20 h20, % "HICON:*" . LockTabIcons["toast"]
+    Gui, Add, Checkbox, x272 y163 w474 h24 valwaysShowLockToast gSaveSettings Checked%alwaysShowLockToast%, % L("Lock_AlwaysShowToast")
 
     ; Card 2: Bảo mật & Mở khóa
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y190 w536 h204, % L("Lock_Card2Title")
+    Gui, Add, GroupBox, x228 y202 w536 h196, % L("Lock_Card2Title")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y212 w500 vwindowsLogonOnly gOnToggleWindowsLogonOnly Checked%windowsLogonOnly%, % L("Lock_WinLogonOnly")
+    if (LockTabIcons["winlock"])
+        Gui, Add, Picture, x246 y221 w20 h20, % "HICON:*" . LockTabIcons["winlock"]
+    Gui, Add, Checkbox, x272 y221 w474 h24 vwindowsLogonOnly gOnToggleWindowsLogonOnly Checked%windowsLogonOnly%, % L("Lock_WinLogonOnly")
 
-    Gui, Add, Text, x246 y245 w105 vLockKeyPromptLbl, % L("Lock_KeyPrompt")
+    if (LockTabIcons["key"])
+        Gui, Add, Picture, x246 y253 w20 h20, % "HICON:*" . LockTabIcons["key"]
+    Gui, Add, Text, x272 y255 w96 vLockKeyPromptLbl, % L("Lock_KeyPrompt")
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Edit, x356 y242 w184 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
-    Gui, Add, Button, x546 y241 w64 h26 gToggleRevealCode vBtnToggleReveal Center, % L("Lock_ShowBtn")
-    Gui, Add, Button, x616 y241 w130 h26 gOpenChangeCodeGui vBtnChangeCode, % L("Lock_ChangeCodeBtn")
+    Gui, Add, Edit, x372 y252 w196 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
+    Gui, Add, Button, x574 y251 w34 h26 +0x0040 gToggleRevealCode vBtnToggleReveal +HwndhBtnToggleReveal
+    if (LockTabIcons["eye_show"]) {
+        DllCall("SendMessage", "Ptr", hBtnToggleReveal, "UInt", 0x00F7, "Ptr", 1, "Ptr", LockTabIcons["eye_show"])
+        SettingsTooltips[hBtnToggleReveal] := L("Lock_RevealShowTip")
+    }
+    Gui, Add, Button, x614 y251 w132 h26 gOpenChangeCodeGui vBtnChangeCode, % L("Lock_ChangeCodeBtn")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y276 w500 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
+    Gui, Add, Checkbox, x246 y285 w500 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
 
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y304 w500 h30 vLockMethodHintTxt, % ("• " . (windowsLogonOnly ? L("Lock_MethodHintWinOnly") : L("Lock_MethodHint")))
+    Gui, Add, Text, x246 y311 w500 h28 vLockMethodHintTxt, % ("• " . (windowsLogonOnly ? L("Lock_MethodHintWinOnly") : L("Lock_MethodHint")))
 
     Gui, Font, s9.5 Bold c004499, Segoe UI
-    Gui, Add, Button, x246 y348 w500 h34 gActionOpenLockCenter, % L("Lock_CenterBtn")
+    Gui, Add, Button, x246 y350 w500 h34 gActionOpenLockCenter, % L("Lock_CenterBtn")
 
     ; --------------------------------------------------------
     ; TAB 4: PHÍM TẮT && TIỆN ÍCH
@@ -372,156 +391,6 @@ AddSidebarNav(idx, yPos, iconChar, labelText) {
     }
 }
 
-CreateSidebarNavBitmaps(iconSize := 20) {
-    result := {}
-    hGdip := DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
-    if (!hGdip)
-        return result
-
-    VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0)
-    NumPut(1, si, 0, "UInt")
-    pToken := 0
-    if (DllCall("gdiplus\GdiplusStartup", "Ptr*", pToken, "Ptr", &si, "Ptr", 0) != 0) {
-        DllCall("FreeLibrary", "Ptr", hGdip)
-        return result
-    }
-
-    scale := A_ScreenDPI / 96.0
-    pix := Round(iconSize * scale)
-
-    bgr := DllCall("GetSysColor", "Int", 15, "UInt")
-    argbWin := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
-    argbActiveBg := 0xFFE5F1FB
-    argbActiveFg := 0xFF005FB8
-    argbNormFg := 0xFF4A5568
-
-    Loop, 5 {
-        idx := A_Index
-        result[idx] := {}
-        for stateIdx, stateName in ["inactive", "active"] {
-            bgCol := (stateName = "active") ? argbActiveBg : argbWin
-            fgCol := (stateName = "active") ? argbActiveFg : argbNormFg
-
-            pBitmap := 0, pGraphics := 0, hBmp := 0
-            DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", pix, "Int", pix, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", pBitmap)
-            DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmap, "Ptr*", pGraphics)
-            DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", pGraphics, "Int", 4)
-            DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", pGraphics, "Int", 2)
-            DllCall("gdiplus\GdipGraphicsClear", "Ptr", pGraphics, "UInt", bgCol)
-
-            DrawSidebarVectorIcon(pGraphics, idx, fgCol, bgCol, scale)
-
-            DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", bgCol)
-            result[idx][stateName] := hBmp
-            DllCall("gdiplus\GdipDeleteGraphics", "Ptr", pGraphics)
-            DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
-        }
-    }
-
-    DllCall("gdiplus\GdiplusShutdown", "Ptr", pToken)
-    DllCall("FreeLibrary", "Ptr", hGdip)
-    return result
-}
-
-DrawSidebarVectorIcon(pGraphics, idx, fgCol, bgCol, scale) {
-    DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 1.7 * scale, "Int", 2, "Ptr*", pPen)
-    DllCall("gdiplus\GdipCreateSolidFill", "UInt", fgCol, "Ptr*", pBrush)
-    DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pPen, "Int", 2)
-
-    if (idx == 1) {
-        ; Cài đặt chung: bánh răng sắc nét 8 răng
-        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 2.2 * scale, "Int", 2, "Ptr*", pPenTooth)
-        Loop, 8 {
-            ang := (A_Index - 1) * 45.0 * 0.01745329252
-            x1 := (10.0 + 5.2 * Cos(ang)) * scale
-            y1 := (10.0 + 5.2 * Sin(ang)) * scale
-            x2 := (10.0 + 8.3 * Cos(ang)) * scale
-            y2 := (10.0 + 8.3 * Sin(ang)) * scale
-            DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenTooth, "Float", x1, "Float", y1, "Float", x2, "Float", y2)
-        }
-        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenTooth)
-        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 2.1 * scale, "Int", 2, "Ptr*", pPenRing)
-        DllCall("gdiplus\GdipDrawEllipse", "Ptr", pGraphics, "Ptr", pPenRing, "Float", 4.9 * scale, "Float", 4.9 * scale, "Float", 10.2 * scale, "Float", 10.2 * scale)
-        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenRing)
-        DllCall("gdiplus\GdipCreateSolidFill", "UInt", bgCol, "Ptr*", pBrushHole)
-        DllCall("gdiplus\GdipFillEllipse", "Ptr", pGraphics, "Ptr", pBrushHole, "Float", 7.3 * scale, "Float", 7.3 * scale, "Float", 5.4 * scale, "Float", 5.4 * scale)
-        DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushHole)
-        DllCall("gdiplus\GdipDrawEllipse", "Ptr", pGraphics, "Ptr", pPen, "Float", 7.5 * scale, "Float", 7.5 * scale, "Float", 5.0 * scale, "Float", 5.0 * scale)
-    } else if (idx == 2) {
-        ; Cuộn & Cử chỉ: chuột hiện đại với con lăn
-        DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pPath)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", 5.0 * scale, "Float", 2.0 * scale, "Float", 10.0 * scale, "Float", 10.0 * scale, "Float", 180.0, "Float", 180.0)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", 5.0 * scale, "Float", 8.0 * scale, "Float", 10.0 * scale, "Float", 10.0 * scale, "Float", 0.0, "Float", 180.0)
-        DllCall("gdiplus\GdipClosePathFigure", "Ptr", pPath)
-        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPen, "Ptr", pPath)
-        DllCall("gdiplus\GdipDeletePath", "Ptr", pPath)
-
-        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 1.3 * scale, "Int", 2, "Ptr*", pPenThin)
-        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenThin, "Float", 5.2 * scale, "Float", 8.5 * scale, "Float", 14.8 * scale, "Float", 8.5 * scale)
-        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenThin)
-
-        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 2.2 * scale, "Int", 2, "Ptr*", pPenWheel)
-        DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPenWheel, "Int", 2)
-        DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenWheel, "Int", 2)
-        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenWheel, "Float", 10.0 * scale, "Float", 4.4 * scale, "Float", 10.0 * scale, "Float", 7.0 * scale)
-        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenWheel)
-    } else if (idx == 3) {
-        ; Khóa: ổ khóa rõ nét
-        DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pShackle)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pShackle, "Float", 6.8 * scale, "Float", 2.4 * scale, "Float", 6.4 * scale, "Float", 6.4 * scale, "Float", 180.0, "Float", 180.0)
-        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPen, "Ptr", pShackle)
-        DllCall("gdiplus\GdipDeletePath", "Ptr", pShackle)
-        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPen, "Float", 6.8 * scale, "Float", 5.6 * scale, "Float", 6.8 * scale, "Float", 8.5 * scale)
-        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPen, "Float", 13.2 * scale, "Float", 5.6 * scale, "Float", 13.2 * scale, "Float", 8.5 * scale)
-
-        DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pBody)
-        d := 3.6 * scale
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pBody, "Float", 4.5 * scale, "Float", 8.5 * scale, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pBody, "Float", 15.5 * scale - d, "Float", 8.5 * scale, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pBody, "Float", 15.5 * scale - d, "Float", 17.5 * scale - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pBody, "Float", 4.5 * scale, "Float", 17.5 * scale - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
-        DllCall("gdiplus\GdipClosePathFigure", "Ptr", pBody)
-        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPen, "Ptr", pBody)
-        DllCall("gdiplus\GdipDeletePath", "Ptr", pBody)
-
-        DllCall("gdiplus\GdipFillEllipse", "Ptr", pGraphics, "Ptr", pBrush, "Float", 8.9 * scale, "Float", 11.1 * scale, "Float", 2.2 * scale, "Float", 2.2 * scale)
-        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 1.8 * scale, "Int", 2, "Ptr*", pPenSlot)
-        DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenSlot, "Int", 2)
-        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenSlot, "Float", 10.0 * scale, "Float", 12.2 * scale, "Float", 10.0 * scale, "Float", 14.9 * scale)
-        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenSlot)
-    } else if (idx == 4) {
-        ; Phím tắt: bàn phím gọn rõ nét
-        DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pKb)
-        d := 3.6 * scale
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pKb, "Float", 2.0 * scale, "Float", 4.8 * scale, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pKb, "Float", 18.0 * scale - d, "Float", 4.8 * scale, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pKb, "Float", 18.0 * scale - d, "Float", 15.2 * scale - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
-        DllCall("gdiplus\GdipAddPathArc", "Ptr", pKb, "Float", 2.0 * scale, "Float", 15.2 * scale - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
-        DllCall("gdiplus\GdipClosePathFigure", "Ptr", pKb)
-        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPen, "Ptr", pKb)
-        DllCall("gdiplus\GdipDeletePath", "Ptr", pKb)
-
-        Loop, 4 {
-            kx := (4.4 + (A_Index - 1) * 3.1) * scale
-            DllCall("gdiplus\GdipFillRectangle", "Ptr", pGraphics, "Ptr", pBrush, "Float", kx, "Float", 7.3 * scale, "Float", 1.9 * scale, "Float", 1.7 * scale)
-            DllCall("gdiplus\GdipFillRectangle", "Ptr", pGraphics, "Ptr", pBrush, "Float", kx, "Float", 9.9 * scale, "Float", 1.9 * scale, "Float", 1.7 * scale)
-        }
-        DllCall("gdiplus\GdipFillRectangle", "Ptr", pGraphics, "Ptr", pBrush, "Float", 5.8 * scale, "Float", 12.5 * scale, "Float", 8.4 * scale, "Float", 1.6 * scale)
-    } else if (idx == 5) {
-        ; Thông tin: vòng tròn chữ i
-        DllCall("gdiplus\GdipDrawEllipse", "Ptr", pGraphics, "Ptr", pPen, "Float", 2.5 * scale, "Float", 2.5 * scale, "Float", 15.0 * scale, "Float", 15.0 * scale)
-        DllCall("gdiplus\GdipFillEllipse", "Ptr", pGraphics, "Ptr", pBrush, "Float", 8.85 * scale, "Float", 5.5 * scale, "Float", 2.3 * scale, "Float", 2.3 * scale)
-        DllCall("gdiplus\GdipCreatePen1", "UInt", fgCol, "Float", 2.1 * scale, "Int", 2, "Ptr*", pPenI)
-        DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPenI, "Int", 2)
-        DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenI, "Int", 2)
-        DllCall("gdiplus\GdipDrawLine", "Ptr", pGraphics, "Ptr", pPenI, "Float", 10.0 * scale, "Float", 9.2 * scale, "Float", 10.0 * scale, "Float", 14.3 * scale)
-        DllCall("gdiplus\GdipDeletePen", "Ptr", pPenI)
-    }
-
-    DllCall("gdiplus\GdipDeletePen", "Ptr", pPen)
-    DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrush)
-}
-
 AddSettingsTabHeader(titleKey, subKey) {
     Gui, Settings:Font, s13 Bold c004499, Segoe UI
     Gui, Settings:Add, Text, x228 y12 w536, % L(titleKey)
@@ -537,46 +406,6 @@ AddSettingsIcon(x, y, w, h, relPath, resId := 0) {
         if (FileExist(fullPath))
             Gui, Settings:Add, Picture, x%x% y%y% w%w% h%h%, %fullPath%
     }
-}
-
-CreateAboutHeroIconBitmap(iconSize := 56, bgRgb := 0xEEF5FC) {
-    scale := A_ScreenDPI / 96.0
-    pix := Round(iconSize * scale)
-
-    hIcon := 0
-    if (A_IsCompiled) {
-        hMod := DllCall("GetModuleHandle", "Ptr", 0, "Ptr")
-        hIcon := DllCall("LoadImage", "Ptr", hMod, "UInt", 159, "UInt", 1, "Int", pix, "Int", pix, "UInt", 0, "Ptr")
-        if (!hIcon)
-            DllCall("Shell32\ExtractIconEx", "Str", A_ScriptFullPath, "Int", 0, "Ptr*", hIcon, "Ptr", 0, "UInt", 1)
-    } else {
-        icoPath := A_ScriptDir . "\image\unnamed.ico"
-        if (FileExist(icoPath))
-            hIcon := DllCall("LoadImage", "Ptr", 0, "Str", icoPath, "UInt", 1, "Int", pix, "Int", pix, "UInt", 0x10, "Ptr")
-    }
-    if (!hIcon)
-        return 0
-
-    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
-    hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
-    hBmp := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", pix, "Int", pix, "Ptr")
-    hOld := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hBmp, "Ptr")
-
-    bgr := ((bgRgb & 0xFF) << 16) | (bgRgb & 0xFF00) | ((bgRgb >> 16) & 0xFF)
-    hBrush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
-    VarSetCapacity(rc, 16, 0)
-    NumPut(pix, rc, 8, "Int")
-    NumPut(pix, rc, 12, "Int")
-    DllCall("FillRect", "Ptr", hdcMem, "Ptr", &rc, "Ptr", hBrush)
-    DllCall("DeleteObject", "Ptr", hBrush)
-
-    DllCall("DrawIconEx", "Ptr", hdcMem, "Int", 0, "Int", 0, "Ptr", hIcon, "Int", pix, "Int", pix, "UInt", 0, "Ptr", 0, "UInt", 0x3)
-
-    DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hOld, "Ptr")
-    DllCall("DeleteDC", "Ptr", hdcMem)
-    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
-    DllCall("DestroyIcon", "Ptr", hIcon)
-    return hBmp
 }
 
 AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
@@ -604,103 +433,6 @@ AddBrowserGestureRow(yPos, hBmp1, labelKey1, tipKey1, hBmp2, labelKey2, tipKey2)
         Gui, Settings:Add, Picture, x676 y%badgeY% +0x100 HwndhBadge2, HBITMAP:%hBmp2%
         SettingsTooltips[hBadge2] := L(tipKey2)
     }
-}
-
-CreateGestureBadgeBitmaps(badgeW := 32, badgeH := 22) {
-    result := {}
-    hGdip := DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
-    if (!hGdip)
-        return result
-
-    VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0)
-    NumPut(1, si, 0, "UInt")
-    pToken := 0
-    if (DllCall("gdiplus\GdiplusStartup", "Ptr*", pToken, "Ptr", &si, "Ptr", 0) != 0) {
-        DllCall("FreeLibrary", "Ptr", hGdip)
-        return result
-    }
-
-    scale := A_ScreenDPI / 96.0
-    pixW := Round(badgeW * scale)
-    pixH := Round(badgeH * scale)
-
-    bgr := DllCall("GetSysColor", "Int", 15, "UInt")
-    argbWin := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
-
-    DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pPath)
-    d := 8.0 * scale
-    pad := 0.5 * scale
-    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", pad, "Float", pad, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
-    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", pixW - 1.0 * scale - d, "Float", pad, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
-    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", pixW - 1.0 * scale - d, "Float", pixH - 1.0 * scale - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
-    DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", pad, "Float", pixH - 1.0 * scale - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
-    DllCall("gdiplus\GdipClosePathFigure", "Ptr", pPath)
-
-    DllCall("gdiplus\GdipCreateSolidFill", "UInt", 0xFFEBF3FB, "Ptr*", pBrushBg)
-    DllCall("gdiplus\GdipCreateSolidFill", "UInt", 0xFF005FB8, "Ptr*", pBrushArrow)
-    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFFBDD6F0, "Float", 1.0 * scale, "Int", 2, "Ptr*", pPenBorder)
-    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFF005FB8, "Float", 2.0 * scale, "Int", 2, "Ptr*", pPenArrow)
-    DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pPenArrow, "Int", 2)
-    DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPenArrow, "Int", 2)
-    DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pPenArrow, "Int", 0)
-
-    shapes := {}
-    shapes["L"]  := {shaft: [24.0, 11.0, 11.5, 11.0],               head: [ 7.0, 11.0, 13.0,  6.5, 13.0, 15.5]}
-    shapes["R"]  := {shaft: [ 8.0, 11.0, 20.5, 11.0],               head: [25.0, 11.0, 19.0,  6.5, 19.0, 15.5]}
-    shapes["LU"] := {shaft: [23.0, 16.5, 11.5, 16.5, 11.5,  8.5],   head: [11.5,  4.5,  7.0, 10.0, 16.0, 10.0]}
-    shapes["LD"] := {shaft: [23.0,  5.5, 11.5,  5.5, 11.5, 13.5],   head: [11.5, 17.5,  7.0, 12.0, 16.0, 12.0]}
-    shapes["RU"] := {shaft: [ 9.0, 16.5, 20.5, 16.5, 20.5,  8.5],   head: [20.5,  4.5, 16.0, 10.0, 25.0, 10.0]}
-    shapes["RD"] := {shaft: [ 9.0,  5.5, 20.5,  5.5, 20.5, 13.5],   head: [20.5, 17.5, 16.0, 12.0, 25.0, 12.0]}
-
-    for dirKey, geom in shapes {
-        pBitmap := 0, pGraphics := 0, hBmp := 0
-        DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", pixW, "Int", pixH, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", pBitmap)
-        DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmap, "Ptr*", pGraphics)
-        DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", pGraphics, "Int", 4)
-        DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", pGraphics, "Int", 2)
-        DllCall("gdiplus\GdipGraphicsClear", "Ptr", pGraphics, "UInt", argbWin)
-        DllCall("gdiplus\GdipFillPath", "Ptr", pGraphics, "Ptr", pBrushBg, "Ptr", pPath)
-        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", pPenBorder, "Ptr", pPath)
-
-        DrawGdipPolyline(pGraphics, pPenArrow, geom.shaft, scale)
-        FillGdipPolygon(pGraphics, pBrushArrow, geom.head, scale)
-
-        DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", argbWin)
-        result[dirKey] := hBmp
-        DllCall("gdiplus\GdipDeleteGraphics", "Ptr", pGraphics)
-        DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
-    }
-
-    DllCall("gdiplus\GdipDeletePen", "Ptr", pPenArrow)
-    DllCall("gdiplus\GdipDeletePen", "Ptr", pPenBorder)
-    DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushArrow)
-    DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushBg)
-    DllCall("gdiplus\GdipDeletePath", "Ptr", pPath)
-    DllCall("gdiplus\GdiplusShutdown", "Ptr", pToken)
-    DllCall("FreeLibrary", "Ptr", hGdip)
-    return result
-}
-
-DrawGdipPolyline(pGraphics, pPen, coords, scale := 1.0) {
-    cnt := coords.Length() // 2
-    VarSetCapacity(pts, cnt * 8, 0)
-    Loop, %cnt% {
-        idx := (A_Index - 1) * 2
-        NumPut(coords[idx + 1] * scale, pts, idx * 4, "Float")
-        NumPut(coords[idx + 2] * scale, pts, (idx + 1) * 4, "Float")
-    }
-    DllCall("gdiplus\GdipDrawLines", "Ptr", pGraphics, "Ptr", pPen, "Ptr", &pts, "Int", cnt)
-}
-
-FillGdipPolygon(pGraphics, pBrush, coords, scale := 1.0) {
-    cnt := coords.Length() // 2
-    VarSetCapacity(pts, cnt * 8, 0)
-    Loop, %cnt% {
-        idx := (A_Index - 1) * 2
-        NumPut(coords[idx + 1] * scale, pts, idx * 4, "Float")
-        NumPut(coords[idx + 2] * scale, pts, (idx + 1) * 4, "Float")
-    }
-    DllCall("gdiplus\GdipFillPolygon", "Ptr", pGraphics, "Ptr", pBrush, "Ptr", &pts, "Int", cnt, "Int", 0)
 }
 
 WM_MOUSEMOVE_SETTINGS(wParam, lParam, msg, hwnd) {
@@ -798,6 +530,7 @@ UpdateSettingsGuiControls() {
 
     GuiControl, Settings:, preventScreenOff, %preventScreenOff%
     GuiControl, Settings:, preventSleep, %preventSleep%
+    GuiControl, Settings:, alwaysShowLockToast, %alwaysShowLockToast%
     GuiControl, Settings:, windowsLogonOnly, %windowsLogonOnly%
     GuiControl, Settings:, requireCodeForTimerEdit, %requireCodeForTimerEdit%
     GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
@@ -865,13 +598,22 @@ ToggleRevealCode:
     isCodeRevealed := !isCodeRevealed
     if (isCodeRevealed) {
         GuiControl, -Password, UnlockCodeDisplay
-        GuiControl,, BtnToggleReveal, % L("Lock_HideBtn")
     } else {
         GuiControl, +Password, UnlockCodeDisplay
-        GuiControl,, BtnToggleReveal, % L("Lock_ShowBtn")
     }
+    UpdateRevealButtonVisual(isCodeRevealed)
     GuiControl,, UnlockCodeDisplay, %UNLOCK_KEYWORD%
 return
+
+UpdateRevealButtonVisual(revealed) {
+    global LockTabIcons, hBtnToggleReveal, SettingsTooltips
+    if (!hBtnToggleReveal)
+        return
+    hIcon := revealed ? LockTabIcons["eye_hide"] : LockTabIcons["eye_show"]
+    if (hIcon)
+        DllCall("SendMessage", "Ptr", hBtnToggleReveal, "UInt", 0x00F7, "Ptr", 1, "Ptr", hIcon)
+    SettingsTooltips[hBtnToggleReveal] := revealed ? L("Lock_RevealHideTip") : L("Lock_RevealShowTip")
+}
 
 ; ========================================================
 ; DIALOG ĐỔI MÃ MỞ KHÓA (POPUP CHUYÊN DỤNG XÁC THỰC 2 LẦN)
@@ -974,7 +716,7 @@ UpdateLockAuthControlsState(winOnly) {
     if (winOnly && isCodeRevealed) {
         isCodeRevealed := 0
         GuiControl, Settings:+Password, UnlockCodeDisplay
-        GuiControl, Settings:, BtnToggleReveal, % L("Lock_ShowBtn")
+        UpdateRevealButtonVisual(false)
         GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
     }
     GuiControl, Settings:Enable%enableCustom%, LockKeyPromptLbl
@@ -1068,11 +810,13 @@ Save:
     requireCodeForTimerEdit := requireCodeForTimerEdit ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, RequireCodeForTimerEdit, %requireCodeForTimerEdit%
 
-    ; Lưu trạng thái ngăn tắt màn hình & ngăn Sleep khi khóa
+    ; Lưu trạng thái ngăn tắt màn hình, ngăn Sleep & thông báo khi khóa
     preventScreenOff := preventScreenOff ? 1 : 0
     preventSleep := preventSleep ? 1 : 0
+    alwaysShowLockToast := alwaysShowLockToast ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventScreenOff, %preventScreenOff%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleep, %preventSleep%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AlwaysShowLockToast, %alwaysShowLockToast%
     if (IsFunc("ApplyLockPowerPolicy"))
         ApplyLockPowerPolicy()
 

@@ -32,6 +32,7 @@ global UNLOCK_KEYWORD            := "unlock"
 global KEYWORD_LENGTH            := 6
 global requireCodeForTimerEdit   := 1         ; Yêu cầu mã mở khóa khi sửa/hủy hẹn giờ đang chạy
 global windowsLogonOnly          := 0         ; Chỉ dùng màn hình khóa Windows để mở khóa (bỏ qua mã riêng)
+global alwaysShowLockToast       := 1         ; 1: Luôn hiện thông báo khóa, 0: Tự ẩn sau 4.5 giây
 
 ; Cấu hình Trung tâm Khóa gần nhất
 global centerLockType            := 0         ; 0: Full Lock, 1: Windows Screen Lock, 2: Focus Lock
@@ -165,6 +166,9 @@ LoadLockSettings() {
 
     RegRead, val, %regPath%, WindowsLogonOnly
     windowsLogonOnly := (val != "") ? (val ? 1 : 0) : 0
+
+    RegRead, val, %regPath%, AlwaysShowLockToast
+    alwaysShowLockToast := (val != "") ? (val ? 1 : 0) : 1
 
     RegRead, val, %regPath%, CenterLockType
     centerLockType := (val != "" && val >= 0 && val <= 2) ? val + 0 : 0
@@ -996,40 +1000,35 @@ RepositionCountdownToast() {
     WinMove, ahk_id %hLockCountdownGui%,, %posX%, %posY%
 }
 
-BuildFluentToastGui(guiName, msg, wrapLogicalW, ByRef outGuiHwnd, ByRef outAccentHwnd, ByRef outTextHwnd) {
+BuildToastGui(guiName, msg, wrapLogicalW, ByRef outGuiHwnd, ByRef outTextHwnd) {
     Gui, %guiName%:Destroy
     Gui, %guiName%:New, +LastFound +AlwaysOnTop -Caption +ToolWindow +E0x20 +E0x08000000 +HwndlocalGui
     Gui, %guiName%:Margin, 16, 10
-    Gui, %guiName%:Color, E5F1FB
-    Gui, %guiName%:Font, s9.5 Norm c004499, Segoe UI
-    Gui, %guiName%:Add, Progress, x0 y0 w4 h36 Background0067C0 c0067C0 -Theme Disabled +HwndlocalAccent, 100
-    textOpt := "x16 y10 Left +0x80 +HwndlocalText"
+    Gui, %guiName%:Color, 1F2421, FFFFFF ; Nền tối sang trọng
+    Gui, %guiName%:Font, s9.5 Norm cF0F0F0, Segoe UI
+    textOpt := "Center +0x80 +HwndlocalText"
     if (wrapLogicalW > 0)
         textOpt .= " w" . wrapLogicalW
     Gui, %guiName%:Add, Text, %textOpt%, %msg%
     Gui, %guiName%:Show, Hide
 
     outGuiHwnd := localGui
-    outAccentHwnd := localAccent
     outTextHwnd := localText
 }
 
-FinalizeFluentToastSize(guiHwnd, accentHwnd, gw, gh) {
-    accentW := Max(4, Round(4 * (A_ScreenDPI / 96.0)))
-    if (accentHwnd)
-        DllCall("SetWindowPos", "Ptr", accentHwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", accentW, "Int", gh, "UInt", 0x16)
-    WinSet, Transparent, 245, ahk_id %guiHwnd%
+FinalizeToastWindow(guiHwnd, gw, gh) {
+    WinSet, Transparent, 235, ahk_id %guiHwnd%
     WinSet, Region, 0-0 w%gw% h%gh% R12-12, ahk_id %guiHwnd%
 }
 
 ShowCountdownToast(msg) {
     global hLockCountdownGui
-    static hCountdownAccent := 0, hCountdownText := 0, sPadX := 0, sCurCW := 0, sCurCH := 0, sGw := 0, sGh := 0
+    static hCountdownText := 0, sPadX := 0, sCurCW := 0, sCurCH := 0, sGw := 0, sGh := 0
 
     prevGui := A_DefaultGui
 
     if (!hLockCountdownGui || !WinExist("ahk_id " . hLockCountdownGui) || !hCountdownText) {
-        BuildFluentToastGui("LockCountdown", msg, 0, hLockCountdownGui, hCountdownAccent, hCountdownText)
+        BuildToastGui("LockCountdown", msg, 0, hLockCountdownGui, hCountdownText)
 
         dhw := A_DetectHiddenWindows
         DetectHiddenWindows, On
@@ -1048,7 +1047,7 @@ ShowCountdownToast(msg) {
         sGw := gw
         sGh := gh
 
-        FinalizeFluentToastSize(hLockCountdownGui, hCountdownAccent, sGw, sGh)
+        FinalizeToastWindow(hLockCountdownGui, sGw, sGh)
         ComputeToastPos(sGw, sGh, posX, posY, true)
         Gui, LockCountdown:Show, x%posX% y%posY% NoActivate
 
@@ -1175,7 +1174,7 @@ ShowToastBanner(msg, autoHideMs := 0) {
     Gui, Notification:Destroy
     hToastBannerGui := 0
 
-    BuildFluentToastGui("Notification", msg, 0, hToastBannerGui, hBannerAccent, hBannerText)
+    BuildToastGui("Notification", msg, 0, hToastBannerGui, hBannerText)
 
     dhw := A_DetectHiddenWindows
     DetectHiddenWindows, On
@@ -1187,7 +1186,7 @@ ShowToastBanner(msg, autoHideMs := 0) {
     maxPhysW := Max(Round(320 * scale), Round((waRight - waLeft) * 0.48))
     if (GuiWidth > maxPhysW) {
         wrapLogicalW := Max(220, Round((maxPhysW - Round(32 * scale)) / scale))
-        BuildFluentToastGui("Notification", msg, wrapLogicalW, hToastBannerGui, hBannerAccent, hBannerText)
+        BuildToastGui("Notification", msg, wrapLogicalW, hToastBannerGui, hBannerText)
         dhw := A_DetectHiddenWindows
         DetectHiddenWindows, On
         WinGetPos,,, GuiWidth, GuiHeight, ahk_id %hToastBannerGui%
@@ -1197,7 +1196,7 @@ ShowToastBanner(msg, autoHideMs := 0) {
     if (!GuiWidth || !GuiHeight)
         GuiWidth := 320, GuiHeight := 38
 
-    FinalizeFluentToastSize(hToastBannerGui, hBannerAccent, GuiWidth, GuiHeight)
+    FinalizeToastWindow(hToastBannerGui, GuiWidth, GuiHeight)
     ComputeToastPos(GuiWidth, GuiHeight, posX, posY, false)
     Gui, Notification:Show, x%posX% y%posY% NoActivate
 
@@ -1211,7 +1210,7 @@ ShowToastBanner(msg, autoHideMs := 0) {
 }
 
 ShowNotification() {
-    global isLocked, lockMode, focusWndTitle, windowsLogonOnly
+    global isLocked, lockMode, focusWndTitle, windowsLogonOnly, alwaysShowLockToast
 
     if (isLocked) {
         if (lockMode == 1) {
@@ -1222,7 +1221,8 @@ ShowNotification() {
             hint := windowsLogonOnly ? L("Lock_ToastHintWinOnly") : L("Lock_ToastHint")
             msg := "🔒 " . L("Lock_NotificationFull") . " — " . hint
         }
-        ShowToastBanner(msg, 0)
+        autoHideMs := alwaysShowLockToast ? 0 : 4500
+        ShowToastBanner(msg, autoHideMs)
     } else {
         ShowToastBanner("✔ " . L("Lock_Unlocked"), 2500)
     }
