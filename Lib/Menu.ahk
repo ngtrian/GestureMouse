@@ -11,6 +11,8 @@ Menu:
         InitLockManager()
     if (IsFunc("InitAlwaysOnTop"))
         InitAlwaysOnTop()
+    if (IsFunc("InitMicMute"))
+        InitMicMute()
 
     ; Xây dựng menu khay hệ thống ban đầu
     RebuildTrayMenu()
