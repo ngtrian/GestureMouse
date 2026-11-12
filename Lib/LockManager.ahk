@@ -1567,21 +1567,18 @@ ShowFocusUnlockGUI() {
         SetGuiYellowIcon(hFocusUnlockGui)
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Text, x18 y16 w364, % "🔑 " . L("LC_FocusUnlockPrompt")
-    Gui, Add, Edit, x18 y44 w364 h26 Password vFocusUnlockCodeInput
+    Gui, Add, Text, x16 y14 w308, % "🔑 " . L("LC_FocusUnlockPrompt")
+    Gui, Add, Edit, x16 y38 w308 h24 Password vFocusUnlockCodeInput
 
     Gui, Font, s8.5 Bold cC62828, Segoe UI
-    Gui, Add, Text, x18 y76 w364 h18 vFocusUnlockErrorTxt,
+    Gui, Add, Text, x16 y66 w308 h16 vFocusUnlockErrorTxt,
 
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x18 y96 w364 h18, % L("LC_FocusUnlockTip")
+    Gui, Font, s9 Norm, Segoe UI
+    Gui, Add, Button, x16 y88 w94 h28 gSubmitFocusUnlock Default, % L("LC_FocusUnlockBtn")
+    Gui, Add, Button, x116 y88 w132 h28 gSwitchFocusToWinLock, % L("LC_FocusWinLockBtn")
+    Gui, Add, Button, x254 y88 w70 h28 gFocusUnlockGuiClose, % L("LC_BtnCancel")
 
-    Gui, Font, s9.5 Norm, Segoe UI
-    Gui, Add, Button, x18 y122 w110 h30 gSubmitFocusUnlock Default, % "✔ " . L("LC_FocusUnlockBtn")
-    Gui, Add, Button, x136 y122 w142 h30 gSwitchFocusToWinLock, % "🖥️ " . L("LC_FocusWinLockBtn")
-    Gui, Add, Button, x286 y122 w96 h30 gFocusUnlockGuiClose, % L("LC_BtnCancel")
-
-    Gui, Show, w400 h166 Center, % L("LC_FocusUnlockTitle")
+    Gui, Show, w340 h132 Center, % L("LC_FocusUnlockTitle")
     if (IsFunc("SetGuiYellowIcon"))
         SetGuiYellowIcon(hFocusUnlockGui)
     WinActivate, ahk_id %hFocusUnlockGui%

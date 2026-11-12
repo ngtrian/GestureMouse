@@ -192,8 +192,8 @@ Settings:
     ; --------------------------------------------------------
     Gui, Tab, TabLock
     AddSettingsTabHeader("Set_HeaderLock", "Set_SubLock", 364)
-    Gui, Font, s9 Bold c004499, Segoe UI
-    Gui, Add, Button, x598 y9 w166 h25 gActionOpenLockCenter +HwndhBtnLockCenterHeader, % L("Lock_CenterBtnShort")
+    Gui, Font, s8.5 Bold c004499, Segoe UI
+    Gui, Add, Button, x598 y9 w166 h39 +0x2000 gActionOpenLockCenter +HwndhBtnLockCenterHeader, % L("Lock_CenterBtnTwoLine")
     SettingsTooltips[hBtnLockCenterHeader] := L("Lock_CenterBtnTip")
 
     ; Card 1: Thiết lập khóa thiết bị
@@ -402,7 +402,7 @@ AddSettingsTabHeader(titleKey, subKey, titleWidth := 536) {
     Gui, Settings:Font, s13 Bold c004499, Segoe UI
     Gui, Settings:Add, Text, x228 y12 w%titleWidth%, % L(titleKey)
     Gui, Settings:Font, s8.5 Norm c666666, Segoe UI
-    Gui, Settings:Add, Text, x228 y35 w536, % L(subKey)
+    Gui, Settings:Add, Text, x228 y35 w%titleWidth%, % L(subKey)
 }
 
 AddSettingsIcon(x, y, w, h, relPath, resId := 0) {
