@@ -46,7 +46,8 @@ Settings:
             targetTab := currentSettingsTab ? currentSettingsTab : 1
             if (!isVisible || targetTab != currentSettingsTab)
                 SwitchSettingsTab(targetTab, !isVisible)
-            Gui, Settings:Show, Center, % "GestureMouse - " . L("Set_Title")
+            Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+            WinActivate, ahk_id %hSettingsGui%
             return
         }
     }

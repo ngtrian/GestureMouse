@@ -98,7 +98,7 @@ RebuildTrayMenu() {
     menuGestureText := GestureScrollEnabled ? L("Tray_Enabled") : L("Tray_Disabled")
     Menu, Tray, Add, %menuGestureText%, ToggleGestureScrollLabel
     Menu, Tray, Add  ; Dòng phân cách
-    Menu, Tray, Add, % L("Tray_Settings"), Settings
+    Menu, Tray, Add, % L("Tray_Settings"), MenuActionSettings
     Menu, Tray, Add, % L("Sub_LockCenter"), MenuActionLockCenter
 
     ; Mục Cài đặt vào hệ thống (chỉ hiển thị khi file .exe chưa nằm trong Program Files)
@@ -478,6 +478,10 @@ CompareVersions(v1, v2) {
 
 ExitMenu:
     ExitApp
+return
+
+MenuActionSettings:
+    SetTimer, Settings, -30
 return
 
 ReloadApp:
