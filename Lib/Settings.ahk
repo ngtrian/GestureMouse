@@ -41,10 +41,12 @@ Settings:
         if (guiExists) {
             if (isPreload)
                 return
+            isVisible := DllCall("IsWindowVisible", "Ptr", hSettingsGui)
             UpdateSettingsGuiControls()
-            SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1)
-            Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
-            WinActivate, ahk_id %hSettingsGui%
+            targetTab := currentSettingsTab ? currentSettingsTab : 1
+            if (!isVisible || targetTab != currentSettingsTab)
+                SwitchSettingsTab(targetTab, !isVisible)
+            Gui, Settings:Show, Center, % "GestureMouse - " . L("Set_Title")
             return
         }
     }
@@ -391,8 +393,11 @@ Settings:
     DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
     SetBatchLines, %prevBatchLines%
 
-    ; Chỉ hiển thị khi người dùng mở trực tiếp (không hiện khi preload nền)
-    if (!isPreload)
+    ; Khi preload nền: Show với Hide để AHK tính sẵn kích thước w780 h455 & vị trí Center
+    ; Khi mở trực tiếp: hiển thị ngay lập tức
+    if (isPreload)
+        Gui, Settings:Show, Hide w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+    else
         Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
 return
 

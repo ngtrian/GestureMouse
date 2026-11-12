@@ -195,8 +195,11 @@ SaveLockCenterPreferences() {
 ; ========================================================
 ; TỰ ĐỘNG KHÓA KHI KHÔNG DÙNG MÁY (IDLE AUTO-LOCK)
 ; ========================================================
+global lastIdleBusyTick := 0
+
 InitAutoLockTimer() {
-    global autoLockIdleEnabled, autoLockIdleMinutes
+    global autoLockIdleEnabled, autoLockIdleMinutes, lastIdleBusyTick
+    lastIdleBusyTick := A_TickCount
     if (autoLockIdleEnabled && autoLockIdleMinutes > 0)
         SetTimer, CheckAutoLockIdle, 4000
     else
@@ -204,16 +207,158 @@ InitAutoLockTimer() {
 }
 
 CheckAutoLockIdle:
-    if (isLocked || lockTimerActive)
+    if (isLocked || lockTimerActive) {
+        lastIdleBusyTick := A_TickCount
         return
+    }
     if (autoLockIdleEnabled && autoLockIdleMinutes > 0) {
-        idleSeconds := A_TimeIdlePhysical // 1000
+        if (IsUserBusyWatchingVideo()) {
+            lastIdleBusyTick := A_TickCount
+            return
+        }
+        idleMs := A_TimeIdlePhysical
+        if (lastIdleBusyTick > 0) {
+            sinceBusyMs := A_TickCount - lastIdleBusyTick
+            if (sinceBusyMs < idleMs)
+                idleMs := sinceBusyMs
+        }
+        idleSeconds := idleMs // 1000
         thresholdSec := autoLockIdleMinutes * 60
         if (idleSeconds >= thresholdSec) {
             ActivateLock(0)
         }
     }
 return
+
+; Nhận biết người dùng đang xem video / chạy ứng dụng toàn màn hình (SMTC + Fullscreen)
+IsUserBusyWatchingVideo() {
+    if (IsFullscreenOrPresentationBusy())
+        return true
+    if (IsVideoOrMediaPlayingSMTC())
+        return true
+    return false
+}
+
+; Kiểm tra trạng thái Fullscreen / Direct3D Fullscreen / Presentation Mode của Windows
+IsFullscreenOrPresentationBusy() {
+    state := 0
+    hr := DllCall("shell32\SHQueryUserNotificationState", "Int*", state)
+    if (hr != 0)
+        return false
+    ; 2: QUNS_BUSY (Fullscreen), 3: QUNS_RUNNING_D3D_FULL_SCREEN, 4: QUNS_PRESENTATION_MODE, 7: QUNS_APP
+    return (state = 2 || state = 3 || state = 4 || state = 7)
+}
+
+; Kiểm tra phiên media đang ở trạng thái Playing qua Windows SMTC (WinRT)
+IsVideoOrMediaPlayingSMTC() {
+    static hCombase := 0, roInited := 0
+    if (!hCombase) {
+        hCombase := DllCall("LoadLibrary", "Str", "combase.dll", "Ptr")
+        if (!hCombase)
+            return false
+    }
+    if (!roInited) {
+        DllCall("combase\RoInitialize", "Int", 0)
+        roInited := 1
+    }
+
+    className := "Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager"
+    hStr := 0
+    hr := DllCall("combase\WindowsCreateString", "WStr", className, "UInt", StrLen(className), "Ptr*", hStr)
+    if (hr != 0 || !hStr)
+        return false
+
+    VarSetCapacity(iidStatics, 16, 0)
+    DllCall("ole32\CLSIDFromString", "WStr", "{2050C4EE-11A0-57DE-AED7-C97C70338245}", "Ptr", &iidStatics)
+
+    pStatics := 0
+    hr := DllCall("combase\RoGetActivationFactory", "Ptr", hStr, "Ptr", &iidStatics, "Ptr*", pStatics)
+    DllCall("combase\WindowsDeleteString", "Ptr", hStr)
+    if (hr != 0 || !pStatics)
+        return false
+
+    pAsync := 0
+    hr := DllCall(NumGet(NumGet(pStatics+0)+6*A_PtrSize), "Ptr", pStatics, "Ptr*", pAsync)
+    ObjRelease(pStatics)
+    if (hr != 0 || !pAsync)
+        return false
+
+    VarSetCapacity(iidAsyncInfo, 16, 0)
+    DllCall("ole32\CLSIDFromString", "WStr", "{00000036-0000-0000-C000-000000000046}", "Ptr", &iidAsyncInfo)
+    pAsyncInfo := 0
+    hr := DllCall(NumGet(NumGet(pAsync+0)+0*A_PtrSize), "Ptr", pAsync, "Ptr", &iidAsyncInfo, "Ptr*", pAsyncInfo)
+    if (hr != 0 || !pAsyncInfo) {
+        ObjRelease(pAsync)
+        return false
+    }
+
+    status := 0
+    loopCount := 0
+    Loop {
+        hr := DllCall(NumGet(NumGet(pAsyncInfo+0)+7*A_PtrSize), "Ptr", pAsyncInfo, "Int*", status)
+        if (hr != 0 || status != 0 || loopCount >= 30)
+            break
+        Sleep, 10
+        loopCount++
+    }
+    ObjRelease(pAsyncInfo)
+
+    if (status != 1) {
+        ObjRelease(pAsync)
+        return false
+    }
+
+    pManager := 0
+    hr := DllCall(NumGet(NumGet(pAsync+0)+8*A_PtrSize), "Ptr", pAsync, "Ptr*", pManager)
+    ObjRelease(pAsync)
+    if (hr != 0 || !pManager)
+        return false
+
+    isPlaying := false
+    pSessions := 0
+    hr := DllCall(NumGet(NumGet(pManager+0)+7*A_PtrSize), "Ptr", pManager, "Ptr*", pSessions)
+    if (hr = 0 && pSessions) {
+        count := 0
+        hr := DllCall(NumGet(NumGet(pSessions+0)+7*A_PtrSize), "Ptr", pSessions, "UInt*", count)
+        if (hr = 0 && count > 0) {
+            Loop, %count% {
+                idx := A_Index - 1
+                pSession := 0
+                hr := DllCall(NumGet(NumGet(pSessions+0)+6*A_PtrSize), "Ptr", pSessions, "UInt", idx, "Ptr*", pSession)
+                if (hr = 0 && pSession) {
+                    hAppId := 0
+                    appId := ""
+                    if (DllCall(NumGet(NumGet(pSession+0)+6*A_PtrSize), "Ptr", pSession, "Ptr*", hAppId) = 0 && hAppId) {
+                        pBuf := DllCall("combase\WindowsGetStringRawBuffer", "Ptr", hAppId, "UInt*", len, "Ptr")
+                        if (pBuf)
+                            appId := StrGet(pBuf, len, "UTF-16")
+                        DllCall("combase\WindowsDeleteString", "Ptr", hAppId)
+                    }
+
+                    pInfo := 0
+                    if (DllCall(NumGet(NumGet(pSession+0)+9*A_PtrSize), "Ptr", pSession, "Ptr*", pInfo) = 0 && pInfo) {
+                        playbackStatus := 0
+                        if (DllCall(NumGet(NumGet(pInfo+0)+7*A_PtrSize), "Ptr", pInfo, "Int*", playbackStatus) = 0) {
+                            ; 4 = GlobalSystemMediaTransportControlsSessionPlaybackStatus_Playing
+                            if (playbackStatus = 4) {
+                                ; Loại trừ các ứng dụng thuần nghe nhạc
+                                if (!RegExMatch(appId, "i)(spotify|applemusic|itunes|foobar2000|aimp|musicbee|winamp|groove|zunemusic|tidal|deezer)"))
+                                    isPlaying := true
+                            }
+                        }
+                        ObjRelease(pInfo)
+                    }
+                    ObjRelease(pSession)
+                    if (isPlaying)
+                        break
+                }
+            }
+        }
+        ObjRelease(pSessions)
+    }
+    ObjRelease(pManager)
+    return isPlaying
+}
 
 ; ========================================================
 ; XỬ LÝ PHÍM TẮT TRUNG TÂM KHÓA & KHÔI PHỤC CHU KỲ LẶP LẠI
