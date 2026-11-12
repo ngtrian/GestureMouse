@@ -5,7 +5,7 @@
 InitAlwaysOnTop() {
     global AOTEnabled, AOTHotkey, AOTBorderEnabled, AOTBorderAlpha, AOTBorderThickness
     global AOTPinnedWindows, AOTGuiCounter, AOTWinEventHooks, AOTWinEventCallback
-    global AOTGdipModule, AOTGdipToken, AOTLastSyncTick, AOTSyncPending
+    global AOTGdipModule, AOTGdipToken, AOTLastSyncTick, AOTSyncPending, AOTCachedAccentRgb
 
     AOTEnabled := 1
     AOTHotkey := "^!t" ; Mặc định: Ctrl + Alt + T
@@ -20,6 +20,8 @@ InitAlwaysOnTop() {
     AOTGdipToken := 0
     AOTLastSyncTick := 0
     AOTSyncPending := false
+    AOTCachedAccentRgb := ReadWindowsAccentRgb()
+    OnMessage(0x0320, "OnAOTDwmColorChanged") ; WM_DWMCOLORIZATIONCOLORCHANGED
 
     RegRead, valEnabled, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTEnabled
     if (!ErrorLevel && valEnabled != "")
@@ -37,8 +39,22 @@ InitAlwaysOnTop() {
     OnExit("CleanupAlwaysOnTop")
 }
 
-; Lấy màu Accent hiện tại của Windows (fallback sang vàng cam #FFB900)
+; Lấy màu Accent từ cache (tự cập nhật khi Windows đổi màu Accent qua WM_DWMCOLORIZATIONCOLORCHANGED)
 GetWindowsAccentRgb() {
+    global AOTCachedAccentRgb
+    if (AOTCachedAccentRgb < 0)
+        AOTCachedAccentRgb := ReadWindowsAccentRgb()
+    return AOTCachedAccentRgb
+}
+
+OnAOTDwmColorChanged(wParam, lParam) {
+    global AOTCachedAccentRgb, AOTPinnedWindows
+    AOTCachedAccentRgb := ReadWindowsAccentRgb()
+    if (AOTPinnedWindows.Count())
+        ScheduleAOTSync(30)
+}
+
+ReadWindowsAccentRgb() {
     RegRead, accentAbgr, HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM, AccentColor
     if (!ErrorLevel && accentAbgr != "") {
         r := accentAbgr & 0xFF
