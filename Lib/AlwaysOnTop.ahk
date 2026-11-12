@@ -3,18 +3,21 @@
 
 ; Khởi tạo module Always On Top
 InitAlwaysOnTop() {
-    global AOTEnabled, AOTHotkey, AOTBorderEnabled, AOTBorderColor, AOTBorderThickness
-    global AOTPinnedWindows, AOTGuiCounter
+    global AOTEnabled, AOTHotkey, AOTBorderEnabled, AOTBorderColor, AOTBorderAlpha, AOTBorderThickness
+    global AOTPinnedWindows, AOTGuiCounter, AOTWinEventHooks, AOTWinEventCallback
 
     AOTEnabled := 1
     AOTHotkey := "^!t" ; Mặc định: Ctrl + Alt + T
     AOTBorderEnabled := 1
     AOTBorderColor := "FFB900" ; Vàng cam mặc định
-    AOTBorderThickness := Round(3 * (A_ScreenDPI / 96))
-    if (AOTBorderThickness < 2)
-        AOTBorderThickness := 2
+    AOTBorderAlpha := 185 ; Độ mờ viền (~72% opacity để rõ nét nhưng dịu mắt)
+    AOTBorderThickness := Round(1.2 * (A_ScreenDPI / 96))
+    if (AOTBorderThickness < 1)
+        AOTBorderThickness := 1
     AOTPinnedWindows := {}
     AOTGuiCounter := 0
+    AOTWinEventHooks := []
+    AOTWinEventCallback := 0
 
     RegRead, valEnabled, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTEnabled
     if (!ErrorLevel && valEnabled != "")
@@ -67,25 +70,26 @@ ToggleAlwaysOnTop(hWnd := 0) {
     if (!hWnd || !IsAOTAllowedWindow(hWnd))
         return
 
-    WinGet, exStyle, ExStyle, ahk_id %hWnd%
+    exStyle := GetWindowExStyle(hWnd)
     isTopmost := (exStyle & 0x8) != 0
 
     if (AOTPinnedWindows.HasKey(hWnd) && isTopmost) {
         UnpinAlwaysOnTopWindow(hWnd)
         ShowAOTFeedback(L("AOT_Unpinned"))
     } else {
-        WinSet, AlwaysOnTop, On, ahk_id %hWnd%
-        WinGet, exStyleAfter, ExStyle, ahk_id %hWnd%
+        ; Dùng Win32 SetWindowPos với HWND_TOPMOST (-1)
+        DllCall("SetWindowPos", "Ptr", hWnd, "Ptr", -1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0013) ; SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE
+        exStyleAfter := GetWindowExStyle(hWnd)
         if (!(exStyleAfter & 0x8)) {
             ShowAOTFeedback(L("AOT_AdminError"))
             return
         }
 
         if (!AOTPinnedWindows.HasKey(hWnd)) {
-            AOTPinnedWindows[hWnd] := { borderName: "", borderHwnd: 0, x: -99999, y: -99999, w: 0, h: 0, visible: false }
+            AOTPinnedWindows[hWnd] := { borderName: "", borderHwnd: 0, x: -99999, y: -99999, w: 0, h: 0, visible: false, layeredInit: false }
         }
+        StartAOTTracking()
         UpdateAOTBorderForWindow(hWnd)
-        SetTimer, AOTSyncTimer, 25
         ShowAOTFeedback(L("AOT_Pinned"))
     }
 
@@ -93,9 +97,16 @@ ToggleAlwaysOnTop(hWnd := 0) {
         UpdateTrayTip()
 }
 
+; Lấy ExStyle trực tiếp qua Win32 API (không phụ thuộc DetectHiddenWindows)
+GetWindowExStyle(hWnd) {
+    if (A_PtrSize = 8)
+        return DllCall("GetWindowLongPtr", "Ptr", hWnd, "Int", -20, "Ptr")
+    return DllCall("GetWindowLong", "Ptr", hWnd, "Int", -20, "Int")
+}
+
 ; Kiểm tra cửa sổ có hợp lệ để ghim không (loại trừ cửa sổ hệ thống và GUI nội bộ)
 IsAOTAllowedWindow(hWnd) {
-    if (!hWnd || !WinExist("ahk_id " . hWnd))
+    if (!hWnd || !DllCall("IsWindow", "Ptr", hWnd))
         return false
 
     WinGet, winPid, PID, ahk_id %hWnd%
@@ -120,18 +131,78 @@ IsAOTAllowedWindow(hWnd) {
     return true
 }
 
+; Đăng ký Win32 SetWinEventHook để bám cửa sổ tức thì (di chuyển, đổi focus, thu nhỏ, đóng)
+StartAOTTracking() {
+    global AOTWinEventHooks, AOTWinEventCallback
+
+    if (!AOTWinEventCallback)
+        AOTWinEventCallback := RegisterCallback("AOTWinEventProc", "F")
+
+    if (!AOTWinEventHooks.Length() && AOTWinEventCallback) {
+        ; Hook 1: EVENT_SYSTEM_FOREGROUND (0x0003) -> EVENT_SYSTEM_MINIMIZEEND (0x0017)
+        h1 := DllCall("SetWinEventHook", "UInt", 0x0003, "UInt", 0x0017, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr")
+        ; Hook 2: EVENT_OBJECT_DESTROY (0x8001) -> EVENT_OBJECT_LOCATIONCHANGE (0x800B)
+        h2 := DllCall("SetWinEventHook", "UInt", 0x8001, "UInt", 0x800B, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr")
+        if (h1)
+            AOTWinEventHooks.Push(h1)
+        if (h2)
+            AOTWinEventHooks.Push(h2)
+    }
+
+    ; Timer dự phòng nhẹ (120ms) để giữ trạng thái TOPMOST nếu ứng dụng tự gỡ khi mất focus
+    SetTimer, AOTSyncTimer, 120
+}
+
+StopAOTTracking() {
+    global AOTWinEventHooks
+    SetTimer, AOTSyncTimer, Off
+    for _, hHook in AOTWinEventHooks {
+        if (hHook)
+            DllCall("UnhookWinEvent", "Ptr", hHook)
+    }
+    AOTWinEventHooks := []
+}
+
+AOTWinEventProc(hWinEventHook, event, hWnd, idObject, idChild, dwEventThread, dwmsEventTime) {
+    global AOTPinnedWindows
+    if (!AOTPinnedWindows.Count())
+        return
+
+    ; Chỉ xử lý sự kiện cấp cửa sổ (OBJID_WINDOW = 0) hoặc sự kiện hệ thống
+    if (event >= 0x8000 && idObject != 0)
+        return
+
+    if (event = 0x0003) { ; EVENT_SYSTEM_FOREGROUND: cửa sổ active thay đổi
+        SetTimer, AOTSyncSoonTimer, -15
+        return
+    }
+
+    hWnd := hWnd + 0
+    if (AOTPinnedWindows.HasKey(hWnd)) {
+        if (event = 0x8001) { ; EVENT_OBJECT_DESTROY
+            SetTimer, AOTSyncSoonTimer, -10
+        } else {
+            UpdateAOTBorderForWindow(hWnd)
+        }
+    }
+}
+
+AOTSyncSoonTimer:
+    SyncAllAOTBorders()
+return
+
 ; Gỡ ghim một cửa sổ cụ thể và hủy viền của nó
 UnpinAlwaysOnTopWindow(hWnd) {
     global AOTPinnedWindows
     hWnd := hWnd + 0
-    if (WinExist("ahk_id " . hWnd))
-        WinSet, AlwaysOnTop, Off, ahk_id %hWnd%
+    if (DllCall("IsWindow", "Ptr", hWnd))
+        DllCall("SetWindowPos", "Ptr", hWnd, "Ptr", -2, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0013) ; HWND_NOTOPMOST (-2)
     if (AOTPinnedWindows.HasKey(hWnd)) {
         DestroyAOTBorderGui(AOTPinnedWindows[hWnd])
         AOTPinnedWindows.Delete(hWnd)
     }
     if (!AOTPinnedWindows.Count())
-        SetTimer, AOTSyncTimer, Off
+        StopAOTTracking()
 }
 
 ; Gỡ ghim tất cả cửa sổ đang ghim
@@ -149,10 +220,11 @@ UnpinAllAlwaysOnTop() {
 ; Dọn dẹp khi thoát GestureMouse: gỡ Always On Top cho mọi cửa sổ đã ghim
 CleanupAlwaysOnTop() {
     UnpinAllAlwaysOnTop()
+    StopAOTTracking()
     return 0
 }
 
-; Đồng bộ vị trí, trạng thái hiển thị và Z-order của viền cho các cửa sổ đang ghim
+; Đồng bộ vị trí, trạng thái hiển thị, chống mất TOPMOST và giữ Z-order của viền
 AOTSyncTimer:
     SyncAllAOTBorders()
 return
@@ -160,17 +232,31 @@ return
 SyncAllAOTBorders() {
     global AOTPinnedWindows
     if (!AOTPinnedWindows.Count()) {
-        SetTimer, AOTSyncTimer, Off
+        StopAOTTracking()
         return
     }
 
+    hActive := WinExist("A") + 0
     toRemove := []
+
     for hWnd, info in AOTPinnedWindows {
-        if (!WinExist("ahk_id " . hWnd)) {
+        if (!DllCall("IsWindow", "Ptr", hWnd)) {
             toRemove.Push(hWnd)
             continue
         }
+
+        ; Chống mất Always On Top khi một số ứng dụng tự hạ cờ WS_EX_TOPMOST khi đổi focus
+        if (!(GetWindowExStyle(hWnd) & 0x8)) {
+            DllCall("SetWindowPos", "Ptr", hWnd, "Ptr", -1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0013)
+        }
+
         UpdateAOTBorderForWindow(hWnd)
+    }
+
+    ; Nếu cửa sổ đang active cũng là cửa sổ được ghim, đảm bảo nó nổi trên các cửa sổ ghim khác
+    if (hActive && AOTPinnedWindows.HasKey(hActive)) {
+        DllCall("SetWindowPos", "Ptr", hActive, "Ptr", -1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0013)
+        UpdateAOTBorderForWindow(hActive)
     }
 
     for _, hWnd in toRemove {
@@ -181,7 +267,7 @@ SyncAllAOTBorders() {
     }
 
     if (!AOTPinnedWindows.Count()) {
-        SetTimer, AOTSyncTimer, Off
+        StopAOTTracking()
         if (IsFunc("UpdateTrayTip"))
             UpdateTrayTip()
     }
@@ -189,7 +275,7 @@ SyncAllAOTBorders() {
 
 ; Cập nhật viền cho 1 cửa sổ cụ thể
 UpdateAOTBorderForWindow(hWnd) {
-    global AOTPinnedWindows, AOTBorderEnabled, AOTBorderColor, AOTBorderThickness, AOTGuiCounter
+    global AOTPinnedWindows, AOTBorderEnabled, AOTBorderColor, AOTBorderAlpha, AOTBorderThickness, AOTGuiCounter
 
     info := AOTPinnedWindows[hWnd]
     if (!info)
@@ -214,22 +300,29 @@ UpdateAOTBorderForWindow(hWnd) {
     }
 
     ; Lấy khung hiển thị thực tế (bỏ qua bóng mờ vô hình của Win 10/11)
-    if (!GetAOTWindowBounds(hWnd, bx, by, bw, bh) || bw <= 0 || bh <= 0) {
+    if (!GetAOTWindowBounds(hWnd, wx, wy, ww, wh) || ww <= 0 || wh <= 0) {
         HideAOTBorderGui(info)
         return
     }
 
     ; Ẩn viền khi cửa sổ đang ở chế độ Fullscreen
-    if (IsAOTWindowFullscreen(hWnd, bx, by, bw, bh)) {
+    if (IsAOTWindowFullscreen(hWnd, wx, wy, ww, wh)) {
         HideAOTBorderGui(info)
         return
     }
 
-    ; Tạo GUI viền nếu chưa có (-DPIScale để khớp chính xác tọa độ pixel thực tế)
-    if (!info.borderHwnd || !WinExist("ahk_id " . info.borderHwnd)) {
+    ; Vẽ viền bao sát ra ngoài mép cửa sổ 1px để không bị mép DWM che mất
+    t := AOTBorderThickness
+    bx := wx - t
+    by := wy - t
+    bw := ww + (t * 2)
+    bh := wh + (t * 2)
+
+    ; Tạo GUI viền nếu chưa có (-DPIScale để khớp pixel thực, +E0x80000 WS_EX_LAYERED để làm mờ)
+    if (!info.borderHwnd || !DllCall("IsWindow", "Ptr", info.borderHwnd)) {
         AOTGuiCounter++
         guiName := "AOTBorder_" . AOTGuiCounter
-        Gui, %guiName%:New, +AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x20 +E0x08000000 +HwndhBorder
+        Gui, %guiName%:New, +AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x20 +E0x80000 +E0x08000000 +HwndhBorder
         Gui, %guiName%:Color, %AOTBorderColor%
         Gui, %guiName%:Show, NoActivate Hide x%bx% y%by% w%bw% h%bh%
         info.borderName := guiName
@@ -239,15 +332,15 @@ UpdateAOTBorderForWindow(hWnd) {
         info.w := 0
         info.h := 0
         info.visible := false
+        info.layeredInit := false
     }
 
     hBorder := info.borderHwnd
     sizeChanged := (bw != info.w || bh != info.h)
     posChanged := (bx != info.x || by != info.y || sizeChanged || !info.visible)
 
-    ; Cập nhật vùng rỗng ở giữa bằng Win32 Region (RGN_DIFF) để tạo viền mỏng chính xác
+    ; Cập nhật vùng rỗng ở giữa bằng Win32 Region (RGN_DIFF)
     if (sizeChanged) {
-        t := AOTBorderThickness
         if (bw > t * 2 && bh > t * 2) {
             hOuter := DllCall("CreateRectRgn", "Int", 0, "Int", 0, "Int", bw, "Int", bh, "Ptr")
             hInner := DllCall("CreateRectRgn", "Int", t, "Int", t, "Int", bw - t, "Int", bh - t, "Ptr")
@@ -257,20 +350,46 @@ UpdateAOTBorderForWindow(hWnd) {
         }
     }
 
-    ; Giữ Z-order của viền nằm ngay trên cửa sổ được ghim (để cửa sổ ghim khác khi active sẽ nổi đè lên)
-    hPrev := DllCall("GetWindow", "Ptr", hWnd, "UInt", 3, "Ptr") ; GW_HWNDPREV = 3
-    zNeedsUpdate := (hPrev != hBorder)
+    ; Tìm cửa sổ hiển thị gần nhất nằm ngay trên hWnd để đặt viền theo đúng Z-order
+    insertAfter := GetAOTInsertAfterHwnd(hWnd, hBorder)
+    hImmediatePrev := DllCall("GetWindow", "Ptr", hWnd, "UInt", 3, "Ptr")
+    zNeedsUpdate := (hImmediatePrev != hBorder)
 
     if (posChanged || zNeedsUpdate) {
-        insertAfter := (hPrev = 0 || hPrev = hBorder) ? -1 : hPrev ; -1 = HWND_TOPMOST
         ; SWP_NOACTIVATE (0x10) | SWP_SHOWWINDOW (0x40)
-        DllCall("SetWindowPos", "Ptr", hBorder, "Ptr", insertAfter, "Int", bx, "Int", by, "Int", bw, "Int", bh, "UInt", 0x0050)
-        info.x := bx
-        info.y := by
-        info.w := bw
-        info.h := bh
-        info.visible := true
+        ok := DllCall("SetWindowPos", "Ptr", hBorder, "Ptr", insertAfter, "Int", bx, "Int", by, "Int", bw, "Int", bh, "UInt", 0x0050)
+        if (!ok && insertAfter != -1) {
+            ok := DllCall("SetWindowPos", "Ptr", hBorder, "Ptr", -1, "Int", bx, "Int", by, "Int", bw, "Int", bh, "UInt", 0x0050)
+        }
+        if (ok) {
+            if (!info.layeredInit) {
+                DllCall("SetLayeredWindowAttributes", "Ptr", hBorder, "UInt", 0, "UChar", AOTBorderAlpha, "UInt", 2)
+                info.layeredInit := true
+            }
+            info.x := bx
+            info.y := by
+            info.w := bw
+            info.h := bh
+            info.visible := true
+        }
     }
+}
+
+; Tìm HWND tham chiếu để đặt viền nằm ngay phía trên hWnd trong Z-order
+GetAOTInsertAfterHwnd(hWnd, hBorder) {
+    curr := hWnd
+    Loop, 20 {
+        prev := DllCall("GetWindow", "Ptr", curr, "UInt", 3, "Ptr") ; GW_HWNDPREV = 3
+        if (!prev)
+            return -1 ; HWND_TOPMOST
+        if (prev != hBorder && DllCall("IsWindowVisible", "Ptr", prev)) {
+            if (GetWindowExStyle(prev) & 0x8)
+                return prev
+            return -1
+        }
+        curr := prev
+    }
+    return -1
 }
 
 ; Lấy tọa độ hiển thị thực tế qua DWMWA_EXTENDED_FRAME_BOUNDS (fallback sang GetWindowRect)
@@ -308,13 +427,7 @@ IsAOTWindowFullscreen(hWnd, bx, by, bw, bh) {
     monRight  := NumGet(mi, 12, "Int")
     monBottom := NumGet(mi, 16, "Int")
 
-    ; Cho phép sai số 1px do DPI scaling
-    coversMonitor := (bx <= monLeft + 1 && by <= monTop + 1 && (bx + bw) >= monRight - 1 && (by + bh) >= monBottom - 1)
-    if (!coversMonitor)
-        return false
-
-    ; Nếu là cửa sổ Maximized bình thường vẫn có tiêu đề/viền hoặc không phủ Taskbar -> chỉ coi là Fullscreen khi phủ trọn monitor rect
-    return true
+    return (bx <= monLeft + 1 && by <= monTop + 1 && (bx + bw) >= monRight - 1 && (by + bh) >= monBottom - 1)
 }
 
 HideAOTBorderGui(info) {
@@ -331,6 +444,7 @@ DestroyAOTBorderGui(info) {
         info.borderName := ""
         info.borderHwnd := 0
         info.visible := false
+        info.layeredInit := false
     }
 }
 
@@ -341,7 +455,7 @@ RefreshAllAOTBorders() {
         UpdateAOTBorderForWindow(hWnd)
 }
 
-; Chuyển đổi chuỗi phím tắt AHK (vd: #^t) sang dạng dễ đọc (Win + Ctrl + T)
+; Chuyển đổi chuỗi phím tắt AHK (vd: ^!t) sang dạng dễ đọc (Ctrl + Alt + T)
 FormatAOTHotkeyText(hk) {
     if (hk = "")
         return L("AOT_NoHotkey")
