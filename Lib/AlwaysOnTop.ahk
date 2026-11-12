@@ -194,23 +194,23 @@ StartAOTTracking() {
         AOTWinEventCallback := RegisterCallback("AOTWinEventProc")
 
     if (!AOTWinEventHooks.Length() && AOTWinEventCallback) {
-        ; Hook đúng 4 sự kiện: Foreground (0x0003), Minimize (0x0016-0x0017), Destroy (0x8001), LocationChange (0x800B)
-        h1 := DllCall("SetWinEventHook", "UInt", 0x0003, "UInt", 0x0003, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr")
-        h2 := DllCall("SetWinEventHook", "UInt", 0x0016, "UInt", 0x0017, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr")
-        h3 := DllCall("SetWinEventHook", "UInt", 0x8001, "UInt", 0x8001, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr")
-        h4 := DllCall("SetWinEventHook", "UInt", 0x800B, "UInt", 0x800B, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr")
-        for _, hHook in [h1, h2, h3, h4] {
+        ; Thuần event-driven qua SetWinEventHook (WINEVENT_SKIPOWNPROCESS = 2 để bỏ qua GUI viền của chính app):
+        ; Foreground (0x0003), Minimize (0x0016-0x0017), Destroy/Show/Hide/Reorder (0x8001-0x8004),
+        ; LocationChange (0x800B), Cloaked/Uncloaked (0x8017-0x8018)
+        h1 := DllCall("SetWinEventHook", "UInt", 0x0003, "UInt", 0x0003, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 2, "Ptr")
+        h2 := DllCall("SetWinEventHook", "UInt", 0x0016, "UInt", 0x0017, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 2, "Ptr")
+        h3 := DllCall("SetWinEventHook", "UInt", 0x8001, "UInt", 0x8004, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 2, "Ptr")
+        h4 := DllCall("SetWinEventHook", "UInt", 0x800B, "UInt", 0x800B, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 2, "Ptr")
+        h5 := DllCall("SetWinEventHook", "UInt", 0x8017, "UInt", 0x8018, "Ptr", 0, "Ptr", AOTWinEventCallback, "UInt", 0, "UInt", 0, "UInt", 2, "Ptr")
+        for _, hHook in [h1, h2, h3, h4, h5] {
             if (hHook)
                 AOTWinEventHooks.Push(hHook)
         }
     }
-
-    SetTimer, AOTSyncTimer, 150
 }
 
 StopAOTTracking() {
     global AOTWinEventHooks, AOTSyncPending
-    SetTimer, AOTSyncTimer, Off
     SetTimer, AOTSyncSoonTimer, Off
     AOTSyncPending := false
     for _, hHook in AOTWinEventHooks {
@@ -221,7 +221,7 @@ StopAOTTracking() {
 }
 
 AOTWinEventProc(hWinEventHook, event, hWnd, idObject, idChild, dwEventThread, dwmsEventTime) {
-    global AOTPinnedWindows, AOTBorderHwnds, AOTLastSyncTick, AOTSyncPending
+    global AOTPinnedWindows, AOTBorderHwnds
 
     if (event >= 0x8000 && idObject != 0)
         return
@@ -230,7 +230,8 @@ AOTWinEventProc(hWinEventHook, event, hWnd, idObject, idChild, dwEventThread, dw
 
     SetBatchLines, -1
 
-    if (event = 0x0003 || event = 0x0016 || event = 0x0017) {
+    ; Đổi focus / thu nhỏ / phóng to / đổi thứ tự Z-order (EVENT_OBJECT_REORDER = 0x8004)
+    if (event = 0x0003 || event = 0x0016 || event = 0x0017 || event = 0x8004) {
         ScheduleAOTSync(15)
         return
     }
@@ -238,41 +239,20 @@ AOTWinEventProc(hWinEventHook, event, hWnd, idObject, idChild, dwEventThread, dw
     hWnd := hWnd + 0
     if (AOTPinnedWindows.HasKey(hWnd)) {
         if (event = 0x800B) { ; EVENT_OBJECT_LOCATIONCHANGE
-            ; Di chuyển viền ngay lập tức không chờ timer để bám sát khi kéo nhanh
+            ; Chỉ di chuyển tọa độ nhẹ (~0.03ms), không vẽ lại GDI+ đồng bộ để tránh làm khựng mouse hook
             movedOnly := TryFastMoveAOTBorder(hWnd)
-            if (movedOnly && AOTPinnedWindows.Count() = 1 && !HasOtherTopmostOccluders(hWnd))
-                return
-            elapsed := A_TickCount - AOTLastSyncTick
-            if (elapsed >= 16)
-                SyncAllAOTBorders()
-            else
-                ScheduleAOTSync(16 - elapsed)
-        } else if (event = 0x8001) { ; EVENT_OBJECT_DESTROY
+            if (!movedOnly || AOTPinnedWindows.Count() > 1)
+                ScheduleAOTSync(30)
+        } else if (event = 0x8001 || event = 0x8002 || event = 0x8003 || event = 0x8017 || event = 0x8018) {
+            ; Destroy / Show / Hide / Cloaked / Uncloaked (Virtual Desktop)
             ScheduleAOTSync(10)
         }
-    } else if (event = 0x800B && !AOTBorderHwnds.HasKey(hWnd) && (GetWindowLongPtrCompat(hWnd, -20) & 0x8)) {
-        ; Cửa sổ On Top từ app khác (vd: PowerToys) vừa di chuyển -> đồng bộ lại vùng cắt
-        ScheduleAOTSync(16)
-    }
-}
-
-HasOtherTopmostOccluders(hWnd) {
-    global AOTBorderHwnds
-    curr := DllCall("GetTopWindow", "Ptr", 0, "Ptr")
-    while (curr) {
-        currInt := curr + 0
-        if (currInt = hWnd)
-            return false
-        if (!AOTBorderHwnds.HasKey(currInt) && DllCall("IsWindowVisible", "Ptr", curr)) {
-            if (GetWindowLongPtrCompat(curr, -20) & 0x8) {
-                WinGetClass, cls, ahk_id %curr%
-                if (cls != "Shell_TrayWnd" && cls != "Shell_SecondaryTrayWnd")
-                    return true
-            }
+    } else if (!AOTBorderHwnds.HasKey(hWnd) && (GetWindowLongPtrCompat(hWnd, -20) & 0x8)) {
+        if (event = 0x800B || event = 0x8002 || event = 0x8003 || event = 0x8017 || event = 0x8018) {
+            ; Cửa sổ On Top từ app khác (vd: PowerToys) vừa di chuyển/ẩn/hiện -> đồng bộ lại vùng cắt
+            ScheduleAOTSync(30)
         }
-        curr := DllCall("GetWindow", "Ptr", curr, "UInt", 2, "Ptr")
     }
-    return false
 }
 
 ScheduleAOTSync(delayMs) {
@@ -359,10 +339,6 @@ CleanupAlwaysOnTop() {
 }
 
 ; Đồng bộ vị trí, trạng thái hiển thị, chống mất TOPMOST và cắt vùng viền bị che theo Z-order
-AOTSyncTimer:
-    SyncAllAOTBorders()
-return
-
 SyncAllAOTBorders() {
     global AOTPinnedWindows, AOTLastSyncTick, AOTSyncPending
     SetBatchLines, -1
