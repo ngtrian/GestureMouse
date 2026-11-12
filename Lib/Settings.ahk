@@ -14,21 +14,43 @@ global LockTabIcons         := {}
 global GestureBadgeBitmaps  := {}
 global hBtnToggleReveal     := 0
 global hAboutHeroBmp        := 0
+global SettingsPreloadOnly  := false
+
+; Dựng sẵn GUI Cài đặt ở trạng thái ẩn sau khi khởi động app để lần mở đầu tiên tức thì
+PreloadSettingsGui:
+    if (hSettingsGui) {
+        DetectHiddenWindows, On
+        guiExists := WinExist("ahk_id " . hSettingsGui)
+        DetectHiddenWindows, Off
+        if (guiExists)
+            return
+    }
+    SettingsPreloadOnly := true
+    Gosub, Settings
+return
 
 ; Tạo GUI cài đặt - Settings (Giao diện Fluent Cards gọn gàng, Singleton pattern)
 Settings:
+    isPreload := SettingsPreloadOnly
+    SettingsPreloadOnly := false
+
     if (hSettingsGui) {
         DetectHiddenWindows, On
         guiExists := WinExist("ahk_id " . hSettingsGui)
         DetectHiddenWindows, Off
         if (guiExists) {
+            if (isPreload)
+                return
             UpdateSettingsGuiControls()
             SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1)
-            Gui, Settings:Show, Center, % "GestureMouse - " . L("Set_Title")
+            Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
             WinActivate, ahk_id %hSettingsGui%
             return
         }
     }
+
+    prevBatchLines := A_BatchLines
+    SetBatchLines, -1
 
     if (IsFunc("LoadLockSettings"))
         LoadLockSettings()
@@ -37,14 +59,10 @@ Settings:
     SettingsTooltips := {}
     LastSettingsTipHwnd := 0
     SidebarIconHwnds := {}
-    if (!SidebarNavBitmaps.HasKey(1))
-        SidebarNavBitmaps := CreateSidebarNavBitmaps(20)
-    if (!LockTabIcons.HasKey("idle"))
-        LockTabIcons := CreateLockTabIcons()
-    if (!GestureBadgeBitmaps.HasKey("L"))
-        GestureBadgeBitmaps := CreateGestureBadgeBitmaps(32, 22)
+    EnsureSettingsVectorIcons()
 
     Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
+    DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
     SetGuiYellowIcon(hSettingsGui)
     Gui, Font, s9.5 Norm c222222, Segoe UI
 
@@ -365,14 +383,17 @@ Settings:
     UpdateLockAuthControlsState(windowsLogonOnly)
 
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
-    SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1)
+    SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1, true)
 
     ; Đăng ký theo dõi hover để hiển thị chú thích cho icon cử chỉ
     OnMessage(0x200, "WM_MOUSEMOVE_SETTINGS")
 
-    ; Hiển thị giao diện kích thước tinh gọn (w780 h455)
-    Gui, Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
-    SetGuiYellowIcon(hSettingsGui)
+    DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
+    SetBatchLines, %prevBatchLines%
+
+    ; Chỉ hiển thị khi người dùng mở trực tiếp (không hiện khi preload nền)
+    if (!isPreload)
+        Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
 return
 
 ; ========================================================
@@ -567,7 +588,7 @@ OnNav5:
     SwitchSettingsTab(5)
 return
 
-SwitchSettingsTab(tabNum) {
+SwitchSettingsTab(tabNum, skipRedraw := false) {
     global currentSettingsTab, hSettingsGui, SidebarNavBitmaps, SidebarIconHwnds
     ClearSettingsTooltip()
     currentSettingsTab := tabNum
@@ -588,11 +609,13 @@ SwitchSettingsTab(tabNum) {
         }
         GuiControl, Settings:Font, NavTxt%A_Index%
         GuiControl, Settings:+BackgroundTrans, NavTxt%A_Index%
-        GuiControl, Settings:MoveDraw, NavTxt%A_Index%
+        if (!skipRedraw)
+            GuiControl, Settings:MoveDraw, NavTxt%A_Index%
         if (SidebarIconHwnds.HasKey(A_Index) && SidebarNavBitmaps.HasKey(A_Index)) {
             hBmp := isActive ? SidebarNavBitmaps[A_Index].active : SidebarNavBitmaps[A_Index].inactive
             DllCall("SendMessage", "Ptr", SidebarIconHwnds[A_Index], "UInt", 0x0172, "Ptr", 0, "Ptr", hBmp)
-            GuiControl, Settings:MoveDraw, NavIco%A_Index%
+            if (!skipRedraw)
+                GuiControl, Settings:MoveDraw, NavIco%A_Index%
         }
     }
 }

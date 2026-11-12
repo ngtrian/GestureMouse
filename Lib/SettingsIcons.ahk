@@ -45,9 +45,30 @@ GetSysWinArgb() {
     return 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
 }
 
-CreateSidebarNavBitmaps(iconSize := 20) {
-    result := {}
+EnsureSettingsVectorIcons() {
+    global SidebarNavBitmaps, LockTabIcons, GestureBadgeBitmaps
+    needSidebar := !SidebarNavBitmaps.HasKey(1)
+    needLock := !LockTabIcons.HasKey("idle")
+    needBadges := !GestureBadgeBitmaps.HasKey("L")
+    if (!needSidebar && !needLock && !needBadges)
+        return
+
     if (!GdipBeginSession(hGdip, pToken))
+        return
+
+    if (needSidebar)
+        SidebarNavBitmaps := CreateSidebarNavBitmaps(20, false)
+    if (needLock)
+        LockTabIcons := CreateLockTabIcons(false)
+    if (needBadges)
+        GestureBadgeBitmaps := CreateGestureBadgeBitmaps(32, 22, false)
+
+    GdipEndSession(hGdip, pToken)
+}
+
+CreateSidebarNavBitmaps(iconSize := 20, manageSession := true) {
+    result := {}
+    if (manageSession && !GdipBeginSession(hGdip, pToken))
         return result
 
     scale := A_ScreenDPI / 96.0
@@ -75,7 +96,8 @@ CreateSidebarNavBitmaps(iconSize := 20) {
         }
     }
 
-    GdipEndSession(hGdip, pToken)
+    if (manageSession)
+        GdipEndSession(hGdip, pToken)
     return result
 }
 
@@ -178,9 +200,9 @@ DrawSidebarVectorIcon(pGraphics, idx, fgCol, bgCol, scale) {
     DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrush)
 }
 
-CreateLockTabIcons() {
+CreateLockTabIcons(manageSession := true) {
     result := {}
-    if (!GdipBeginSession(hGdip, pToken))
+    if (manageSession && !GdipBeginSession(hGdip, pToken))
         return result
 
     scale := A_ScreenDPI / 96.0
@@ -198,7 +220,8 @@ CreateLockTabIcons() {
         GdipReleaseCanvas(pBitmap, pGraphics)
     }
 
-    GdipEndSession(hGdip, pToken)
+    if (manageSession)
+        GdipEndSession(hGdip, pToken)
     return result
 }
 
@@ -341,9 +364,9 @@ CreateAboutHeroIconBitmap(iconSize := 56, bgRgb := 0xEEF5FC) {
     return hBmp
 }
 
-CreateGestureBadgeBitmaps(badgeW := 32, badgeH := 22) {
+CreateGestureBadgeBitmaps(badgeW := 32, badgeH := 22, manageSession := true) {
     result := {}
-    if (!GdipBeginSession(hGdip, pToken))
+    if (manageSession && !GdipBeginSession(hGdip, pToken))
         return result
 
     scale := A_ScreenDPI / 96.0
@@ -395,7 +418,8 @@ CreateGestureBadgeBitmaps(badgeW := 32, badgeH := 22) {
     DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushArrow)
     DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushBg)
     DllCall("gdiplus\GdipDeletePath", "Ptr", pPath)
-    GdipEndSession(hGdip, pToken)
+    if (manageSession)
+        GdipEndSession(hGdip, pToken)
     return result
 }
 

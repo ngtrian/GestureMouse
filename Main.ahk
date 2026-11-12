@@ -110,6 +110,7 @@ LoadIcons()  ; Gọi hàm tải biểu tượng
 OnExit("CleanupIcons")  ; Đăng ký hàm giải phóng tài nguyên khi thoát
 InitPowerAndSessionWatch() ; Khởi tạo theo dõi sleep, unlock màn hình, chống drop hook
 SetTimer, UpdateExplorerSelectionState, 500 ; Timer kiểm tra nền selection của Explorer ngoài hook thread
+SetTimer, PreloadSettingsGui, -1500 ; Dựng sẵn Settings GUI ẩn ở nền để lần mở đầu tiên tức thì
 
 #Include %A_ScriptDir%\Lib\Language.ahk ; Quản lý đa ngôn ngữ (chỉ gồm các hàm)
 #Include %A_ScriptDir%\Lib\Menu.ahk ; Menu, UpdateTrayTip, ExitMenu
