@@ -307,7 +307,7 @@ Settings:
     Gui, Font, s9 Norm c555555, Segoe UI
     Gui, Add, Text, x464 y286 w56 h18, % L("AOT_HotkeyLbl")
     Gui, Font, s9 Norm c222222, Segoe UI
-    aotHkDisplay := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Win + Ctrl + T"
+    aotHkDisplay := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
     Gui, Add, Button, x522 y281 w120 h25 vAOTHotkeyBtn gOnChangeAOTHotkey, %aotHkDisplay%
     Gui, Add, Button, x648 y281 w104 h25 vAOTUnpinAllBtn gOnUnpinAllAOT, % L("AOT_UnpinAllBtn")
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -927,15 +927,16 @@ return
 
 ShowAOTHotkeyDialog() {
     global AOTHotkey, hSettingsGui, hAOTHotkeyGui
-    global AOTNewWinMod, AOTNewKeyCtrl
+    global AOTNewKeyCtrl
 
     if (hAOTHotkeyGui && WinExist("ahk_id " . hAOTHotkeyGui)) {
         WinActivate, ahk_id %hAOTHotkeyGui%
         return
     }
 
-    hasWin := InStr(AOTHotkey, "#") ? 1 : 0
-    baseHk := StrReplace(AOTHotkey, "#")
+    ; Tạm tắt phím tắt hiện tại để người dùng có thể bấm lại chính tổ hợp đó vào ô nhập
+    if (AOTHotkey != "")
+        try Hotkey, %AOTHotkey%, ToggleAlwaysOnTopLabel, Off
 
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
         Gui, Settings:+Disabled
@@ -947,28 +948,23 @@ ShowAOTHotkeyDialog() {
     Gui, AOTHotkeyDlg:Color, FFFFFF
     Gui, AOTHotkeyDlg:Font, s9.5 Norm c222222, Segoe UI
     Gui, AOTHotkeyDlg:Add, Text, x16 y14 w310, % L("AOT_HotkeyPrompt")
-    Gui, AOTHotkeyDlg:Add, Checkbox, x16 y44 w70 h24 vAOTNewWinMod Checked%hasWin%, Win +
-    Gui, AOTHotkeyDlg:Add, Hotkey, x92 y43 w234 h24 vAOTNewKeyCtrl, %baseHk%
-    Gui, AOTHotkeyDlg:Add, Button, x16 y82 w110 h28 gOnResetAOTHotkey, Win + Ctrl + T
-    Gui, AOTHotkeyDlg:Add, Button, x176 y82 w72 h28 Default gOnSaveAOTHotkey, OK
-    Gui, AOTHotkeyDlg:Add, Button, x254 y82 w72 h28 gAOTHotkeyDlgGuiClose, % L("Set_Close")
-    Gui, AOTHotkeyDlg:Show, w342 h124 Center
+    Gui, AOTHotkeyDlg:Add, Hotkey, x16 y42 w310 h26 vAOTNewKeyCtrl, %AOTHotkey%
+    Gui, AOTHotkeyDlg:Add, Button, x16 y80 w115 h28 gOnResetAOTHotkey, Ctrl + Alt + T
+    Gui, AOTHotkeyDlg:Add, Button, x176 y80 w72 h28 Default gOnSaveAOTHotkey, OK
+    Gui, AOTHotkeyDlg:Add, Button, x254 y80 w72 h28 gAOTHotkeyDlgGuiClose, % L("Set_Close")
+    Gui, AOTHotkeyDlg:Show, w342 h122 Center
 }
 
 OnResetAOTHotkey:
-    GuiControl, AOTHotkeyDlg:, AOTNewWinMod, 1
-    GuiControl, AOTHotkeyDlg:, AOTNewKeyCtrl, ^t
+    GuiControl, AOTHotkeyDlg:, AOTNewKeyCtrl, ^!t
 return
 
 OnSaveAOTHotkey:
     Gui, AOTHotkeyDlg:Submit, NoHide
     if (AOTNewKeyCtrl = "")
         return
-    newHk := (AOTNewWinMod ? "#" : "") . AOTNewKeyCtrl
-    AOTHotkey := newHk
+    AOTHotkey := AOTNewKeyCtrl
     RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTHotkey, %AOTHotkey%
-    if (IsFunc("ApplyAOTHotkey"))
-        ApplyAOTHotkey()
     if (IsFunc("FormatAOTHotkeyText"))
         GuiControl, Settings:, AOTHotkeyBtn, % FormatAOTHotkeyText(AOTHotkey)
     Gosub, AOTHotkeyDlgGuiClose
@@ -982,6 +978,8 @@ AOTHotkeyDlgGuiEscape:
     }
     Gui, AOTHotkeyDlg:Destroy
     hAOTHotkeyGui := 0
+    if (IsFunc("ApplyAOTHotkey"))
+        ApplyAOTHotkey()
 return
 
 OpenGitHubLink:

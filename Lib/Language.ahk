@@ -147,7 +147,7 @@ InitLanguage() {
     v["AOT_AdminError"]         := "⚠ Không thể ghim cửa sổ đang chạy quyền Admin"
     v["AOT_TrayCount"]          := "Đang ghim (Always On Top): "
     v["AOT_NoHotkey"]           := "Chưa gán"
-    v["AOT_HotkeyPrompt"]       := "Nhấn tổ hợp phím tắt mới (hoặc Esc để hủy, Backspace để đặt lại Win + Ctrl + T):"
+    v["AOT_HotkeyPrompt"]       := "Nhấn tổ hợp phím tắt mới trực tiếp vào ô bên dưới:"
     v["TT_ExApps"]              := "Quản lý danh sách ứng dụng không áp dụng cử chỉ chuột và cuộn chuột"
     
     ; Ứng dụng loại trừ - Excluded Apps
@@ -517,7 +517,7 @@ InitLanguage() {
     e["AOT_AdminError"]         := "⚠ Cannot pin window running as Administrator"
     e["AOT_TrayCount"]          := "Pinned (Always On Top): "
     e["AOT_NoHotkey"]           := "None"
-    e["AOT_HotkeyPrompt"]       := "Press new hotkey combination (Esc to cancel, Backspace to reset to Win + Ctrl + T):"
+    e["AOT_HotkeyPrompt"]       := "Press the new hotkey combination directly in the box below:"
     e["TT_ExApps"]              := "Manage applications excluded from mouse gestures and right-click scroll"
     
     ; Excluded Apps

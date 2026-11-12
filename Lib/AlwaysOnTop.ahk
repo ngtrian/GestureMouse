@@ -7,7 +7,7 @@ InitAlwaysOnTop() {
     global AOTPinnedWindows, AOTGuiCounter
 
     AOTEnabled := 1
-    AOTHotkey := "#^t" ; Mặc định: Win + Ctrl + T
+    AOTHotkey := "^!t" ; Mặc định: Ctrl + Alt + T
     AOTBorderEnabled := 1
     AOTBorderColor := "FFB900" ; Vàng cam mặc định
     AOTBorderThickness := Round(3 * (A_ScreenDPI / 96))
@@ -225,11 +225,11 @@ UpdateAOTBorderForWindow(hWnd) {
         return
     }
 
-    ; Tạo GUI viền nếu chưa có
+    ; Tạo GUI viền nếu chưa có (-DPIScale để khớp chính xác tọa độ pixel thực tế)
     if (!info.borderHwnd || !WinExist("ahk_id " . info.borderHwnd)) {
         AOTGuiCounter++
         guiName := "AOTBorder_" . AOTGuiCounter
-        Gui, %guiName%:New, +AlwaysOnTop -Caption +ToolWindow +E0x20 +E0x08000000 +HwndhBorder
+        Gui, %guiName%:New, +AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x20 +E0x08000000 +HwndhBorder
         Gui, %guiName%:Color, %AOTBorderColor%
         Gui, %guiName%:Show, NoActivate Hide x%bx% y%by% w%bw% h%bh%
         info.borderName := guiName
@@ -245,17 +245,15 @@ UpdateAOTBorderForWindow(hWnd) {
     sizeChanged := (bw != info.w || bh != info.h)
     posChanged := (bx != info.x || by != info.y || sizeChanged || !info.visible)
 
-    ; Cập nhật vùng rỗng ở giữa để tạo thành viền mỏng
+    ; Cập nhật vùng rỗng ở giữa bằng Win32 Region (RGN_DIFF) để tạo viền mỏng chính xác
     if (sizeChanged) {
         t := AOTBorderThickness
-        ix := t
-        iy := t
-        iw := bw - t
-        ih := bh - t
-        if (iw > ix && ih > iy) {
-            regionStr := "0-0 " . bw . "-0 " . bw . "-" . bh . " 0-" . bh . " 0-0 "
-                . ix . "-" . iy . " " . iw . "-" . iy . " " . iw . "-" . ih . " " . ix . "-" . ih . " " . ix . "-" . iy
-            WinSet, Region, %regionStr%, ahk_id %hBorder%
+        if (bw > t * 2 && bh > t * 2) {
+            hOuter := DllCall("CreateRectRgn", "Int", 0, "Int", 0, "Int", bw, "Int", bh, "Ptr")
+            hInner := DllCall("CreateRectRgn", "Int", t, "Int", t, "Int", bw - t, "Int", bh - t, "Ptr")
+            DllCall("CombineRgn", "Ptr", hOuter, "Ptr", hOuter, "Ptr", hInner, "Int", 4) ; RGN_DIFF = 4
+            DllCall("DeleteObject", "Ptr", hInner)
+            DllCall("SetWindowRgn", "Ptr", hBorder, "Ptr", hOuter, "Int", 1)
         }
     }
 
