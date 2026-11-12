@@ -10,6 +10,7 @@ global SettingsTooltips     := {}
 global LastSettingsTipHwnd  := 0
 global SidebarNavBitmaps    := {}
 global SidebarIconHwnds     := {}
+global hAboutHeroBmp        := 0
 
 ; Tạo GUI cài đặt - Settings (Giao diện Fluent Cards gọn gàng, Singleton pattern)
 Settings:
@@ -266,60 +267,63 @@ Settings:
     Gui, Tab, TabAbout
 
     ; Hero Card nền xanh nhạt (#EEF5FC) với viền nhẹ & thanh nhấn xanh
-    Gui, Add, Progress, x228 y14 w536 h108 BackgroundD0E3F7 cD0E3F7 -Theme Disabled, 100
-    Gui, Add, Progress, x229 y15 w534 h106 BackgroundEEF5FC cEEF5FC -Theme Disabled, 100
-    Gui, Add, Progress, x229 y15 w4 h106 Background0067C0 c0067C0 -Theme Disabled, 100
+    Gui, Add, Progress, x228 y14 w536 h116 BackgroundD0E3F7 cD0E3F7 -Theme Disabled, 100
+    Gui, Add, Progress, x229 y15 w534 h114 BackgroundEEF5FC cEEF5FC -Theme Disabled, 100
+    Gui, Add, Progress, x229 y15 w4 h114 Background0067C0 c0067C0 -Theme Disabled, 100
 
-    hHeroBmp := CreateAboutHeroIconBitmap(56, 0xEEF5FC)
-    if (hHeroBmp)
-        Gui, Add, Picture, x248 y40, HBITMAP:%hHeroBmp%
+    if (!hAboutHeroBmp)
+        hAboutHeroBmp := CreateAboutHeroIconBitmap(56, 0xEEF5FC)
+    if (hAboutHeroBmp)
+        Gui, Add, Picture, x248 y43, HBITMAP:*%hAboutHeroBmp%
     else
-        AddSettingsIcon(248, 40, 56, 56, "image\unnamed.ico", 1)
+        AddSettingsIcon(248, 43, 56, 56, "image\unnamed.ico", 1)
 
     Gui, Font, s15 Bold c004499, Segoe UI
-    Gui, Add, Text, x318 y24 w288 +BackgroundTrans, GestureMouse
+    Gui, Add, Text, x318 y24 w285 +BackgroundTrans, GestureMouse
     Gui, Font, s9.5 Norm c2C3E50, Segoe UI
-    Gui, Add, Text, x318 y53 w288 h32 +BackgroundTrans, % L("About_Headline")
+    Gui, Add, Text, x318 y52 w288 h34 +BackgroundTrans, % L("About_Headline")
     Gui, Font, s8.5 Norm c5A6B7C, Segoe UI
-    Gui, Add, Text, x318 y89 w288 +BackgroundTrans, % L("About_HeroMeta")
+    Gui, Add, Text, x318 y93 w288 +BackgroundTrans, % L("About_HeroMeta")
 
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Button, x616 y52 w130 h32 gOpenDonateLink, % "❤ " . L("About_Donate")
+    Gui, Add, Button, x616 y55 w130 h32 gOpenDonateLink, % "❤ " . L("About_Donate")
 
     ; Dải 3 nút hành động nhanh
     Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x228 y134 w172 h30 gCheckForUpdates, % L("Tray_CheckUpdate")
-    Gui, Add, Button, x410 y134 w172 h30 gOpenGitHubLink, GitHub Releases
-    Gui, Add, Button, x592 y134 w172 h30 gOpenEmailLink, % L("About_ContactBtn")
+    Gui, Add, Button, x228 y142 w172 h30 gCheckForUpdates, % L("Tray_CheckUpdate")
+    Gui, Add, Button, x410 y142 w172 h30 gOpenGitHubLink, GitHub Releases
+    Gui, Add, Button, x592 y142 w172 h30 gOpenEmailLink, % L("About_ContactBtn")
 
-    Gui, Add, Text, x228 y178 w536 h1 0x10
+    Gui, Add, Text, x228 y184 w536 h1 0x10
 
     ; Đoạn giới thiệu ngắn gọn (bôi đen copy được, không thanh cuộn)
     Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Edit, x225 y192 w539 h46 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_ShortDesc")
+    Gui, Add, Edit, x228 y196 w536 h44 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_ShortDesc")
+    DllCall("SendMessage", "Ptr", hAboutDetailEdit, "UInt", 0x00D3, "Ptr", 1, "Ptr", 0)
 
-    Gui, Add, Text, x228 y246 w536 h1 0x10
+    Gui, Add, Text, x228 y248 w536 h1 0x10
 
     ; Bảng thông tin 2 cột (Tác giả, Giấy phép, Email, Mã nguồn)
     Gui, Font, s9 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y262 w108, % L("About_LblAuthor")
+    Gui, Add, Text, x228 y264 w108, % L("About_LblAuthor")
     Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, Edit, x337 y261 w427 h20 ReadOnly -E0x200 -VScroll -Tabstop, % L("About_ValAuthor")
+    Gui, Add, Edit, x340 y263 w424 h20 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutAuthorEdit, % L("About_ValAuthor")
+    DllCall("SendMessage", "Ptr", hAboutAuthorEdit, "UInt", 0x00D3, "Ptr", 1, "Ptr", 0)
 
     Gui, Font, s9 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y290 w108, % L("About_LblLicense")
+    Gui, Add, Text, x228 y292 w108, % L("About_LblLicense")
     Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Text, x340 y290 w424 h20, % L("About_ValLicense")
+    Gui, Add, Text, x340 y292 w424 h20, % L("About_ValLicense")
 
     Gui, Font, s9 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y318 w108, % L("About_LblEmail")
+    Gui, Add, Text, x228 y320 w108, % L("About_LblEmail")
     Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Link, x340 y318 w424 h20 gOnAboutLinkClick, <a href="mailto:nguyentrian87@gmail.com">nguyentrian87@gmail.com</a>
+    Gui, Add, Link, x340 y320 w424 h20 gOnAboutLinkClick, <a href="mailto:nguyentrian87@gmail.com">nguyentrian87@gmail.com</a>
 
     Gui, Font, s9 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y346 w108, % L("About_LblRepo")
+    Gui, Add, Text, x228 y348 w108, % L("About_LblRepo")
     Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Link, x340 y346 w424 h20 gOnAboutLinkClick, <a href="https://github.com/ngtrian/GestureMouse">https://github.com/ngtrian/GestureMouse</a>
+    Gui, Add, Link, x340 y348 w424 h20 gOnAboutLinkClick, <a href="https://github.com/ngtrian/GestureMouse">https://github.com/ngtrian/GestureMouse</a>
 
     ; ========================================================
     ; CHÂN TRANG GỌN GÀNG (AUTO-SAVE + NÚT ĐÓNG)
@@ -553,37 +557,26 @@ CreateAboutHeroIconBitmap(iconSize := 56, bgRgb := 0xEEF5FC) {
     if (!hIcon)
         return 0
 
-    hGdip := DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
-    if (hGdip) {
-        VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0)
-        NumPut(1, si, 0, "UInt")
-        pToken := 0
-        if (DllCall("gdiplus\GdiplusStartup", "Ptr*", pToken, "Ptr", &si, "Ptr", 0) == 0) {
-            argbBg := 0xFF000000 | (bgRgb & 0xFFFFFF)
-            pIconBmp := 0, pBitmap := 0, pGraphics := 0, hBmp := 0
-            DllCall("gdiplus\GdipCreateBitmapFromHICON", "Ptr", hIcon, "Ptr*", pIconBmp)
-            DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", pix, "Int", pix, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", pBitmap)
-            DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmap, "Ptr*", pGraphics)
-            DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", pGraphics, "Int", 7)
-            DllCall("gdiplus\GdipGraphicsClear", "Ptr", pGraphics, "UInt", argbBg)
-            if (pIconBmp)
-                DllCall("gdiplus\GdipDrawImageRectI", "Ptr", pGraphics, "Ptr", pIconBmp, "Int", 0, "Int", 0, "Int", pix, "Int", pix)
-            DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", argbBg)
-            if (pIconBmp)
-                DllCall("gdiplus\GdipDisposeImage", "Ptr", pIconBmp)
-            DllCall("gdiplus\GdipDeleteGraphics", "Ptr", pGraphics)
-            DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
-            DllCall("gdiplus\GdiplusShutdown", "Ptr", pToken)
-            DllCall("FreeLibrary", "Ptr", hGdip)
-            DllCall("DestroyIcon", "Ptr", hIcon)
-            if (hBmp)
-                return hBmp
-        }
-        DllCall("FreeLibrary", "Ptr", hGdip)
-    }
+    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
+    hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
+    hBmp := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", pix, "Int", pix, "Ptr")
+    hOld := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hBmp, "Ptr")
 
+    bgr := ((bgRgb & 0xFF) << 16) | (bgRgb & 0xFF00) | ((bgRgb >> 16) & 0xFF)
+    hBrush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
+    VarSetCapacity(rc, 16, 0)
+    NumPut(pix, rc, 8, "Int")
+    NumPut(pix, rc, 12, "Int")
+    DllCall("FillRect", "Ptr", hdcMem, "Ptr", &rc, "Ptr", hBrush)
+    DllCall("DeleteObject", "Ptr", hBrush)
+
+    DllCall("DrawIconEx", "Ptr", hdcMem, "Int", 0, "Int", 0, "Ptr", hIcon, "Int", pix, "Int", pix, "UInt", 0, "Ptr", 0, "UInt", 0x3)
+
+    DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hOld, "Ptr")
+    DllCall("DeleteDC", "Ptr", hdcMem)
+    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
     DllCall("DestroyIcon", "Ptr", hIcon)
-    return 0
+    return hBmp
 }
 
 AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
