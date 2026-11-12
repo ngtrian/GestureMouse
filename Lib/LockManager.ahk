@@ -55,6 +55,7 @@ global hMouseHook                := 0
 global Buffer                    := ""
 global hLockCenterGui            := 0
 global hLockCountdownGui         := 0
+global hToastBannerGui           := 0
 global hFocusUnlockGui           := 0
 global centerEditUnlocked        := 1
 global focusCandidateHwnds       := []
@@ -442,7 +443,7 @@ ShowLockCenterGUI() {
         Gui, Add, Progress, x15 y12 w440 h36 BackgroundE5F1FB cE5F1FB -Theme Disabled, 100
         Gui, Add, Progress, x15 y12 w4 h36 Background0067C0 c0067C0 -Theme Disabled, 100
         Gui, Font, s9.5 Bold c004499, Segoe UI
-        Gui, Add, Text, x28 y12 w420 h36 +0x200 +BackgroundTrans vCenterActiveBanner, % "⏱️ " . GetActiveTimerStatusText()
+        Gui, Add, Text, x28 y12 w420 h36 +0x200 +0x80 +BackgroundTrans vCenterActiveBanner, % "⏱️ " . GetActiveTimerStatusText()
         Gui, Font, s9.5 Norm c222222, Segoe UI
         yOffset := 58
     }
@@ -912,39 +913,130 @@ StartLockCountdown(type, minutes, repeat := 0) {
 }
 
 MeasureToastTextWidth(hwndCtrl, text) {
-    VarSetCapacity(sz, 8, 0)
+    VarSetCapacity(rc, 16, 0)
     hdc := DllCall("GetDC", "Ptr", hwndCtrl, "Ptr")
     hFont := DllCall("SendMessage", "Ptr", hwndCtrl, "UInt", 0x0031, "Ptr", 0, "Ptr", 0, "Ptr")
     hOld := hFont ? DllCall("SelectObject", "Ptr", hdc, "Ptr", hFont, "Ptr") : 0
-    DllCall("GetTextExtentPoint32", "Ptr", hdc, "Str", text, "Int", StrLen(text), "Ptr", &sz)
+    ; DT_CALCRECT (0x0400) | DT_SINGLELINE (0x0020) | DT_NOPREFIX (0x0800) = 0x0C20
+    DllCall("DrawText", "Ptr", hdc, "Str", text, "Int", -1, "Ptr", &rc, "UInt", 0x0C20)
+    w := NumGet(rc, 8, "Int") - NumGet(rc, 0, "Int")
+    if (w <= 0) {
+        VarSetCapacity(sz, 8, 0)
+        DllCall("GetTextExtentPoint32", "Ptr", hdc, "Str", text, "Int", StrLen(text), "Ptr", &sz)
+        w := NumGet(sz, 0, "Int")
+    }
     if (hOld)
         DllCall("SelectObject", "Ptr", hdc, "Ptr", hOld, "Ptr")
     DllCall("ReleaseDC", "Ptr", hwndCtrl, "Ptr", hdc)
-    return NumGet(sz, 0, "Int")
+    return w
+}
+
+GetToastWorkArea(ByRef waLeft, ByRef waTop, ByRef waRight, ByRef waBottom) {
+    global isLocked, lockMode, hFocusWnd
+
+    SysGet, wa, MonitorWorkArea
+    if (isLocked && lockMode == 1 && hFocusWnd && WinExist("ahk_id " . hFocusWnd)) {
+        WinGetPos, fx, fy, fw, fh, ahk_id %hFocusWnd%
+        if (fw > 0 && fh > 0) {
+            cx := fx + (fw // 2)
+            cy := fy + (fh // 2)
+            SysGet, monCount, MonitorCount
+            Loop, %monCount% {
+                SysGet, m, MonitorWorkArea, %A_Index%
+                if (cx >= mLeft && cx < mRight && cy >= mTop && cy < mBottom) {
+                    waLeft := mLeft, waTop := mTop, waRight := mRight, waBottom := mBottom
+                    break
+                }
+            }
+        }
+    }
+
+    if (waRight <= waLeft || waBottom <= waTop) {
+        waLeft := 0
+        waTop := 0
+        waRight := A_ScreenWidth
+        waBottom := A_ScreenHeight
+    }
+}
+
+ComputeToastPos(gw, gh, ByRef posX, ByRef posY, stackAboveBanner := false) {
+    global hToastBannerGui
+
+    GetToastWorkArea(waLeft, waTop, waRight, waBottom)
+    scale := A_ScreenDPI / 96.0
+    margin := Round(16 * scale)
+    gap := Round(8 * scale)
+
+    posX := waRight - gw - margin
+    posY := waBottom - gh - margin
+
+    if (stackAboveBanner && hToastBannerGui) {
+        if (WinExist("ahk_id " . hToastBannerGui) && DllCall("IsWindowVisible", "Ptr", hToastBannerGui)) {
+            WinGetPos, bx, by, bw, bh, ahk_id %hToastBannerGui%
+            ; Chỉ đẩy lên trên nếu banner đang nằm trên cùng màn hình workarea
+            if (bx >= waLeft && bx < waRight && by >= waTop && by < waBottom) {
+                candidateY := by - gh - gap
+                if (candidateY >= waTop + margin)
+                    posY := candidateY
+            }
+        }
+    }
+}
+
+RepositionCountdownToast() {
+    global hLockCountdownGui
+    if (!hLockCountdownGui || !WinExist("ahk_id " . hLockCountdownGui))
+        return
+    if (!DllCall("IsWindowVisible", "Ptr", hLockCountdownGui))
+        return
+    WinGetPos,,, gw, gh, ahk_id %hLockCountdownGui%
+    if (gw <= 0 || gh <= 0)
+        return
+    ComputeToastPos(gw, gh, posX, posY, true)
+    WinMove, ahk_id %hLockCountdownGui%,, %posX%, %posY%
+}
+
+BuildFluentToastGui(guiName, msg, wrapLogicalW, ByRef outGuiHwnd, ByRef outAccentHwnd, ByRef outTextHwnd) {
+    Gui, %guiName%:Destroy
+    Gui, %guiName%:New, +LastFound +AlwaysOnTop -Caption +ToolWindow +E0x20 +E0x08000000 +HwndlocalGui
+    Gui, %guiName%:Margin, 16, 10
+    Gui, %guiName%:Color, E5F1FB
+    Gui, %guiName%:Font, s9.5 Norm c004499, Segoe UI
+    Gui, %guiName%:Add, Progress, x0 y0 w4 h36 Background0067C0 c0067C0 -Theme Disabled +HwndlocalAccent, 100
+    textOpt := "x16 y10 Left +0x80 +HwndlocalText"
+    if (wrapLogicalW > 0)
+        textOpt .= " w" . wrapLogicalW
+    Gui, %guiName%:Add, Text, %textOpt%, %msg%
+    Gui, %guiName%:Show, Hide
+
+    outGuiHwnd := localGui
+    outAccentHwnd := localAccent
+    outTextHwnd := localText
+}
+
+FinalizeFluentToastSize(guiHwnd, accentHwnd, gw, gh) {
+    accentW := Max(4, Round(4 * (A_ScreenDPI / 96.0)))
+    if (accentHwnd)
+        DllCall("SetWindowPos", "Ptr", accentHwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", accentW, "Int", gh, "UInt", 0x16)
+    WinSet, Transparent, 245, ahk_id %guiHwnd%
+    WinSet, Region, 0-0 w%gw% h%gh% R12-12, ahk_id %guiHwnd%
 }
 
 ShowCountdownToast(msg) {
     global hLockCountdownGui
-    static LockCountdownText := "", hCountdownText := 0, sPadX := 0, sCurCW := 0, sCurCH := 0, sGw := 0, sGh := 0
+    static hCountdownAccent := 0, hCountdownText := 0, sPadX := 0, sCurCW := 0, sCurCH := 0, sGw := 0, sGh := 0
 
-    hTaskbar := 60
-    if (WinExist("ahk_class Shell_TrayWnd"))
-        WinGetPos,,,, hTaskbar, ahk_class Shell_TrayWnd
+    prevGui := A_DefaultGui
 
     if (!hLockCountdownGui || !WinExist("ahk_id " . hLockCountdownGui) || !hCountdownText) {
-        Gui, LockCountdown:Destroy
-        Gui, LockCountdown:New, +LastFound +AlwaysOnTop -Caption +ToolWindow +E0x20 +HwndhLockCountdownGui
-        Gui, Margin, 16, 10
-        Gui, Font, s9.5 Norm, Segoe UI
-        Gui, Color, FFF9C4, 2B1E00 ; Nền vàng nhạt nổi bật, chữ nâu sẫm dễ đọc
-        Gui, Font, c2B1E00
-        Gui, Add, Text, Center +0x80 vLockCountdownText +HwndhCountdownText, %msg%
-        Gui, Show, Hide
+        BuildFluentToastGui("LockCountdown", msg, 0, hLockCountdownGui, hCountdownAccent, hCountdownText)
+
         dhw := A_DetectHiddenWindows
         DetectHiddenWindows, On
         WinGetPos,,, gw, gh, ahk_id %hLockCountdownGui%
         ControlGetPos,,, cw, ch,, ahk_id %hCountdownText%
         DetectHiddenWindows, %dhw%
+
         if (!gw || !gh)
             gw := 300, gh := 38
         if (!cw || !ch)
@@ -956,26 +1048,28 @@ ShowCountdownToast(msg) {
         sGw := gw
         sGh := gh
 
-        posX := A_ScreenWidth - sGw - 16
-        posY := A_ScreenHeight - sGh - hTaskbar - 16
+        FinalizeFluentToastSize(hLockCountdownGui, hCountdownAccent, sGw, sGh)
+        ComputeToastPos(sGw, sGh, posX, posY, true)
+        Gui, LockCountdown:Show, x%posX% y%posY% NoActivate
 
-        WinSet, Transparent, 240, ahk_id %hLockCountdownGui%
-        WinSet, Region, 0-0 w%sGw% h%sGh% R12-12, ahk_id %hLockCountdownGui%
-        Gui, Show, x%posX% y%posY% NoActivate
+        if (prevGui != "")
+            try Gui, %prevGui%:Default
         return
     }
 
-    wantCW := MeasureToastTextWidth(hCountdownText, msg) + 6
+    wantCW := MeasureToastTextWidth(hCountdownText, msg) + 12
     if (wantCW > sCurCW || (sCurCW - wantCW) > 16) {
         sCurCW := wantCW + 8
         sGw := sCurCW + sPadX
         DllCall("SetWindowPos", "Ptr", hCountdownText, "Ptr", 0, "Int", 0, "Int", 0, "Int", sCurCW, "Int", sCurCH, "UInt", 0x16)
-        posX := A_ScreenWidth - sGw - 16
-        posY := A_ScreenHeight - sGh - hTaskbar - 16
+        ComputeToastPos(sGw, sGh, posX, posY, true)
         WinMove, ahk_id %hLockCountdownGui%,, %posX%, %posY%, %sGw%, %sGh%
         WinSet, Region, 0-0 w%sGw% h%sGh% R12-12, ahk_id %hLockCountdownGui%
     }
-    GuiControl, LockCountdown:, LockCountdownText, %msg%
+    GuiControl, LockCountdown:, %hCountdownText%, %msg%
+
+    if (prevGui != "")
+        try Gui, %prevGui%:Default
 }
 
 UpdateLockCountdown:
@@ -1074,31 +1168,46 @@ CancelLockCountdown(showNotice := false) {
 ; THÔNG BÁO TRỰC QUAN (TOAST)
 ; ========================================================
 ShowToastBanner(msg, autoHideMs := 0) {
-    hTaskbar := 60
-    if (WinExist("ahk_class Shell_TrayWnd"))
-        WinGetPos,,,, hTaskbar, ahk_class Shell_TrayWnd
+    global hToastBannerGui
 
+    prevGui := A_DefaultGui
     SetTimer, HideNotification, Off
     Gui, Notification:Destroy
+    hToastBannerGui := 0
 
-    Gui, Notification:New, +AlwaysOnTop +ToolWindow -Caption +LastFound
-    Gui, Margin, 16, 10
-    Gui, Font, s9.5 Norm, Segoe UI
-    Gui, Color, FFF9C4, 2B1E00
-    Gui, Font, c2B1E00
-    Gui, Add, Text, Center +0x80, %msg%
-    Gui, Show, Hide
-    WinGetPos,,, GuiWidth, GuiHeight
+    BuildFluentToastGui("Notification", msg, 0, hToastBannerGui, hBannerAccent, hBannerText)
 
-    posX := A_ScreenWidth - GuiWidth - 16
-    posY := A_ScreenHeight - GuiHeight - hTaskbar - 16
+    dhw := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+    WinGetPos,,, GuiWidth, GuiHeight, ahk_id %hToastBannerGui%
+    DetectHiddenWindows, %dhw%
 
-    WinSet, Transparent, 240
-    WinSet, Region, 0-0 w%GuiWidth% h%GuiHeight% R12-12
-    Gui, Show, x%posX% y%posY% NoActivate
+    GetToastWorkArea(waLeft, waTop, waRight, waBottom)
+    scale := A_ScreenDPI / 96.0
+    maxPhysW := Max(Round(320 * scale), Round((waRight - waLeft) * 0.48))
+    if (GuiWidth > maxPhysW) {
+        wrapLogicalW := Max(220, Round((maxPhysW - Round(32 * scale)) / scale))
+        BuildFluentToastGui("Notification", msg, wrapLogicalW, hToastBannerGui, hBannerAccent, hBannerText)
+        dhw := A_DetectHiddenWindows
+        DetectHiddenWindows, On
+        WinGetPos,,, GuiWidth, GuiHeight, ahk_id %hToastBannerGui%
+        DetectHiddenWindows, %dhw%
+    }
+
+    if (!GuiWidth || !GuiHeight)
+        GuiWidth := 320, GuiHeight := 38
+
+    FinalizeFluentToastSize(hToastBannerGui, hBannerAccent, GuiWidth, GuiHeight)
+    ComputeToastPos(GuiWidth, GuiHeight, posX, posY, false)
+    Gui, Notification:Show, x%posX% y%posY% NoActivate
+
+    RepositionCountdownToast()
 
     if (autoHideMs > 0)
         SetTimer, HideNotification, % -autoHideMs
+
+    if (prevGui != "")
+        try Gui, %prevGui%:Default
 }
 
 ShowNotification() {
@@ -1125,6 +1234,8 @@ ShowNotification() {
 
 HideNotification:
     Gui, Notification:Destroy
+    hToastBannerGui := 0
+    RepositionCountdownToast()
 return
 
 ; ========================================================
