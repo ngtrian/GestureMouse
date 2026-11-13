@@ -166,9 +166,11 @@ ApplyMicMuteHotkey() {
         }
     }
 
-    ; 2. Đăng ký phím tắt Push-to-Talk (hỗ trợ cả phím đơn như RCtrl/LCtrl)
+    ; 2. Đăng ký phím tắt Push-to-Talk (hỗ trợ cả phím đơn như LCtrl/RCtrl mà không chặn Ctrl+C/A/V)
     if (MicPttHotkey != "") {
-        hkPtt := (SubStr(MicPttHotkey, 1, 1) = "*") ? MicPttHotkey : ("*" . MicPttHotkey)
+        isSingleMod := (MicPttHotkey ~= "i)^(L|R)(Ctrl|Shift|Alt|Win)$")
+        hkPrefix := isSingleMod ? "~*" : "*"
+        hkPtt := (SubStr(MicPttHotkey, 1, 1) = "*" || SubStr(MicPttHotkey, 1, 1) = "~") ? MicPttHotkey : (hkPrefix . MicPttHotkey)
         try {
             Hotkey, %hkPtt%, MicPttKeyDownHandler, On
             MicMuteRegPttDownHk := hkPtt
@@ -878,8 +880,8 @@ ShowMicBadge() {
     size := Round(38 * scale)
 
     SysGet, wa, MonitorWorkArea
-    bx := Round(waRight - size - 16 * scale)
-    by := Round(waTop + 16 * scale)
+    bx := Round(waRight - size - 24 * scale)
+    by := Round(waTop + 48 * scale)
 
     pBitmap := 0, pGraphics := 0
     DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", size, "Int", size, "Int", 0, "Int", 0xE200B, "Ptr", 0, "Ptr*", pBitmap)

@@ -1230,10 +1230,7 @@ BuildShortcutsScrollPanel(aboutIcon) {
     Gui, ShortcutsScroll:Add, Text, x20 y262 w280 h18 vMicHeaderTxt gOnToggleMicExpand, % " ▸  " . L("Set_GroupMic") . " "
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x30 y285 w220 h22 vMicMuteEnabled gOnToggleMicMuteEnabled Checked%MicMuteEnabled%, % L("Mic_EnableChk")
-    micHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Win + Alt + M"
-    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x256 y282 w278 h26 vMicHotkeyBtn gOnChangeMicToggleHotkey, %micHkDisplay%
+    Gui, ShortcutsScroll:Add, Checkbox, x30 y285 w496 h22 vMicMuteEnabled gOnToggleMicMuteEnabled Checked%MicMuteEnabled%, % L("Mic_EnableChk")
 
     ; Phần mở rộng 1 cột của Card Microphone (tọa độ tương đối so với micBaseY = 264)
     Gui, ShortcutsScroll:Add, Text, x30 y316 w502 h1 0x10 +HwndhMicDiv Hidden
@@ -1244,65 +1241,76 @@ BuildShortcutsScrollPanel(aboutIcon) {
     MicGroupItems.Push({hwnd: hMicSecMode, relY: 326 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x38 y352 w212 h20 +HwndhMicPttLbl Hidden, % L("Mic_PttHkLbl")
+    Gui, ShortcutsScroll:Add, Text, x38 y352 w212 h20 +HwndhMicToggleLbl Hidden, % L("Mic_ToggleHkLbl")
+    micHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Win + Alt + M"
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x256 y348 w278 h26 vMicHotkeyBtn +HwndhMicToggleBtn gOnChangeMicToggleHotkey Hidden, %micHkDisplay%
+    MicGroupItems.Push({hwnd: hMicToggleLbl, relY: 352 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicToggleBtn, relY: 348 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x38 y384 w212 h20 +HwndhMicPttLbl Hidden, % L("Mic_PttHkLbl")
     pttHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicPttHotkey) : "Left Ctrl"
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x256 y348 w278 h26 vMicPttHotkeyBtn +HwndhMicPttBtn gOnChangeMicPttHotkey Hidden, %pttHkDisplay%
-    MicGroupItems.Push({hwnd: hMicPttLbl, relY: 352 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicPttBtn, relY: 348 - micBaseY})
+    Gui, ShortcutsScroll:Add, Button, x256 y380 w278 h26 vMicPttHotkeyBtn +HwndhMicPttBtn gOnChangeMicPttHotkey Hidden, %pttHkDisplay%
+    MicGroupItems.Push({hwnd: hMicPttLbl, relY: 384 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicPttBtn, relY: 380 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y380 w494 h22 vMicPttInvert +HwndhMicPttInv gOnSaveMicSettings Checked%MicPttInvert% Hidden, % L("Mic_PttInvertChk")
-    MicGroupItems.Push({hwnd: hMicPttInv, relY: 380 - micBaseY})
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y412 w494 h22 vMicPttInvert +HwndhMicPttInv gOnSaveMicSettings Checked%MicPttInvert% Hidden, % L("Mic_PttInvertChk")
+    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x58 y434 w474 h18 +HwndhMicPttInvDesc Hidden, % L("Mic_PttInvertDesc")
+    MicGroupItems.Push({hwnd: hMicPttInv, relY: 412 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicPttInvDesc, relY: 434 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x38 y409 w214 h18 +HwndhMicDelayLbl Hidden, % L("Mic_DelayLbl")
+    Gui, ShortcutsScroll:Add, Text, x38 y461 w214 h18 +HwndhMicDelayLbl Hidden, % L("Mic_DelayLbl")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Edit, x258 y406 w72 h22 Number vMicReleaseDelayInput +HwndhMicDelayEdit gOnChangeMicDelay Hidden, %MicMuteReleaseDelay%
+    Gui, ShortcutsScroll:Add, Edit, x258 y458 w72 h22 Number vMicReleaseDelayInput +HwndhMicDelayEdit gOnChangeMicDelay Hidden, %MicMuteReleaseDelay%
     Gui, ShortcutsScroll:Add, UpDown, Range0-2000 vMicReleaseDelayUpDown +HwndhMicDelayUD Hidden, %MicMuteReleaseDelay%
     Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x336 y409 w120 h18 +HwndhMicDelayUnit Hidden, (0 - 2000 ms)
-    MicGroupItems.Push({hwnd: hMicDelayLbl,  relY: 409 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayEdit, relY: 406 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayUD,   relY: 406 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayUnit, relY: 409 - micBaseY})
+    Gui, ShortcutsScroll:Add, Text, x336 y461 w120 h18 +HwndhMicDelayUnit Hidden, (0 - 2000 ms)
+    MicGroupItems.Push({hwnd: hMicDelayLbl,  relY: 461 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayEdit, relY: 458 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayUD,   relY: 458 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayUnit, relY: 461 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y438 w502 h18 +HwndhMicSecDev Hidden, % L("Mic_SecDevice")
+    Gui, ShortcutsScroll:Add, Text, x30 y490 w502 h18 +HwndhMicSecDev Hidden, % L("Mic_SecDevice")
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, DropDownList, x38 y461 w464 AltSubmit vMicDeviceChoice +HwndhMicDevDDL gOnSelectMicDevice Hidden, % L("Mic_DevAll")
+    Gui, ShortcutsScroll:Add, DropDownList, x38 y513 w464 AltSubmit vMicDeviceChoice +HwndhMicDevDDL gOnSelectMicDevice Hidden, % L("Mic_DevAll")
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x506 y460 w28 h24 vMicRefreshDevBtn +HwndhMicDevRefresh gOnRefreshMicDevices Hidden, ↻
+    Gui, ShortcutsScroll:Add, Button, x506 y512 w28 h24 vMicRefreshDevBtn +HwndhMicDevRefresh gOnRefreshMicDevices Hidden, ↻
     Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x38 y488 w492 h18 +HwndhMicAllDesc Hidden, % L("Mic_AllDevicesDesc")
-    MicGroupItems.Push({hwnd: hMicSecDev,     relY: 438 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDevDDL,     relY: 461 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDevRefresh, relY: 460 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicAllDesc,    relY: 488 - micBaseY})
+    Gui, ShortcutsScroll:Add, Text, x38 y540 w492 h18 +HwndhMicAllDesc Hidden, % L("Mic_AllDevicesDesc")
+    MicGroupItems.Push({hwnd: hMicSecDev,     relY: 490 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDevDDL,     relY: 513 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDevRefresh, relY: 512 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicAllDesc,    relY: 540 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y512 w502 h18 +HwndhMicSecOsd Hidden, % L("Mic_SecOsd")
+    Gui, ShortcutsScroll:Add, Text, x30 y564 w502 h18 +HwndhMicSecOsd Hidden, % L("Mic_SecOsd")
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y534 w492 h22 vMicMuteBadgeEnabled +HwndhMicBadgeChk gOnToggleMicBadge Checked%MicMuteBadgeEnabled% Hidden, % L("Mic_BadgeChk")
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y558 w492 h22 vMicOsdEnabled +HwndhMicOsdChk gOnToggleMicOsd Checked%MicMuteOsdEnabled% Hidden, % L("Mic_OsdChk")
-    MicGroupItems.Push({hwnd: hMicSecOsd,   relY: 512 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicBadgeChk, relY: 534 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdChk,   relY: 558 - micBaseY})
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y586 w492 h22 vMicMuteBadgeEnabled +HwndhMicBadgeChk gOnToggleMicBadge Checked%MicMuteBadgeEnabled% Hidden, % L("Mic_BadgeChk")
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y610 w492 h22 vMicOsdEnabled +HwndhMicOsdChk gOnToggleMicOsd Checked%MicMuteOsdEnabled% Hidden, % L("Mic_OsdChk")
+    MicGroupItems.Push({hwnd: hMicSecOsd,   relY: 564 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicBadgeChk, relY: 586 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdChk,   relY: 610 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y585 w196 h18 +HwndhMicOsdDurLbl Hidden, % L("Mic_OsdDurLbl")
+    Gui, ShortcutsScroll:Add, Text, x58 y637 w196 h18 +HwndhMicOsdDurLbl Hidden, % L("Mic_OsdDurLbl")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Edit, x258 y582 w72 h22 Number vMicOsdDurationInput +HwndhMicOsdEdit gOnChangeMicOsdDuration Hidden, %MicMuteOsdDuration%
+    Gui, ShortcutsScroll:Add, Edit, x258 y634 w72 h22 Number vMicOsdDurationInput +HwndhMicOsdEdit gOnChangeMicOsdDuration Hidden, %MicMuteOsdDuration%
     Gui, ShortcutsScroll:Add, UpDown, Range400-10000 vMicOsdDurationUpDown +HwndhMicOsdUD Hidden, %MicMuteOsdDuration%
-    Gui, ShortcutsScroll:Add, Button, x340 y580 w116 h25 vMicTestOsdBtn +HwndhMicTestBtn gOnTestMicOsd Hidden, % L("Mic_TestOsdBtn")
-    MicGroupItems.Push({hwnd: hMicOsdDurLbl, relY: 585 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdEdit,   relY: 582 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdUD,     relY: 582 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicTestBtn,   relY: 580 - micBaseY})
+    Gui, ShortcutsScroll:Add, Button, x340 y632 w116 h25 vMicTestOsdBtn +HwndhMicTestBtn gOnTestMicOsd Hidden, % L("Mic_TestOsdBtn")
+    MicGroupItems.Push({hwnd: hMicOsdDurLbl, relY: 637 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdEdit,   relY: 634 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdUD,     relY: 634 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicTestBtn,   relY: 632 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y611 w492 h22 vMicBeepEnabled +HwndhMicBeepChk gOnSaveMicSettings Checked%MicMuteBeepEnabled% Hidden, % L("Mic_BeepChk")
-    MicGroupItems.Push({hwnd: hMicBeepChk, relY: 611 - micBaseY})
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y663 w492 h22 vMicBeepEnabled +HwndhMicBeepChk gOnSaveMicSettings Checked%MicMuteBeepEnabled% Hidden, % L("Mic_BeepChk")
+    MicGroupItems.Push({hwnd: hMicBeepChk, relY: 663 - micBaseY})
 
     ; --------------------------------------------------------
     ; ACCORDION 3: GHIM CỬA SỔ LUÔN NỔI (MẶC ĐỊNH MỞ)
@@ -1379,12 +1387,11 @@ LayoutShortcutsTab(resetScroll := false) {
     curY += sysH + 8
 
     ; 2. Microphone
-    micH := micExpanded ? 380 : 54
+    micH := micExpanded ? 432 : 54
     GuiControl, ShortcutsScroll:Move, MicGroupBox,    % "y" . (curY - off) . " h" . micH
     GuiControl, ShortcutsScroll:Move, MicHeaderTxt,   % "y" . (curY - 2 - off)
     GuiControl, ShortcutsScroll:, MicHeaderTxt, % (micExpanded ? " ▾  " : " ▸  ") . L("Set_GroupMic") . " "
     GuiControl, ShortcutsScroll:Move, MicMuteEnabled, % "y" . (curY + 21 - off)
-    GuiControl, ShortcutsScroll:Move, MicHotkeyBtn,   % "y" . (curY + 18 - off)
     ApplyAccordionGroupLayout(MicGroupItems, curY, off, micExpanded)
     curY += micH + 8
 
