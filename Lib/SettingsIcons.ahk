@@ -46,11 +46,12 @@ GetSysWinArgb() {
 }
 
 EnsureSettingsVectorIcons() {
-    global SidebarNavBitmaps, LockTabIcons, GestureBadgeBitmaps
+    global SidebarNavBitmaps, LockTabIcons, GestureBadgeBitmaps, ChevronBitmaps
     needSidebar := !SidebarNavBitmaps.HasKey(1)
     needLock := !LockTabIcons.HasKey("idle")
     needBadges := !GestureBadgeBitmaps.HasKey("L")
-    if (!needSidebar && !needLock && !needBadges)
+    needChevron := !IsObject(ChevronBitmaps) || !ChevronBitmaps.HasKey("down")
+    if (!needSidebar && !needLock && !needBadges && !needChevron)
         return
 
     if (!GdipBeginSession(hGdip, pToken))
@@ -62,6 +63,8 @@ EnsureSettingsVectorIcons() {
         LockTabIcons := CreateLockTabIcons(false)
     if (needBadges)
         GestureBadgeBitmaps := CreateGestureBadgeBitmaps(32, 22, false)
+    if (needChevron)
+        ChevronBitmaps := CreateChevronBitmaps(16, 0xFFFBFBFB, false)
 
     GdipEndSession(hGdip, pToken)
 }
@@ -74,7 +77,7 @@ CreateSidebarNavBitmaps(iconSize := 20, manageSession := true) {
     scale := A_ScreenDPI / 96.0
     pix := Round(iconSize * scale)
 
-    argbWin := GetSysWinArgb()
+    argbInactiveBg := 0xFFF3F3F3
     argbActiveBg := 0xFFE5F1FB
     argbActiveFg := 0xFF005FB8
     argbNormFg := 0xFF4A5568
@@ -83,7 +86,7 @@ CreateSidebarNavBitmaps(iconSize := 20, manageSession := true) {
         idx := A_Index
         result[idx] := {}
         for stateIdx, stateName in ["inactive", "active"] {
-            bgCol := (stateName = "active") ? argbActiveBg : argbWin
+            bgCol := (stateName = "active") ? argbActiveBg : argbInactiveBg
             fgCol := (stateName = "active") ? argbActiveFg : argbNormFg
 
             GdipCreateCanvas(pix, pix, bgCol, pBitmap, pGraphics)
@@ -443,4 +446,37 @@ FillGdipPolygon(pGraphics, pBrush, coords, scale := 1.0) {
         NumPut(coords[idx + 2] * scale, pts, (idx + 1) * 4, "Float")
     }
     DllCall("gdiplus\GdipFillPolygon", "Ptr", pGraphics, "Ptr", pBrush, "Ptr", &pts, "Int", cnt, "Int", 0)
+}
+
+CreateChevronBitmaps(size := 16, bgArgb := 0xFFFBFBFB, manageSession := true) {
+    result := {}
+    if (manageSession && !GdipBeginSession(hGdip, pToken))
+        return result
+
+    scale := A_ScreenDPI / 96.0
+    pix := Round(size * scale)
+
+    for _, dir in ["down", "up"] {
+        GdipCreateCanvas(pix, pix, bgArgb, pBitmap, pGraphics)
+        pPen := 0
+        DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFF3A3A3A, "Float", 1.25 * scale, "Int", 2, "Ptr*", pPen)
+        DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPen, "Int", 2) ; Round
+        DllCall("gdiplus\GdipSetPenEndCap",   "Ptr", pPen, "Int", 2)
+        DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pPen, "Int", 2)
+
+        if (dir = "down")
+            DrawGdipPolyline(pGraphics, pPen, [3.0, 5.5, 8.0, 10.5, 13.0, 5.5], scale)
+        else
+            DrawGdipPolyline(pGraphics, pPen, [3.0, 10.5, 8.0, 5.5, 13.0, 10.5], scale)
+
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pPen)
+        hBmp := 0
+        DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", bgArgb)
+        result[dir] := hBmp
+        GdipReleaseCanvas(pBitmap, pGraphics)
+    }
+
+    if (manageSession)
+        GdipEndSession(hGdip, pToken)
+    return result
 }

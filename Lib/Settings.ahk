@@ -81,6 +81,7 @@ Settings:
     EnsureSettingsVectorIcons()
 
     Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
+    Gui, Settings:Color, F3F3F3
     DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
     SetGuiYellowIcon(hSettingsGui)
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -368,8 +369,8 @@ Settings:
     ; CHÂN TRANG GỌN GÀNG (AUTO-SAVE + NÚT ĐÓNG)
     ; ========================================================
     Gui, Tab
-    Gui, Font, s8.5 Norm c777777, Segoe UI
-    Gui, Add, Text, x228 y418 w415 vSettingsAutoSaveHint, % L("Set_AutoSaveHint")
+    Gui, Font, s8.5 Norm c666666, Segoe UI
+    Gui, Add, Text, x228 y418 w415 +BackgroundTrans vSettingsAutoSaveHint, % L("Set_AutoSaveHint")
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Button, x658 y411 w106 h30 vSettingsCloseBtn gSettingsCloseBtn Default, % L("Set_Close")
 
@@ -387,8 +388,9 @@ Settings:
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
     SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1, true)
 
-    ; Đăng ký theo dõi hover, cuộn dọc & lăn chuột cho vùng Phím tắt
+    ; Đăng ký theo dõi hover, tô màu Card, cuộn dọc & lăn chuột cho vùng Phím tắt
     OnMessage(0x200, "WM_MOUSEMOVE_SETTINGS")
+    OnMessage(0x138, "WM_CTLCOLORSTATIC_SETTINGS")
     OnMessage(0x115, "OnShortcutsVScroll")
     OnMessage(0x20A, "OnShortcutsMouseWheel")
 
@@ -507,33 +509,6 @@ CheckSettingsTooltipLeave:
     }
 return
 
-AddShortcutRow(yPos, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text := "", gLabel2 := "", itemsArr := 0, groupBaseY := 54) {
-    icoY := yPos - 1
-    btnY := yPos - 4
-    if (iconFile != "" && FileExist(iconFile)) {
-        Gui, ShortcutsScroll:Add, Picture, x30 y%icoY% w20 h20 %iconOpt% +HwndhPic, %iconFile%
-        if (IsObject(itemsArr))
-            itemsArr.Push({hwnd: hPic, relY: icoY - groupBaseY})
-    }
-    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y%yPos% w256 +HwndhLbl, % L(labelKey)
-    if (IsObject(itemsArr))
-        itemsArr.Push({hwnd: hLbl, relY: yPos - groupBaseY})
-    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    if (btn2Text = "") {
-        Gui, ShortcutsScroll:Add, Button, x320 y%btnY% w210 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
-        if (IsObject(itemsArr))
-            itemsArr.Push({hwnd: hBtn1, relY: btnY - groupBaseY})
-    } else {
-        Gui, ShortcutsScroll:Add, Button, x320 y%btnY% w102 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
-        Gui, ShortcutsScroll:Add, Button, x428 y%btnY% w102 h26 Center +HwndhBtn2 g%gLabel2%, %btn2Text%
-        if (IsObject(itemsArr)) {
-            itemsArr.Push({hwnd: hBtn1, relY: btnY - groupBaseY})
-            itemsArr.Push({hwnd: hBtn2, relY: btnY - groupBaseY})
-        }
-    }
-}
-
 GetIdleMinuteIndex(mins) {
     static minuteOptions := [1, 3, 5, 10, 15, 30, 60]
     for idx, val in minuteOptions {
@@ -599,6 +574,7 @@ UpdateSettingsGuiControls() {
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTUnpinAllBtn
 
     SyncMicControlsFromState()
+    UpdateShortcutsCardSummaries()
 }
 
 ; ========================================================
@@ -918,6 +894,7 @@ OnToggleAOTEnabled:
         ApplyAOTHotkey()
     if (!AOTEnabled && IsFunc("UnpinAllAlwaysOnTop"))
         UnpinAllAlwaysOnTop()
+    UpdateShortcutsCardSummaries()
 return
 
 OnToggleAOTBorder:
@@ -951,6 +928,7 @@ SavePickedAOTHotkey(newHk) {
     AOTHotkey := newHk
     RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTHotkey, %AOTHotkey%
     GuiControl, ShortcutsScroll:, AOTHotkeyBtn, % FormatHotkeyText(AOTHotkey)
+    UpdateShortcutsCardSummaries()
 }
 
 OpenGitHubLink:
@@ -1139,192 +1117,375 @@ SyncShortcutsScrollPanelSize() {
 
 BuildShortcutsScrollPanel(aboutIcon) {
     global
-    sysExpanded := 1
-    micExpanded := 0
-    aotExpanded := 1
-    trayExpanded := 1
+    ShortcutsCards := []
+    ShortcutsStaticColors := {}
     shortcutsScrollPos := 0
-    SysGroupItems := []
-    MicGroupItems := []
-    AotGroupItems := []
-    TrayGroupItems := []
 
     Gui, ShortcutsScroll:New, -Caption +0x40000000 +0x04000000 +0x200000 +Parent%hSettingsGui% +HwndhShortcutsScroll
+    Gui, ShortcutsScroll:Color, F3F3F3
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
 
-    ; Tiêu đề Tab 4
+    ; Tiêu đề Tab 4 (hiển thị trên nền #F3F3F3)
     Gui, ShortcutsScroll:Font, s13 Bold c004499, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x12 y12 w536, % L("Set_HeaderShortcuts")
+    Gui, ShortcutsScroll:Add, Text, x12 y12 w536 +BackgroundTrans +HwndhShortcutsTitle, % L("Set_HeaderShortcuts")
     Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x12 y35 w536, % L("Set_SubShortcuts")
+    Gui, ShortcutsScroll:Add, Text, x12 y35 w536 +BackgroundTrans +HwndhShortcutsSub, % L("Set_SubShortcuts")
+    ShortcutsStaticColors[hShortcutsTitle] := "body"
+    ShortcutsStaticColors[hShortcutsSub]   := "body"
 
     ; --------------------------------------------------------
-    ; ACCORDION 1: PHÍM TẮT HỆ THỐNG (MẶC ĐỊNH MỞ)
+    ; CARD 1: PHÍM TẮT HỆ THỐNG (MẶC ĐỊNH MỞ)
     ; --------------------------------------------------------
-    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, GroupBox, x12 y54 w536 h202 vSysGroupBox
-    Gui, ShortcutsScroll:Add, Text, x20 y52 w260 h18 vSysHeaderTxt gOnToggleSysExpand, % " ▾  " . L("Set_GroupSystemHotkeys") . " "
-
-    AddShortcutRow(76,  "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",     "ActionOpenLockCenter", "", "", SysGroupItems, 54)
-    AddShortcutRow(104, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V",   "ActionPastePlain", "", "", SysGroupItems, 54)
-    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y126 w472 h18 +HwndhSysPasteDesc, % L("Set_PastePlainDesc")
-    SysGroupItems.Push({hwnd: hSysPasteDesc, relY: 126 - 54})
-    AddShortcutRow(148, "Icon3",   A_WinDir . "\System32\SndVol.exe",  "Set_Mute",       "Ctrl + Shift + M",   "ActionMute", "", "", SysGroupItems, 54)
-    AddShortcutRow(176, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"), "ActionVolDown", SysGroupItems, 54)
-    AddShortcutRow(204, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp", SysGroupItems, 54)
-
-    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y235 w500 h18 +HwndhSysTip, % L("Set_ShortcutsTip")
-    SysGroupItems.Push({hwnd: hSysTip, relY: 235 - 54})
+    sysCard := BeginShortcutsCard("sys", L("Set_GroupSystemHotkeys"), 1, "OnToggleSysExpand")
+    CardAddShortcutRow(sysCard, "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",     "ActionOpenLockCenter")
+    CardAddShortcutRow(sysCard, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V",   "ActionPastePlain")
+    CardAddDescText(sysCard, L("Set_PastePlainDesc"), 58, 18, 4)
+    CardAddShortcutRow(sysCard, "Icon3",   A_WinDir . "\System32\SndVol.exe",  "Set_Mute",       "Ctrl + Shift + M",   "ActionMute")
+    CardAddShortcutRow(sysCard, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"), "ActionVolDown")
+    CardAddShortcutRow(sysCard, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp")
+    CardAddDescText(sysCard, L("Set_ShortcutsTip"), 28, 18, 2)
+    EndShortcutsCard(sysCard, 8)
 
     ; --------------------------------------------------------
-    ; ACCORDION 2: MICROPHONE (MẶC ĐỊNH THU GỌN)
+    ; CARD 2: MICROPHONE (MẶC ĐỊNH THU GỌN, CHECKBOX TRÊN HEADER)
     ; --------------------------------------------------------
-    micBaseY := 264
-    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, GroupBox, x12 y%micBaseY% w536 h54 vMicGroupBox
-    Gui, ShortcutsScroll:Add, Text, x20 y262 w280 h18 vMicHeaderTxt gOnToggleMicExpand, % " ▸  " . L("Set_GroupMic") . " "
+    micCard := BeginShortcutsCard("mic", L("Set_GroupMic"), 0, "OnToggleMicExpand", "MicMuteEnabled", "OnToggleMicMuteEnabled", MicMuteEnabled)
 
+    CardAddSubHeader(micCard, L("Mic_SecHotkeys"), 0)
+
+    y := micCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x30 y285 w496 h22 vMicMuteEnabled gOnToggleMicMuteEnabled Checked%MicMuteEnabled%, % L("Mic_EnableChk")
-
-    ; Phần mở rộng 1 cột của Card Microphone (tọa độ tương đối so với micBaseY = 264)
-    Gui, ShortcutsScroll:Add, Text, x30 y316 w502 h1 0x10 +HwndhMicDiv Hidden
-    MicGroupItems.Push({hwnd: hMicDiv, relY: 316 - micBaseY})
-
-    Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y326 w502 h18 +HwndhMicSecMode Hidden, % L("Mic_SecHotkeys")
-    MicGroupItems.Push({hwnd: hMicSecMode, relY: 326 - micBaseY})
-
-    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x38 y352 w212 h20 +HwndhMicToggleLbl Hidden, % L("Mic_ToggleHkLbl")
+    Gui, ShortcutsScroll:Add, Text, x32 y%y% w210 h20 +HwndhMicToggleLbl Hidden, % L("Mic_ToggleHkLbl")
     micHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Win + Alt + M"
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x256 y348 w278 h26 vMicHotkeyBtn +HwndhMicToggleBtn gOnChangeMicToggleHotkey Hidden, %micHkDisplay%
-    MicGroupItems.Push({hwnd: hMicToggleLbl, relY: 352 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicToggleBtn, relY: 348 - micBaseY})
+    Gui, ShortcutsScroll:Add, Button, % "x248 y" . (y - 3) . " w272 h26 vMicHotkeyBtn +HwndhMicToggleBtn gOnChangeMicToggleHotkey Hidden", %micHkDisplay%
+    CardAddItem(micCard, hMicToggleLbl, y)
+    CardAddItem(micCard, hMicToggleBtn, y - 3)
+    micCard.curY += 30
 
+    y := micCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x38 y384 w212 h20 +HwndhMicPttLbl Hidden, % L("Mic_PttHkLbl")
+    Gui, ShortcutsScroll:Add, Text, x32 y%y% w210 h20 +HwndhMicPttLbl Hidden, % L("Mic_PttHkLbl")
     pttHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicPttHotkey) : "Right Ctrl"
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x256 y380 w278 h26 vMicPttHotkeyBtn +HwndhMicPttBtn gOnChangeMicPttHotkey Hidden, %pttHkDisplay%
-    MicGroupItems.Push({hwnd: hMicPttLbl, relY: 384 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicPttBtn, relY: 380 - micBaseY})
+    Gui, ShortcutsScroll:Add, Button, % "x248 y" . (y - 3) . " w272 h26 vMicPttHotkeyBtn +HwndhMicPttBtn gOnChangeMicPttHotkey Hidden", %pttHkDisplay%
+    CardAddItem(micCard, hMicPttLbl, y)
+    CardAddItem(micCard, hMicPttBtn, y - 3)
+    micCard.curY += 29
 
+    y := micCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y412 w494 h22 vMicPttInvert +HwndhMicPttInv gOnSaveMicSettings Checked%MicPttInvert% Hidden, % L("Mic_PttInvertChk")
-    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y434 w474 h18 +HwndhMicPttInvDesc Hidden, % L("Mic_PttInvertDesc")
-    MicGroupItems.Push({hwnd: hMicPttInv, relY: 412 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicPttInvDesc, relY: 434 - micBaseY})
+    Gui, ShortcutsScroll:Add, Checkbox, x32 y%y% w496 h22 vMicPttInvert +HwndhMicPttInv gOnSaveMicSettings Checked%MicPttInvert% Hidden, % L("Mic_PttInvertChk")
+    CardAddItem(micCard, hMicPttInv, y)
+    micCard.curY += 22
+    CardAddDescText(micCard, L("Mic_PttInvertDesc"), 52, 18, 4)
 
+    y := micCard.curY
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x38 y461 w214 h18 +HwndhMicDelayLbl Hidden, % L("Mic_DelayLbl")
+    Gui, ShortcutsScroll:Add, Text, % "x32 y" . (y + 3) . " w218 h18 +HwndhMicDelayLbl Hidden", % L("Mic_DelayLbl")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Edit, x258 y458 w72 h22 Number vMicReleaseDelayInput +HwndhMicDelayEdit gOnChangeMicDelay Hidden, %MicMuteReleaseDelay%
+    Gui, ShortcutsScroll:Add, Edit, x254 y%y% w72 h22 Number vMicReleaseDelayInput +HwndhMicDelayEdit gOnChangeMicDelay Hidden, %MicMuteReleaseDelay%
     Gui, ShortcutsScroll:Add, UpDown, Range0-2000 vMicReleaseDelayUpDown +HwndhMicDelayUD Hidden, %MicMuteReleaseDelay%
     Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x336 y461 w120 h18 +HwndhMicDelayUnit Hidden, (0 - 2000 ms)
-    MicGroupItems.Push({hwnd: hMicDelayLbl,  relY: 461 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayEdit, relY: 458 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayUD,   relY: 458 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayUnit, relY: 461 - micBaseY})
+    Gui, ShortcutsScroll:Add, Text, % "x334 y" . (y + 3) . " w120 h18 +HwndhMicDelayUnit Hidden", (0 - 2000 ms)
+    CardAddItem(micCard, hMicDelayLbl,  y + 3)
+    CardAddItem(micCard, hMicDelayEdit, y)
+    CardAddItem(micCard, hMicDelayUD,   y)
+    CardAddItem(micCard, hMicDelayUnit, y + 3)
+    micCard.curY += 28
 
-    Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y490 w502 h18 +HwndhMicSecDev Hidden, % L("Mic_SecDevice")
-    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, DropDownList, x38 y513 w464 AltSubmit vMicDeviceChoice +HwndhMicDevDDL gOnSelectMicDevice Hidden, % L("Mic_DevAll")
-    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x506 y512 w28 h24 vMicRefreshDevBtn +HwndhMicDevRefresh gOnRefreshMicDevices Hidden, ↻
-    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x38 y540 w492 h18 +HwndhMicAllDesc Hidden, % L("Mic_AllDevicesDesc")
-    MicGroupItems.Push({hwnd: hMicSecDev,     relY: 490 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDevDDL,     relY: 513 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDevRefresh, relY: 512 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicAllDesc,    relY: 540 - micBaseY})
+    CardAddSubHeader(micCard, L("Mic_SecDevice"), 6)
 
-    Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y564 w502 h18 +HwndhMicSecOsd Hidden, % L("Mic_SecOsd")
+    y := micCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y586 w492 h22 vMicMuteBadgeEnabled +HwndhMicBadgeChk gOnToggleMicBadge Checked%MicMuteBadgeEnabled% Hidden, % L("Mic_BadgeChk")
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y610 w492 h22 vMicOsdEnabled +HwndhMicOsdChk gOnToggleMicOsd Checked%MicMuteOsdEnabled% Hidden, % L("Mic_OsdChk")
-    MicGroupItems.Push({hwnd: hMicSecOsd,   relY: 564 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicBadgeChk, relY: 586 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdChk,   relY: 610 - micBaseY})
+    Gui, ShortcutsScroll:Add, DropDownList, x32 y%y% w454 AltSubmit vMicDeviceChoice +HwndhMicDevDDL gOnSelectMicDevice Hidden, % L("Mic_DevAll")
+    Gui, ShortcutsScroll:Add, Button, % "x492 y" . (y - 1) . " w28 h24 vMicRefreshDevBtn +HwndhMicDevRefresh gOnRefreshMicDevices Hidden", ↻
+    CardAddItem(micCard, hMicDevDDL,     y)
+    CardAddItem(micCard, hMicDevRefresh, y - 1)
+    micCard.curY += 26
+    CardAddDescText(micCard, L("Mic_AllDevicesDesc"), 32, 18, 4)
 
+    CardAddSubHeader(micCard, L("Mic_SecOsd"), 6)
+
+    y := micCard.curY
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Checkbox, x32 y%y% w496 h22 vMicMuteBadgeEnabled +HwndhMicBadgeChk gOnToggleMicBadge Checked%MicMuteBadgeEnabled% Hidden, % L("Mic_BadgeChk")
+    CardAddItem(micCard, hMicBadgeChk, y)
+    micCard.curY += 24
+
+    y := micCard.curY
+    Gui, ShortcutsScroll:Add, Checkbox, x32 y%y% w496 h22 vMicOsdEnabled +HwndhMicOsdChk gOnToggleMicOsd Checked%MicMuteOsdEnabled% Hidden, % L("Mic_OsdChk")
+    CardAddItem(micCard, hMicOsdChk, y)
+    micCard.curY += 26
+
+    y := micCard.curY
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y637 w196 h18 +HwndhMicOsdDurLbl Hidden, % L("Mic_OsdDurLbl")
+    Gui, ShortcutsScroll:Add, Text, % "x52 y" . (y + 3) . " w198 h18 +HwndhMicOsdDurLbl Hidden", % L("Mic_OsdDurLbl")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Edit, x258 y634 w72 h22 Number vMicOsdDurationInput +HwndhMicOsdEdit gOnChangeMicOsdDuration Hidden, %MicMuteOsdDuration%
+    Gui, ShortcutsScroll:Add, Edit, x254 y%y% w72 h22 Number vMicOsdDurationInput +HwndhMicOsdEdit gOnChangeMicOsdDuration Hidden, %MicMuteOsdDuration%
     Gui, ShortcutsScroll:Add, UpDown, Range400-10000 vMicOsdDurationUpDown +HwndhMicOsdUD Hidden, %MicMuteOsdDuration%
-    Gui, ShortcutsScroll:Add, Button, x340 y632 w116 h25 vMicTestOsdBtn +HwndhMicTestBtn gOnTestMicOsd Hidden, % L("Mic_TestOsdBtn")
-    MicGroupItems.Push({hwnd: hMicOsdDurLbl, relY: 637 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdEdit,   relY: 634 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdUD,     relY: 634 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicTestBtn,   relY: 632 - micBaseY})
+    Gui, ShortcutsScroll:Add, Button, % "x336 y" . (y - 2) . " w116 h25 vMicTestOsdBtn +HwndhMicTestBtn gOnTestMicOsd Hidden", % L("Mic_TestOsdBtn")
+    CardAddItem(micCard, hMicOsdDurLbl, y + 3)
+    CardAddItem(micCard, hMicOsdEdit,   y)
+    CardAddItem(micCard, hMicOsdUD,     y)
+    CardAddItem(micCard, hMicTestBtn,   y - 2)
+    micCard.curY += 28
 
+    y := micCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y663 w492 h22 vMicBeepEnabled +HwndhMicBeepChk gOnSaveMicSettings Checked%MicMuteBeepEnabled% Hidden, % L("Mic_BeepChk")
-    MicGroupItems.Push({hwnd: hMicBeepChk, relY: 663 - micBaseY})
+    Gui, ShortcutsScroll:Add, Checkbox, x32 y%y% w496 h22 vMicBeepEnabled +HwndhMicBeepChk gOnSaveMicSettings Checked%MicMuteBeepEnabled% Hidden, % L("Mic_BeepChk")
+    CardAddItem(micCard, hMicBeepChk, y)
+    micCard.curY += 24
+    EndShortcutsCard(micCard, 8)
 
     ; --------------------------------------------------------
-    ; ACCORDION 3: GHIM CỬA SỔ LUÔN NỔI (MẶC ĐỊNH MỞ)
+    ; CARD 3: GHIM CỬA SỔ LUÔN NỔI (MẶC ĐỊNH MỞ, CHECKBOX TRÊN HEADER)
     ; --------------------------------------------------------
-    aotBaseY := 326
-    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, GroupBox, x12 y%aotBaseY% w536 h82 vAOTGroupBox
-    Gui, ShortcutsScroll:Add, Text, x20 y324 w280 h18 vAotHeaderTxt gOnToggleAotExpand, % " ▾  " . L("Set_GroupAOT") . " "
-
-    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x30 y347 w214 h22 vAOTEnabled +HwndhAotChk gOnToggleAOTEnabled Checked%AOTEnabled%, % L("AOT_EnableChk")
+    aotCard := BeginShortcutsCard("aot", L("Set_GroupAOT"), 1, "OnToggleAotExpand", "AOTEnabled", "OnToggleAOTEnabled", AOTEnabled)
+    y := aotCard.curY
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x248 y350 w56 h18 vAOTHotkeyLbl +HwndhAotHkLbl, % L("AOT_HotkeyLbl")
+    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w64 h18 vAOTHotkeyLbl +HwndhAotHkLbl", % L("AOT_HotkeyLbl")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
     aotHkDisplay := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
-    Gui, ShortcutsScroll:Add, Button, x306 y345 w120 h25 vAOTHotkeyBtn +HwndhAotHkBtn gOnChangeAOTHotkey, %aotHkDisplay%
-    Gui, ShortcutsScroll:Add, Button, x432 y345 w104 h25 vAOTUnpinAllBtn +HwndhAotUnpinBtn gOnUnpinAllAOT, % L("AOT_UnpinAllBtn")
+    Gui, ShortcutsScroll:Add, Button, x96 y%y% w168 h25 vAOTHotkeyBtn +HwndhAotHkBtn gOnChangeAOTHotkey, %aotHkDisplay%
+    Gui, ShortcutsScroll:Add, Button, x272 y%y% w128 h25 vAOTUnpinAllBtn +HwndhAotUnpinBtn gOnUnpinAllAOT, % L("AOT_UnpinAllBtn")
+    CardAddItem(aotCard, hAotHkLbl,    y + 4)
+    CardAddItem(aotCard, hAotHkBtn,    y)
+    CardAddItem(aotCard, hAotUnpinBtn, y)
+    aotCard.curY += 30
+
+    y := aotCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x30 y375 w500 h22 vAOTBorderEnabled +HwndhAotBorderChk gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
-    AotGroupItems.Push({hwnd: hAotChk,       relY: 21})
-    AotGroupItems.Push({hwnd: hAotHkLbl,     relY: 24})
-    AotGroupItems.Push({hwnd: hAotHkBtn,     relY: 19})
-    AotGroupItems.Push({hwnd: hAotUnpinBtn,  relY: 19})
-    AotGroupItems.Push({hwnd: hAotBorderChk, relY: 49})
+    Gui, ShortcutsScroll:Add, Checkbox, x28 y%y% w502 h22 vAOTBorderEnabled +HwndhAotBorderChk gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
+    CardAddItem(aotCard, hAotBorderChk, y)
+    aotCard.curY += 24
+    EndShortcutsCard(aotCard, 8)
 
     ; --------------------------------------------------------
-    ; ACCORDION 4: THAO TÁC NHANH TRÊN KHAY HỆ THỐNG (MẶC ĐỊNH MỞ)
+    ; CARD 4: THAO TÁC NHANH TRÊN KHAY HỆ THỐNG (MẶC ĐỊNH MỞ)
     ; --------------------------------------------------------
-    trayBaseY := 416
-    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, GroupBox, x12 y%trayBaseY% w536 h64 vTrayGroupBox
-    Gui, ShortcutsScroll:Add, Text, x20 y414 w280 h18 vTrayHeaderTxt gOnToggleTrayExpand, % " ▾  " . L("Set_GroupTrayActions") . " "
-
+    trayCard := BeginShortcutsCard("tray", L("Set_GroupTrayActions"), 1, "OnToggleTrayExpand")
+    y := trayCard.curY
     if (aboutIcon != "" && FileExist(aboutIcon)) {
-        Gui, ShortcutsScroll:Add, Picture, x30 y434 w20 h20 Icon1 vTrayToggleIco +HwndhTrayIco, %aboutIcon%
-        TrayGroupItems.Push({hwnd: hTrayIco, relY: 18})
+        Gui, ShortcutsScroll:Add, Picture, % "x28 y" . (y + 3) . " w20 h20 Icon1 vTrayToggleIco +HwndhTrayIco", %aboutIcon%
+        CardAddItem(trayCard, hTrayIco, y + 3)
     }
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y435 w256 vTrayToggleLbl +HwndhTrayLbl, % L("Set_TrayToggleLabel")
+    Gui, ShortcutsScroll:Add, Text, % "x56 y" . (y + 4) . " w252 vTrayToggleLbl +HwndhTrayLbl", % L("Set_TrayToggleLabel")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x320 y431 w210 h26 Center gActionToggleGestures vTrayToggleBtn +HwndhTrayBtn, % L("Set_TrayToggleBtn")
-    Gui, ShortcutsScroll:Font, s8.5 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y458 w500 h16 vTrayDblClickLbl +HwndhTrayTip, % "• " . L("Set_TrayDblClickTip")
-    TrayGroupItems.Push({hwnd: hTrayLbl, relY: 19})
-    TrayGroupItems.Push({hwnd: hTrayBtn, relY: 15})
-    TrayGroupItems.Push({hwnd: hTrayTip, relY: 42})
+    Gui, ShortcutsScroll:Add, Button, x314 y%y% w206 h26 Center gActionToggleGestures vTrayToggleBtn +HwndhTrayBtn, % L("Set_TrayToggleBtn")
+    CardAddItem(trayCard, hTrayLbl, y + 4)
+    CardAddItem(trayCard, hTrayBtn, y)
+    trayCard.curY += 30
+    CardAddDescText(trayCard, "• " . L("Set_TrayDblClickTip"), 28, 18, 2)
+    EndShortcutsCard(trayCard, 8)
 
     Gui, ShortcutsScroll:Show, Hide x216 y0 w564 h407
     RefreshMicDeviceDropdown()
+    UpdateShortcutsCardSummaries()
     LayoutShortcutsTab(true)
 }
 
+; ========================================================
+; CARD BUILDER & ROW HELPERS CHO TAB 4 (SHORTCUTS & UTILS)
+; ========================================================
+BeginShortcutsCard(id, titleText, expanded, toggleGLabel, toggleVar := "", toggleChkGLabel := "", toggleChecked := 0) {
+    global ShortcutsCards, ShortcutsStaticColors, ShortcutsOnLabelMap, ChevronBitmaps
+    if (!IsObject(ShortcutsOnLabelMap))
+        ShortcutsOnLabelMap := {}
+    headerH := 48
+    collapsedH := 50
+
+    ; Khung nền Card dùng Static + WM_CTLCOLORSTATIC: viền phẳng đúng 1px #E5E5E5 cả 4 cạnh, nền #FBFBFB
+    ; Chiều rộng w524 (12+524=536) chừa khoảng thoáng với thanh cuộn dọc (w564 - 17px)
+    Gui, ShortcutsScroll:Add, Text, x12 y0 w524 h50 Disabled +HwndhBorder
+    Gui, ShortcutsScroll:Add, Text, x13 y1 w522 h48 Disabled +HwndhBody
+    Gui, ShortcutsScroll:Add, Text, x22 y48 w504 h1 Disabled +HwndhHeaderDiv
+    ShortcutsStaticColors[hBorder]    := "border"
+    ShortcutsStaticColors[hBody]      := "card"
+    ShortcutsStaticColors[hHeaderDiv] := "border"
+
+    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x22 y7 w415 h18 +0x200 +HwndhTitle, %titleText%
+
+    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x22 y26 w415 h16 +0x200 +HwndhSummary
+
+    hToggleChk := 0
+    hOnLbl := 0
+    hitW := 490
+    if (toggleVar != "") {
+        Gui, ShortcutsScroll:Font, s9 Norm c444444, Segoe UI
+        Gui, ShortcutsScroll:Add, Text, x448 y15 w28 h18 +Right +0x200 gOnClickCardOnLabel +HwndhOnLbl, On
+        Gui, ShortcutsScroll:Add, Checkbox, x480 y16 w16 h16 v%toggleVar% g%toggleChkGLabel% Checked%toggleChecked% +HwndhToggleChk
+        ShortcutsOnLabelMap[hOnLbl] := {var: toggleVar, gLabel: toggleChkGLabel}
+        hitW := 432
+    }
+
+    hArrowBmp := IsObject(ChevronBitmaps) ? ChevronBitmaps[expanded ? "up" : "down"] : 0
+    if (hArrowBmp) {
+        Gui, ShortcutsScroll:Add, Picture, x508 y16 +0x100 g%toggleGLabel% +HwndhArrow, HBITMAP:*%hArrowBmp%
+    } else {
+        Gui, ShortcutsScroll:Font, s9.5 Bold c555555, Segoe UI
+        Gui, ShortcutsScroll:Add, Text, x504 y14 w24 h20 +Center +0x200 g%toggleGLabel% +HwndhArrow, % expanded ? "⌃" : "⌄"
+    }
+
+    Gui, ShortcutsScroll:Add, Text, x12 y1 w%hitW% h47 +BackgroundTrans g%toggleGLabel% +HwndhHit
+    ShortcutsStaticColors[hHit] := "trans"
+
+    card := {id: id
+        , expanded: expanded ? 1 : 0
+        , headerH: headerH
+        , collapsedH: collapsedH
+        , expandedH: collapsedH
+        , curY: headerH + 10
+        , hBorder: hBorder
+        , hBody: hBody
+        , hHeaderDiv: hHeaderDiv
+        , hOnLbl: hOnLbl
+        , hToggleChk: hToggleChk
+        , hTitle: hTitle
+        , hSummary: hSummary
+        , hArrow: hArrow
+        , hHit: hHit
+        , items: []}
+    ShortcutsCards.Push(card)
+    return card
+}
+
+WM_CTLCOLORSTATIC_SETTINGS(wParam, lParam, msg, hwnd) {
+    global hShortcutsScroll, ShortcutsStaticColors
+    static hBrBorder := 0, hBrCard := 0, hBrBody := 0
+    if (!hShortcutsScroll || hwnd != hShortcutsScroll)
+        return ""
+    if (!hBrBorder) {
+        hBrBorder := DllCall("CreateSolidBrush", "UInt", 0xE5E5E5, "Ptr")
+        hBrCard   := DllCall("CreateSolidBrush", "UInt", 0xFBFBFB, "Ptr")
+        hBrBody   := DllCall("CreateSolidBrush", "UInt", 0xF3F3F3, "Ptr")
+    }
+    role := IsObject(ShortcutsStaticColors) ? ShortcutsStaticColors[lParam] : ""
+    if (role = "border")
+        return hBrBorder
+    if (role = "trans") {
+        DllCall("SetBkMode", "Ptr", wParam, "Int", 1) ; TRANSPARENT
+        return DllCall("GetStockObject", "Int", 5, "Ptr") ; NULL_BRUSH
+    }
+    if (role = "body") {
+        DllCall("SetBkMode", "Ptr", wParam, "Int", 1) ; TRANSPARENT
+        return hBrBody
+    }
+    DllCall("SetBkColor", "Ptr", wParam, "UInt", 0xFBFBFB)
+    return hBrCard
+}
+
+CardAddItem(card, hwnd, relY) {
+    if (hwnd)
+        card.items.Push({hwnd: hwnd, relY: relY})
+}
+
+CardAddSubHeader(card, titleText, topGap := 2) {
+    card.curY += topGap
+    y := card.curY
+    Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x28 y%y% w504 h18 +HwndhSub Hidden, %titleText%
+    if (!card.expanded)
+        DllCall("ShowWindow", "Ptr", hSub, "Int", 0)
+    else
+        DllCall("ShowWindow", "Ptr", hSub, "Int", 5)
+    CardAddItem(card, hSub, y)
+    card.curY += 22
+}
+
+CardAddDescText(card, textStr, indentX := 28, height := 18, bottomGap := 4) {
+    y := card.curY
+    w := 532 - indentX
+    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x%indentX% y%y% w%w% h%height% +HwndhDesc, %textStr%
+    CardAddItem(card, hDesc, y)
+    card.curY += height + bottomGap
+}
+
+CardAddShortcutRow(card, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text := "", gLabel2 := "") {
+    y := card.curY
+    icoY := y + 3
+    lblY := y + 4
+    if (iconFile != "" && FileExist(iconFile)) {
+        Gui, ShortcutsScroll:Add, Picture, x28 y%icoY% w20 h20 %iconOpt% +HwndhPic, %iconFile%
+        CardAddItem(card, hPic, icoY)
+    }
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x56 y%lblY% w252 +HwndhLbl, % L(labelKey)
+    CardAddItem(card, hLbl, lblY)
+
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    if (btn2Text = "") {
+        Gui, ShortcutsScroll:Add, Button, x314 y%y% w206 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
+        CardAddItem(card, hBtn1, y)
+    } else {
+        Gui, ShortcutsScroll:Add, Button, x314 y%y% w100 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
+        Gui, ShortcutsScroll:Add, Button, x420 y%y% w100 h26 Center +HwndhBtn2 g%gLabel2%, %btn2Text%
+        CardAddItem(card, hBtn1, y)
+        CardAddItem(card, hBtn2, y)
+    }
+    card.curY += 29
+}
+
+EndShortcutsCard(card, bottomPad := 8) {
+    card.expandedH := card.curY + bottomPad
+}
+
+OnClickCardOnLabel:
+    MouseGetPos,,,, hClickedOnLbl, 2
+    if (IsObject(ShortcutsOnLabelMap) && ShortcutsOnLabelMap.HasKey(hClickedOnLbl)) {
+        info := ShortcutsOnLabelMap[hClickedOnLbl]
+        GuiControlGet, curChkVal, ShortcutsScroll:, % info.var
+        newChkVal := curChkVal ? 0 : 1
+        GuiControl, ShortcutsScroll:, % info.var, %newChkVal%
+        Gosub, % info.gLabel
+    }
+return
+
+UpdateShortcutsCardSummaries() {
+    global ShortcutsCards, CurrentLang, MicMuteHotkey, AOTHotkey
+    if (!IsObject(ShortcutsCards))
+        return
+
+    hkPrefix := (CurrentLang = "en") ? "Hotkey: " : "Phím tắt: "
+    noHkTxt  := (CurrentLang = "en") ? "No hotkey assigned" : "Chưa gán phím tắt"
+
+    for _, card in ShortcutsCards {
+        summary := ""
+        if (card.id = "sys") {
+            summary := (CurrentLang = "en") ? "5 system shortcuts" : "5 phím tắt hệ thống"
+        } else if (card.id = "mic") {
+            hk := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Win + Alt + M"
+            summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
+        } else if (card.id = "aot") {
+            hk := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
+            summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
+        } else if (card.id = "tray") {
+            summary := (CurrentLang = "en") ? "Double-click tray icon to toggle" : "Click đúp biểu tượng khay để bật/tắt"
+        }
+        GuiControl, ShortcutsScroll:, % card.hSummary, %summary%
+    }
+}
+
+ToggleShortcutsCard(cardId) {
+    global ShortcutsCards
+    if (!IsObject(ShortcutsCards))
+        return
+    for _, card in ShortcutsCards {
+        if (card.id = cardId) {
+            card.expanded := !card.expanded
+            break
+        }
+    }
+    LayoutShortcutsTab(false)
+}
+
 LayoutShortcutsTab(resetScroll := false) {
-    global hShortcutsScroll, sysExpanded, micExpanded, aotExpanded, trayExpanded
-    global SysGroupItems, MicGroupItems, AotGroupItems, TrayGroupItems
-    global shortcutsScrollPos, shortcutsContentH
-    if (!hShortcutsScroll)
+    global hShortcutsScroll, ShortcutsCards, shortcutsScrollPos, shortcutsContentH, ChevronBitmaps
+    if (!hShortcutsScroll || !IsObject(ShortcutsCards))
         return
 
     if (resetScroll && shortcutsScrollPos != 0)
@@ -1333,42 +1494,39 @@ LayoutShortcutsTab(resetScroll := false) {
     DllCall("SendMessage", "Ptr", hShortcutsScroll, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
 
     off := shortcutsScrollPos
-    curY := 54
+    curY := 56
 
-    ; 1. System Shortcuts
-    sysH := sysExpanded ? 202 : 28
-    GuiControl, ShortcutsScroll:Move, SysGroupBox, % "y" . (curY - off) . " h" . sysH
-    GuiControl, ShortcutsScroll:Move, SysHeaderTxt, % "y" . (curY - 2 - off)
-    GuiControl, ShortcutsScroll:, SysHeaderTxt, % (sysExpanded ? " ▾  " : " ▸  ") . L("Set_GroupSystemHotkeys") . " "
-    ApplyAccordionGroupLayout(SysGroupItems, curY, off, sysExpanded)
-    curY += sysH + 8
+    for _, card in ShortcutsCards {
+        cardH := card.expanded ? card.expandedH : card.collapsedH
+        yVis := curY - off
 
-    ; 2. Microphone
-    micH := micExpanded ? 432 : 54
-    GuiControl, ShortcutsScroll:Move, MicGroupBox,    % "y" . (curY - off) . " h" . micH
-    GuiControl, ShortcutsScroll:Move, MicHeaderTxt,   % "y" . (curY - 2 - off)
-    GuiControl, ShortcutsScroll:, MicHeaderTxt, % (micExpanded ? " ▾  " : " ▸  ") . L("Set_GroupMic") . " "
-    GuiControl, ShortcutsScroll:Move, MicMuteEnabled, % "y" . (curY + 21 - off)
-    ApplyAccordionGroupLayout(MicGroupItems, curY, off, micExpanded)
-    curY += micH + 8
+        GuiControl, ShortcutsScroll:Move, % card.hBorder, % "y" . yVis . " h" . cardH
+        GuiControl, ShortcutsScroll:Move, % card.hBody,   % "y" . (yVis + 1) . " h" . (cardH - 2)
 
-    ; 3. Always On Top
-    aotH := aotExpanded ? 82 : 28
-    GuiControl, ShortcutsScroll:Move, AOTGroupBox,  % "y" . (curY - off) . " h" . aotH
-    GuiControl, ShortcutsScroll:Move, AotHeaderTxt, % "y" . (curY - 2 - off)
-    GuiControl, ShortcutsScroll:, AotHeaderTxt, % (aotExpanded ? " ▾  " : " ▸  ") . L("Set_GroupAOT") . " "
-    ApplyAccordionGroupLayout(AotGroupItems, curY, off, aotExpanded)
-    curY += aotH + 8
+        DllCall("ShowWindow", "Ptr", card.hHeaderDiv, "Int", card.expanded ? 5 : 0)
+        if (card.expanded)
+            GuiControl, ShortcutsScroll:Move, % card.hHeaderDiv, % "y" . (yVis + card.headerH)
 
-    ; 4. Tray Actions
-    trayH := trayExpanded ? 64 : 28
-    GuiControl, ShortcutsScroll:Move, TrayGroupBox,  % "y" . (curY - off) . " h" . trayH
-    GuiControl, ShortcutsScroll:Move, TrayHeaderTxt, % "y" . (curY - 2 - off)
-    GuiControl, ShortcutsScroll:, TrayHeaderTxt, % (trayExpanded ? " ▾  " : " ▸  ") . L("Set_GroupTrayActions") . " "
-    ApplyAccordionGroupLayout(TrayGroupItems, curY, off, trayExpanded)
-    curY += trayH + 12
+        if (card.hOnLbl)
+            GuiControl, ShortcutsScroll:Move, % card.hOnLbl, % "y" . (yVis + 15)
+        if (card.hToggleChk)
+            GuiControl, ShortcutsScroll:Move, % card.hToggleChk, % "y" . (yVis + 16)
+        GuiControl, ShortcutsScroll:Move, % card.hTitle,   % "y" . (yVis + 7)
+        GuiControl, ShortcutsScroll:Move, % card.hSummary, % "y" . (yVis + 26)
+        if (IsObject(ChevronBitmaps) && ChevronBitmaps.HasKey("down")) {
+            GuiControl, ShortcutsScroll:Move, % card.hArrow, % "y" . (yVis + 16)
+            DllCall("SendMessage", "Ptr", card.hArrow, "UInt", 0x0172, "Ptr", 0, "Ptr", ChevronBitmaps[card.expanded ? "up" : "down"])
+        } else {
+            GuiControl, ShortcutsScroll:Move, % card.hArrow, % "y" . (yVis + 14)
+            GuiControl, ShortcutsScroll:,     % card.hArrow, % card.expanded ? "⌃" : "⌄"
+        }
+        GuiControl, ShortcutsScroll:Move, % card.hHit,     % "y" . (yVis + 1)
 
-    shortcutsContentH := curY
+        ApplyAccordionGroupLayout(card.items, curY, off, card.expanded)
+        curY += cardH + 10
+    }
+
+    shortcutsContentH := curY + 4
 
     DllCall("SendMessage", "Ptr", hShortcutsScroll, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
     DllCall("RedrawWindow", "Ptr", hShortcutsScroll, "Ptr", 0, "Ptr", 0, "UInt", 0x0185) ; RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN|RDW_UPDATENOW
@@ -1386,18 +1544,19 @@ ApplyAccordionGroupLayout(itemsArr, groupY, scrollOff, isExpanded) {
 }
 
 OnToggleSysExpand:
-    sysExpanded := !sysExpanded
-    LayoutShortcutsTab(false)
+    ToggleShortcutsCard("sys")
+return
+
+OnToggleMicExpand:
+    ToggleShortcutsCard("mic")
 return
 
 OnToggleAotExpand:
-    aotExpanded := !aotExpanded
-    LayoutShortcutsTab(false)
+    ToggleShortcutsCard("aot")
 return
 
 OnToggleTrayExpand:
-    trayExpanded := !trayExpanded
-    LayoutShortcutsTab(false)
+    ToggleShortcutsCard("tray")
 return
 
 UpdateShortcutsScrollInfo() {
@@ -1515,13 +1674,8 @@ OnShortcutsMouseWheel(wParam, lParam, msg, hwnd) {
 }
 
 ; ========================================================
-; CÀI ĐẶT MICROPHONE (MỞ RỘNG ACCORDION & BẮT PHÍM TẮT)
+; CÀI ĐẶT MICROPHONE (BẮT PHÍM TẮT & ĐỒNG BỘ TRẠNG THÁI)
 ; ========================================================
-OnToggleMicExpand:
-    micExpanded := !micExpanded
-    LayoutShortcutsTab(false)
-return
-
 OnToggleMicMuteEnabled:
     Gui, ShortcutsScroll:Submit, NoHide
     MicMuteEnabled := MicMuteEnabled ? 1 : 0
@@ -1534,6 +1688,7 @@ OnToggleMicMuteEnabled:
     if (IsFunc("SyncMicBadgeTimer"))
         SyncMicBadgeTimer()
     UpdateMicControlsState()
+    UpdateShortcutsCardSummaries()
 return
 
 OnChangeMicDelay:
@@ -1680,6 +1835,7 @@ SyncMicControlsFromState() {
     GuiControl, ShortcutsScroll:, MicOsdDurationInput, %MicMuteOsdDuration%
     GuiControl, ShortcutsScroll:, MicBeepEnabled, %MicMuteBeepEnabled%
     UpdateMicControlsState()
+    UpdateShortcutsCardSummaries()
 }
 
 OnChangeMicToggleHotkey:
@@ -1716,6 +1872,7 @@ SavePickedMicToggleHotkey(newHk) {
         RebuildTrayMenu()
     if (IsFunc("SaveMicMuteSettings"))
         SaveMicMuteSettings()
+    UpdateShortcutsCardSummaries()
 }
 
 SavePickedMicPttHotkey(newHk) {
@@ -1724,4 +1881,5 @@ SavePickedMicPttHotkey(newHk) {
     GuiControl, ShortcutsScroll:, MicPttHotkeyBtn, % FormatHotkeyText(MicPttHotkey)
     if (IsFunc("SaveMicMuteSettings"))
         SaveMicMuteSettings()
+    UpdateShortcutsCardSummaries()
 }
