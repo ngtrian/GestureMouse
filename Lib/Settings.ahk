@@ -1209,9 +1209,8 @@ BuildShortcutsScrollPanel(aboutIcon) {
     ; ACCORDION 1: PHÍM TẮT HỆ THỐNG (MẶC ĐỊNH MỞ)
     ; --------------------------------------------------------
     Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, GroupBox, x12 y54 w536 h202 vSysGroupBox, % L("Set_GroupSystemHotkeys")
-    Gui, ShortcutsScroll:Font, s8.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x510 y69 w28 h20 vSysExpandBtn gOnToggleSysExpand, ▴
+    Gui, ShortcutsScroll:Add, GroupBox, x12 y54 w536 h202 vSysGroupBox
+    Gui, ShortcutsScroll:Add, Text, x20 y52 w260 h18 vSysHeaderTxt gOnToggleSysExpand, % " ▾  " . L("Set_GroupSystemHotkeys") . " "
 
     AddShortcutRow(76,  "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",     "ActionOpenLockCenter", "", "", SysGroupItems, 54)
     AddShortcutRow(104, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V",   "ActionPastePlain", "", "", SysGroupItems, 54)
@@ -1231,15 +1230,14 @@ BuildShortcutsScrollPanel(aboutIcon) {
     ; --------------------------------------------------------
     micBaseY := 264
     Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, GroupBox, x12 y%micBaseY% w536 h54 vMicGroupBox, % L("Set_GroupMic")
+    Gui, ShortcutsScroll:Add, GroupBox, x12 y%micBaseY% w536 h54 vMicGroupBox
+    Gui, ShortcutsScroll:Add, Text, x20 y262 w280 h18 vMicHeaderTxt gOnToggleMicExpand, % " ▸  " . L("Set_GroupMic") . " "
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
     Gui, ShortcutsScroll:Add, Checkbox, x30 y285 w220 h22 vMicMuteEnabled gOnToggleMicMuteEnabled Checked%MicMuteEnabled%, % L("Mic_EnableChk")
     micHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Ctrl + Shift + A"
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x256 y282 w246 h26 vMicHotkeyBtn gOnChangeMicHotkey, %micHkDisplay%
-    Gui, ShortcutsScroll:Font, s8.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x510 y284 w28 h22 vMicExpandBtn gOnToggleMicExpand, ▾
+    Gui, ShortcutsScroll:Add, Button, x256 y282 w278 h26 vMicHotkeyBtn gOnChangeMicHotkey, %micHkDisplay%
 
     ; Phần mở rộng 1 cột của Card Microphone (tọa độ tương đối so với micBaseY = 264)
     Gui, ShortcutsScroll:Add, Text, x30 y316 w502 h1 0x10 +HwndhMicDiv Hidden
@@ -1314,20 +1312,19 @@ BuildShortcutsScrollPanel(aboutIcon) {
     ; --------------------------------------------------------
     aotBaseY := 326
     Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, GroupBox, x12 y%aotBaseY% w536 h82 vAOTGroupBox, % L("Set_GroupAOT")
-    Gui, ShortcutsScroll:Font, s8.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x510 y341 w28 h20 vAotExpandBtn gOnToggleAotExpand, ▴
+    Gui, ShortcutsScroll:Add, GroupBox, x12 y%aotBaseY% w536 h82 vAOTGroupBox
+    Gui, ShortcutsScroll:Add, Text, x20 y324 w280 h18 vAotHeaderTxt gOnToggleAotExpand, % " ▾  " . L("Set_GroupAOT") . " "
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x30 y347 w200 h22 vAOTEnabled +HwndhAotChk gOnToggleAOTEnabled Checked%AOTEnabled%, % L("AOT_EnableChk")
+    Gui, ShortcutsScroll:Add, Checkbox, x30 y347 w214 h22 vAOTEnabled +HwndhAotChk gOnToggleAOTEnabled Checked%AOTEnabled%, % L("AOT_EnableChk")
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x234 y350 w54 h18 vAOTHotkeyLbl +HwndhAotHkLbl, % L("AOT_HotkeyLbl")
+    Gui, ShortcutsScroll:Add, Text, x248 y350 w56 h18 vAOTHotkeyLbl +HwndhAotHkLbl, % L("AOT_HotkeyLbl")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
     aotHkDisplay := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
-    Gui, ShortcutsScroll:Add, Button, x290 y345 w112 h25 vAOTHotkeyBtn +HwndhAotHkBtn gOnChangeAOTHotkey, %aotHkDisplay%
-    Gui, ShortcutsScroll:Add, Button, x406 y345 w98 h25 vAOTUnpinAllBtn +HwndhAotUnpinBtn gOnUnpinAllAOT, % L("AOT_UnpinAllBtn")
+    Gui, ShortcutsScroll:Add, Button, x306 y345 w120 h25 vAOTHotkeyBtn +HwndhAotHkBtn gOnChangeAOTHotkey, %aotHkDisplay%
+    Gui, ShortcutsScroll:Add, Button, x432 y345 w104 h25 vAOTUnpinAllBtn +HwndhAotUnpinBtn gOnUnpinAllAOT, % L("AOT_UnpinAllBtn")
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x30 y375 w498 h22 vAOTBorderEnabled +HwndhAotBorderChk gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
+    Gui, ShortcutsScroll:Add, Checkbox, x30 y375 w500 h22 vAOTBorderEnabled +HwndhAotBorderChk gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
     AotGroupItems.Push({hwnd: hAotChk,       relY: 21})
     AotGroupItems.Push({hwnd: hAotHkLbl,     relY: 24})
     AotGroupItems.Push({hwnd: hAotHkBtn,     relY: 19})
@@ -1339,20 +1336,19 @@ BuildShortcutsScrollPanel(aboutIcon) {
     ; --------------------------------------------------------
     trayBaseY := 416
     Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, GroupBox, x12 y%trayBaseY% w536 h64 vTrayGroupBox, % L("Set_GroupTrayActions")
-    Gui, ShortcutsScroll:Font, s8.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x510 y431 w28 h20 vTrayExpandBtn gOnToggleTrayExpand, ▴
+    Gui, ShortcutsScroll:Add, GroupBox, x12 y%trayBaseY% w536 h64 vTrayGroupBox
+    Gui, ShortcutsScroll:Add, Text, x20 y414 w280 h18 vTrayHeaderTxt gOnToggleTrayExpand, % " ▾  " . L("Set_GroupTrayActions") . " "
 
     if (aboutIcon != "" && FileExist(aboutIcon)) {
         Gui, ShortcutsScroll:Add, Picture, x30 y434 w20 h20 Icon1 vTrayToggleIco +HwndhTrayIco, %aboutIcon%
         TrayGroupItems.Push({hwnd: hTrayIco, relY: 18})
     }
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y435 w244 vTrayToggleLbl +HwndhTrayLbl, % L("Set_TrayToggleLabel")
+    Gui, ShortcutsScroll:Add, Text, x58 y435 w256 vTrayToggleLbl +HwndhTrayLbl, % L("Set_TrayToggleLabel")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x306 y431 w198 h26 Center gActionToggleGestures vTrayToggleBtn +HwndhTrayBtn, % L("Set_TrayToggleBtn")
+    Gui, ShortcutsScroll:Add, Button, x320 y431 w210 h26 Center gActionToggleGestures vTrayToggleBtn +HwndhTrayBtn, % L("Set_TrayToggleBtn")
     Gui, ShortcutsScroll:Font, s8.5 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y458 w498 h16 vTrayDblClickLbl +HwndhTrayTip, % "• " . L("Set_TrayDblClickTip")
+    Gui, ShortcutsScroll:Add, Text, x30 y458 w500 h16 vTrayDblClickLbl +HwndhTrayTip, % "• " . L("Set_TrayDblClickTip")
     TrayGroupItems.Push({hwnd: hTrayLbl, relY: 19})
     TrayGroupItems.Push({hwnd: hTrayBtn, relY: 15})
     TrayGroupItems.Push({hwnd: hTrayTip, relY: 42})
@@ -1378,36 +1374,36 @@ LayoutShortcutsTab(resetScroll := false) {
     curY := 54
 
     ; 1. System Shortcuts
-    sysH := sysExpanded ? 202 : 40
+    sysH := sysExpanded ? 202 : 28
     GuiControl, ShortcutsScroll:Move, SysGroupBox, % "y" . (curY - off) . " h" . sysH
-    GuiControl, ShortcutsScroll:Move, SysExpandBtn, % "y" . (curY + 15 - off)
-    GuiControl, ShortcutsScroll:, SysExpandBtn, % sysExpanded ? "▴" : "▾"
+    GuiControl, ShortcutsScroll:Move, SysHeaderTxt, % "y" . (curY - 2 - off)
+    GuiControl, ShortcutsScroll:, SysHeaderTxt, % (sysExpanded ? " ▾  " : " ▸  ") . L("Set_GroupSystemHotkeys") . " "
     ApplyAccordionGroupLayout(SysGroupItems, curY, off, sysExpanded)
     curY += sysH + 8
 
     ; 2. Microphone
     micH := micExpanded ? 364 : 54
-    GuiControl, ShortcutsScroll:Move, MicGroupBox,     % "y" . (curY - off) . " h" . micH
-    GuiControl, ShortcutsScroll:Move, MicMuteEnabled,  % "y" . (curY + 21 - off)
-    GuiControl, ShortcutsScroll:Move, MicHotkeyBtn,    % "y" . (curY + 18 - off)
-    GuiControl, ShortcutsScroll:Move, MicExpandBtn,    % "y" . (curY + 20 - off)
-    GuiControl, ShortcutsScroll:, MicExpandBtn, % micExpanded ? "▴" : "▾"
+    GuiControl, ShortcutsScroll:Move, MicGroupBox,    % "y" . (curY - off) . " h" . micH
+    GuiControl, ShortcutsScroll:Move, MicHeaderTxt,   % "y" . (curY - 2 - off)
+    GuiControl, ShortcutsScroll:, MicHeaderTxt, % (micExpanded ? " ▾  " : " ▸  ") . L("Set_GroupMic") . " "
+    GuiControl, ShortcutsScroll:Move, MicMuteEnabled, % "y" . (curY + 21 - off)
+    GuiControl, ShortcutsScroll:Move, MicHotkeyBtn,   % "y" . (curY + 18 - off)
     ApplyAccordionGroupLayout(MicGroupItems, curY, off, micExpanded)
     curY += micH + 8
 
     ; 3. Always On Top
-    aotH := aotExpanded ? 82 : 40
-    GuiControl, ShortcutsScroll:Move, AOTGroupBox, % "y" . (curY - off) . " h" . aotH
-    GuiControl, ShortcutsScroll:Move, AotExpandBtn, % "y" . (curY + 15 - off)
-    GuiControl, ShortcutsScroll:, AotExpandBtn, % aotExpanded ? "▴" : "▾"
+    aotH := aotExpanded ? 82 : 28
+    GuiControl, ShortcutsScroll:Move, AOTGroupBox,  % "y" . (curY - off) . " h" . aotH
+    GuiControl, ShortcutsScroll:Move, AotHeaderTxt, % "y" . (curY - 2 - off)
+    GuiControl, ShortcutsScroll:, AotHeaderTxt, % (aotExpanded ? " ▾  " : " ▸  ") . L("Set_GroupAOT") . " "
     ApplyAccordionGroupLayout(AotGroupItems, curY, off, aotExpanded)
     curY += aotH + 8
 
     ; 4. Tray Actions
-    trayH := trayExpanded ? 64 : 40
-    GuiControl, ShortcutsScroll:Move, TrayGroupBox, % "y" . (curY - off) . " h" . trayH
-    GuiControl, ShortcutsScroll:Move, TrayExpandBtn, % "y" . (curY + 15 - off)
-    GuiControl, ShortcutsScroll:, TrayExpandBtn, % trayExpanded ? "▴" : "▾"
+    trayH := trayExpanded ? 64 : 28
+    GuiControl, ShortcutsScroll:Move, TrayGroupBox,  % "y" . (curY - off) . " h" . trayH
+    GuiControl, ShortcutsScroll:Move, TrayHeaderTxt, % "y" . (curY - 2 - off)
+    GuiControl, ShortcutsScroll:, TrayHeaderTxt, % (trayExpanded ? " ▾  " : " ▸  ") . L("Set_GroupTrayActions") . " "
     ApplyAccordionGroupLayout(TrayGroupItems, curY, off, trayExpanded)
     curY += trayH + 12
 
