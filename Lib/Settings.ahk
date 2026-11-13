@@ -1250,7 +1250,7 @@ BuildShortcutsScrollPanel(aboutIcon) {
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
     Gui, ShortcutsScroll:Add, Text, x38 y384 w212 h20 +HwndhMicPttLbl Hidden, % L("Mic_PttHkLbl")
-    pttHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicPttHotkey) : "Left Ctrl"
+    pttHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicPttHotkey) : "Right Ctrl"
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
     Gui, ShortcutsScroll:Add, Button, x256 y380 w278 h26 vMicPttHotkeyBtn +HwndhMicPttBtn gOnChangeMicPttHotkey Hidden, %pttHkDisplay%
     MicGroupItems.Push({hwnd: hMicPttLbl, relY: 384 - micBaseY})
@@ -1902,7 +1902,7 @@ OnMicHotkeyDlgMouseBtn(wParam, lParam, msg, hwnd) {
 
 OnResetMicHotkey:
     if (MicHotkeyTargetMode = "ptt")
-        MicHotkeyCaptured := "LCtrl"
+        MicHotkeyCaptured := "RCtrl"
     else
         MicHotkeyCaptured := "#!m"
     GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured

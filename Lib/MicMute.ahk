@@ -16,7 +16,7 @@ InitMicMute() {
 
     MicMuteEnabled       := 1
     MicMuteHotkey        := "#!m"      ; Phím tắt Toggle mặc định: Win + Alt + M
-    MicPttHotkey         := "LCtrl"    ; Phím tắt Push-to-Talk mặc định: Left Ctrl
+    MicPttHotkey         := "RCtrl"    ; Phím tắt Push-to-Talk mặc định: Right Ctrl
     MicPttInvert         := 1          ; 1: Đảo chiều thông minh (nếu mic đang bật -> giữ để tắt tạm thời)
     MicMuteAllDevices    := 1          ; 1: Áp dụng tất cả thiết bị thu đang hoạt động, 0: Thiết bị chỉ định hoặc mặc định
     MicTargetDeviceId    := ""         ; Rỗng = thiết bị mặc định (khi MicMuteAllDevices = 0)
@@ -191,7 +191,7 @@ ApplyMicMuteHotkey() {
 MicToggleKeyHandler:
     MicPttLastActionMode := ""
     if (MicMuteEnabled)
-        ToggleMicMute(true)
+        ToggleMicMute(false)
 return
 
 MicPttKeyDownHandler:
