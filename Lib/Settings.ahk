@@ -18,16 +18,13 @@ global SettingsPreloadOnly  := false
 global hSettingsSep         := 0
 global hSettingsTabNav      := 0
 global hShortcutsScroll     := 0
-global sysExpanded          := 1
-global micExpanded          := 0
-global aotExpanded          := 1
-global trayExpanded         := 1
-global shortcutsScrollPos   := 0
-global shortcutsContentH    := 470
-global SysGroupItems        := []
-global MicGroupItems        := []
-global AotGroupItems        := []
-global TrayGroupItems       := []
+global TabScrollNames       := ["Tab1Scroll", "Tab2Scroll", "Tab3Scroll", "ShortcutsScroll"]
+global TabScrollHwnds       := [0, 0, 0, 0]
+global TabScrollHwndToNum   := {}
+global TabCards             := [[], [], [], []]
+global TabScrollPos         := [0, 0, 0, 0]
+global TabContentH          := [0, 0, 0, 0]
+global TabStaticColors      := [{}, {}, {}, {}]
 
 ; Dựng sẵn GUI Cài đặt ở trạng thái ẩn sau khi khởi động app để lần mở đầu tiên tức thì
 PreloadSettingsGui:
@@ -59,9 +56,10 @@ Settings:
             targetTab := currentSettingsTab ? currentSettingsTab : 1
             SwitchSettingsTab(targetTab, !isVisible)
             Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
-            if (currentSettingsTab = 4 && hShortcutsScroll) {
-                SyncShortcutsScrollPanelSize()
-                UpdateShortcutsScrollInfo()
+            if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
+                SyncTabScrollPanelSize(currentSettingsTab)
+                UpdateTabScrollInfo(currentSettingsTab)
+                DllCall("RedrawWindow", "Ptr", TabScrollHwnds[currentSettingsTab], "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
             }
             WinActivate, ahk_id %hSettingsGui%
             return
@@ -135,171 +133,9 @@ Settings:
     Gui, Add, Text, x212 y12 w1 h428 0x11 +HwndhSettingsSep
 
     ; ========================================================
-    ; VÙNG NỘI DUNG BÊN PHẢI (TAB2 +Buttons ẨN HOÀN TOÀN VIỀN KHUNG)
+    ; VÙNG NỘI DUNG BÊN PHẢI (TAB 1-4 DÙNG CHILD GUI CARD CUỘN DỌC, TAB 5 DÙNG TAB2)
     ; ========================================================
     Gui, Add, Tab2, x216 y-35 w564 h439 +Buttons -Theme -Wrap +0x04000000 vSettingsTabNav +HwndhSettingsTabNav, TabGeneral|TabScrollGesture|TabLock|TabShortcuts|TabAbout
-
-    ; --------------------------------------------------------
-    ; TAB 1: CÀI ĐẶT CHUNG && HỆ THỐNG
-    ; --------------------------------------------------------
-    Gui, Tab, TabGeneral
-    AddSettingsTabHeader("Set_HeaderGeneral", "Set_SubGeneral")
-
-    ; Card 1: Cài đặt chung (Khởi động + Ngôn ngữ)
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h82, % L("Set_GroupGeneral")
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y80 w490 vAutoStart gSaveSettings Checked%AutoStart%, % L("Set_AutoStart")
-
-    Gui, Add, Text, x246 y110 w145, % L("Set_Language")
-    chkVI := (CurrentLang = "vi") ? 1 : 0
-    chkEN := (CurrentLang = "en") ? 1 : 0
-    AddSettingsIcon(398, 111, 16, 16, "image\flag_vn.ico", 312)
-    Gui, Add, Radio, x420 y110 w105 vLangVI gOnLangRadio Group Checked%chkVI%, Tiếng Việt
-    AddSettingsIcon(538, 111, 16, 16, "image\flag_en.ico", 313)
-    Gui, Add, Radio, x560 y110 w90 vLangEN gOnLangRadio Checked%chkEN%, English
-
-    ; Card 2: Đặc quyền hệ thống (UIPI & UIAccess)
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y150 w536 h122, % L("Set_Privilege")
-
-    if (hasPriv = "Admin") {
-        Gui, Font, s9.5 Bold c007A00, Segoe UI
-        Gui, Add, Text, x246 y173 w500, % "✔ " . L("Set_PrivAdmin")
-        Gui, Font, s8.5 Norm c555555, Segoe UI
-        Gui, Add, Text, x246 y194 w500, % L("Set_PrivSubAdmin")
-    } else if (hasPriv = "UIAccess") {
-        Gui, Font, s9.5 Bold c0078D7, Segoe UI
-        Gui, Add, Text, x246 y173 w500, % "✔ " . L("Set_PrivUIA")
-        Gui, Font, s8.5 Norm c555555, Segoe UI
-        Gui, Add, Text, x246 y194 w500, % L("Set_PrivSubUIA")
-    } else {
-        Gui, Font, s9.5 Bold cC0392B, Segoe UI
-        Gui, Add, Text, x246 y173 w335, % "⚠ " . L("Set_PrivStandard")
-        Gui, Font, s8.5 Norm c555555, Segoe UI
-        Gui, Add, Text, x246 y194 w335, % L("Set_PrivSubStandard")
-        Gui, Font, s9 Norm c222222, Segoe UI
-        Gui, Add, Button, x590 y173 w156 h30 gRunAsAdmin, % L("Set_RunAdminBtn")
-    }
-
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y218 w500 h46, % L("Set_PrivHelp")
-
-    ; Card 3: Lưu ý nhanh
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y282 w536 h104, % L("Set_GroupTips")
-    Gui, Font, s8.5 Norm c444444, Segoe UI
-    Gui, Add, Text, x246 y304 w500 h72, % L("Set_QuickTips")
-
-    ; --------------------------------------------------------
-    ; TAB 2: CUỘN && CỬ CHỈ CHUỘT
-    ; --------------------------------------------------------
-    Gui, Tab, TabScrollGesture
-    AddSettingsTabHeader("Set_HeaderScrollGesture", "Set_SubScrollGesture")
-
-    ; Card 1: Bật/tắt, Ứng dụng loại trừ & Phương pháp cuộn
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h102, % L("Set_GroupGesture")
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y80 w300 vGestureEnabled gOnToggleGestureCheckbox Checked%GestureScrollEnabled%, % L("Set_EnableGesture")
-    Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x556 y76 w190 h26 gOpenExcludedAppsGui, % L("Set_ExcludedAppsBtn")
-
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Radio, x246 y112 w500 vScrollStyle1 gSaveSettings Group Checked%chkS1%, % L("Set_ScrollStyle1")
-    Gui, Add, Radio, x246 y134 w500 vScrollStyle2 gSaveSettings Checked%chkS2%, % L("Set_ScrollStyle2")
-
-    ; Card 2: Thao tác chuột & Cử chỉ trình duyệt (Dùng icon .ico thực tế)
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y170 w536 h224, % L("Set_GroupMouseActions")
-
-    AddMouseActionRow(191, "image\scroll_manual.ico", 314, "Set_ManualScroll", "Set_ManualScrollBtn")
-    AddMouseActionRow(217, "image\scroll_auto.ico",   315, "Set_AutoScroll",   "Set_AutoScrollBtn")
-    AddMouseActionRow(243, "image\scroll_page.ico",   316, "Set_PgScroll",     "Set_PgScrollBtn")
-    AddMouseActionRow(269, "image\mouse_volume.ico",  317, "Set_MouseVolume",  "Set_MouseVolumeBtn")
-
-    Gui, Font, s9 Bold c004499, Segoe UI
-    Gui, Add, Text, x246 y299 w500, % L("Set_BrowserGesturesTitle")
-
-    AddBrowserGestureRow(323, GestureBadgeBitmaps["L"],  "Set_Back",     "Set_TipGestureL",  GestureBadgeBitmaps["R"],  "Set_Forward", "Set_TipGestureR")
-    AddBrowserGestureRow(347, GestureBadgeBitmaps["LU"], "Set_PrevTab",  "Set_TipGestureLU", GestureBadgeBitmaps["LD"], "Set_NextTab", "Set_TipGestureLD")
-    AddBrowserGestureRow(371, GestureBadgeBitmaps["RU"], "Set_CloseTab", "Set_TipGestureRU", GestureBadgeBitmaps["RD"], "Set_Refresh", "Set_TipGestureRD")
-
-    ; --------------------------------------------------------
-    ; TAB 3: KHÓA BÀN PHÍM && CHUỘT
-    ; --------------------------------------------------------
-    Gui, Tab, TabLock
-    AddSettingsTabHeader("Set_HeaderLock", "Set_SubLock", 364)
-    Gui, Font, s8.5 Bold c004499, Segoe UI
-    Gui, Add, Button, x598 y9 w166 h39 +0x2000 gActionOpenLockCenter +HwndhBtnLockCenterHeader, % L("Lock_CenterBtnTwoLine")
-    SettingsTooltips[hBtnLockCenterHeader] := L("Lock_CenterBtnTip")
-
-    ; Card 1: Thiết lập khóa thiết bị
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y58 w536 h88, % L("Lock_Card1Title")
-
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Picture, x246 y78 w22 h22 Icon28, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x272 y79 w120 h22 vlockKeyboardEnabled gSaveSettings Checked%lockKeyboardEnabled%, % L("Lock_TargetKB")
-    Gui, Add, Picture, x398 y78 w22 h22 Icon32, %A_WinDir%\System32\ddores.dll
-    Gui, Add, Checkbox, x424 y79 w98 h22 vmouseLockEnabled gSaveSettings Checked%mouseLockEnabled%, % L("Lock_TargetMouse")
-    Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x528 y77 w218 h26 gOpenWhitelistGui, % L("Lock_WhitelistBtn")
-
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    if (LockTabIcons["idle"])
-        Gui, Add, Picture, x246 y112 w20 h20, % "HICON:*" . LockTabIcons["idle"]
-    Gui, Add, Checkbox, x272 y113 w250 vautoLockIdleEnabled gOnToggleIdleCheck Checked%autoLockIdleEnabled%, % L("Lock_AutoIdleCheck")
-    Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, DropDownList, x528 y110 w218 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx%, %idleMinutesList%
-
-    ; Card 2: Hành vi khi đang khóa
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y156 w536 h82, % L("Lock_Card2BehaviorTitle")
-
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y176 w174 h22 vpreventScreenOff gSaveSettings Checked%preventScreenOff%, % L("Lock_PreventScreenOff")
-    Gui, Add, Checkbox, x426 y176 w142 h22 vpreventSleep gSaveSettings Checked%preventSleep%, % L("Lock_PreventSleep")
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x574 y179 w172 h18 +Right, % L("Lock_PowerScopeHint")
-
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    if (LockTabIcons["toast"])
-        Gui, Add, Picture, x246 y205 w20 h20, % "HICON:*" . LockTabIcons["toast"]
-    Gui, Add, Checkbox, x272 y205 w474 h22 valwaysShowLockToast gSaveSettings Checked%alwaysShowLockToast%, % L("Lock_AlwaysShowToast")
-
-    ; Card 3: Bảo mật & Mở khóa
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y248 w536 h150, % L("Lock_Card2Title")
-
-    chkCustomMode := windowsLogonOnly ? 0 : 1
-    chkWinOnlyMode := windowsLogonOnly ? 1 : 0
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    if (LockTabIcons["key"])
-        Gui, Add, Picture, x246 y269 w20 h20, % "HICON:*" . LockTabIcons["key"]
-    Gui, Add, Radio, x272 y269 w474 h22 vUnlockModeCustom gOnSelectUnlockModeCustom Checked%chkCustomMode%, % L("Lock_ModeCustom")
-
-    Gui, Add, Text, x288 y301 w94 vLockKeyPromptLbl, % L("Lock_KeyPrompt")
-    Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Edit, x384 y298 w184 h24 vUnlockCodeDisplay ReadOnly Password, %UNLOCK_KEYWORD%
-    Gui, Add, Button, x574 y297 w34 h26 +0x0040 gToggleRevealCode vBtnToggleReveal +HwndhBtnToggleReveal
-    if (LockTabIcons["eye_show"]) {
-        DllCall("SendMessage", "Ptr", hBtnToggleReveal, "UInt", 0x00F7, "Ptr", 1, "Ptr", LockTabIcons["eye_show"])
-        SettingsTooltips[hBtnToggleReveal] := L("Lock_RevealShowTip")
-    }
-    Gui, Add, Button, x614 y297 w132 h26 gOpenChangeCodeGui vBtnChangeCode, % L("Lock_ChangeCodeBtn")
-
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x288 y331 w458 h22 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit%, % L("Lock_ReqTimerEditCode")
-
-    if (LockTabIcons["winlock"])
-        Gui, Add, Picture, x246 y362 w20 h20, % "HICON:*" . LockTabIcons["winlock"]
-    Gui, Add, Radio, x272 y362 w474 h22 vUnlockModeWinOnly gOnSelectUnlockModeWinOnly Checked%chkWinOnlyMode%, % L("Lock_ModeWinOnly")
-
-    ; --------------------------------------------------------
-    ; TAB 4: PHÍM TẮT && TIỆN ÍCH (DỰNG TRONG CHILD GUI CÓ THANH CUỘN DỌC)
-    ; --------------------------------------------------------
-    Gui, Tab, TabShortcuts
 
     ; --------------------------------------------------------
     ; TAB 5: THÔNG TIN && BẢN QUYỀN (HERO BANNER HIỆN ĐẠI)
@@ -374,11 +210,25 @@ Settings:
     Gui, Font, s9.5 Norm c222222, Segoe UI
     Gui, Add, Button, x658 y411 w106 h30 vSettingsCloseBtn gSettingsCloseBtn Default, % L("Set_Close")
 
-    ; Dựng vùng cuộn dọc cho Tab Phím tắt & Tiện ích
+    ; Đăng ký tô màu Card trước khi dựng các tab
+    OnMessage(0x138, "WM_CTLCOLORSTATIC_SETTINGS")
+
+    ; Dựng các Tab 1-4 theo kiến trúc Card cuộn dọc thống nhất
+    TabScrollNames := ["Tab1Scroll", "Tab2Scroll", "Tab3Scroll", "ShortcutsScroll"]
+    TabScrollHwnds := [0, 0, 0, 0]
+    TabScrollHwndToNum := {}
+    TabCards := [[], [], [], []]
+    TabScrollPos := [0, 0, 0, 0]
+    TabContentH := [0, 0, 0, 0]
+    TabStaticColors := [{}, {}, {}, {}]
+
+    BuildTab1ScrollPanel(AutoStart, hasPriv)
+    BuildTab2ScrollPanel(chkS1, chkS2)
+    BuildTab3ScrollPanel(idleMinutesList, selIdleIdx, preventScreenOff, preventSleep)
     BuildShortcutsScrollPanel(aboutIcon)
 
     ; Khởi tạo trạng thái Enable/Disable của control
-    GuiControl, Settings:Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
+    GuiControl, Tab3Scroll:Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
     UpdateLockAuthControlsState(windowsLogonOnly)
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTHotkeyBtn
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTBorderEnabled
@@ -388,9 +238,8 @@ Settings:
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
     SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1, true)
 
-    ; Đăng ký theo dõi hover, tô màu Card, cuộn dọc & lăn chuột cho vùng Phím tắt
+    ; Đăng ký theo dõi hover, cuộn dọc & lăn chuột cho vùng nội dung
     OnMessage(0x200, "WM_MOUSEMOVE_SETTINGS")
-    OnMessage(0x138, "WM_CTLCOLORSTATIC_SETTINGS")
     OnMessage(0x115, "OnShortcutsVScroll")
     OnMessage(0x20A, "OnShortcutsMouseWheel")
 
@@ -403,9 +252,11 @@ Settings:
         Gui, Settings:Show, Hide w780 h455 Center, % "GestureMouse - " . L("Set_Title")
     else
         Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
-    if (currentSettingsTab = 4 && hShortcutsScroll) {
-        SyncShortcutsScrollPanelSize()
-        UpdateShortcutsScrollInfo()
+    if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
+        SyncTabScrollPanelSize(currentSettingsTab)
+        UpdateTabScrollInfo(currentSettingsTab)
+        if (!isPreload)
+            DllCall("RedrawWindow", "Ptr", TabScrollHwnds[currentSettingsTab], "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
     }
 return
 
@@ -439,41 +290,54 @@ AddSettingsTabHeader(titleKey, subKey, titleWidth := 536) {
     Gui, Settings:Add, Text, x228 y35 w%titleWidth%, % L(subKey)
 }
 
-AddSettingsIcon(x, y, w, h, relPath, resId := 0) {
+AddSettingsIcon(x, y, w, h, relPath, resId := 0, guiName := "Settings") {
+    hPic := 0
     if (A_IsCompiled && resId > 0) {
-        Gui, Settings:Add, Picture, x%x% y%y% w%w% h%h% Icon-%resId%, %A_ScriptFullPath%
+        Gui, %guiName%:Add, Picture, x%x% y%y% w%w% h%h% Icon-%resId% +HwndhPic, %A_ScriptFullPath%
     } else {
         fullPath := A_ScriptDir . "\" . relPath
         if (FileExist(fullPath))
-            Gui, Settings:Add, Picture, x%x% y%y% w%w% h%h%, %fullPath%
+            Gui, %guiName%:Add, Picture, x%x% y%y% w%w% h%h% +HwndhPic, %fullPath%
     }
+    return hPic
 }
 
-AddMouseActionRow(yPos, icoRelPath, resId, labelKey, descKey) {
+AddMouseActionRow(card, icoRelPath, resId, labelKey, descKey) {
+    yPos := card.curY
     icoY := yPos - 1
-    AddSettingsIcon(246, icoY, 20, 20, icoRelPath, resId)
-    Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x278 y%yPos% w154, % L(labelKey)
-    Gui, Settings:Font, s8.5 Norm c555555, Segoe UI
-    Gui, Settings:Add, Text, x436 y%yPos% w310, % "→ " . L(descKey)
+    hIco := AddSettingsIcon(28, icoY, 20, 20, icoRelPath, resId, "Tab2Scroll")
+    CardAddItem(card, hIco, icoY)
+    Gui, Tab2Scroll:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab2Scroll:Add, Text, x58 y%yPos% w154 +HwndhLbl, % L(labelKey)
+    Gui, Tab2Scroll:Font, s8.5 Norm c555555, Segoe UI
+    Gui, Tab2Scroll:Add, Text, x216 y%yPos% w306 +HwndhDesc, % "→ " . L(descKey)
+    CardAddItem(card, hLbl, yPos)
+    CardAddItem(card, hDesc, yPos)
+    card.curY += 26
 }
 
-AddBrowserGestureRow(yPos, hBmp1, labelKey1, tipKey1, hBmp2, labelKey2, tipKey2) {
+AddBrowserGestureRow(card, hBmp1, labelKey1, tipKey1, hBmp2, labelKey2, tipKey2) {
     global SettingsTooltips
+    yPos := card.curY
     badgeY := yPos - 2
-    Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x246 y%yPos% w160, % L(labelKey1)
+    Gui, Tab2Scroll:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab2Scroll:Add, Text, x28 y%yPos% w154 +HwndhLbl1, % L(labelKey1)
+    CardAddItem(card, hLbl1, yPos)
     if (hBmp1) {
-        Gui, Settings:Add, Picture, x412 y%badgeY% +0x100 HwndhBadge1, HBITMAP:*%hBmp1%
+        Gui, Tab2Scroll:Add, Picture, x186 y%badgeY% +0x100 +HwndhBadge1, HBITMAP:*%hBmp1%
         SettingsTooltips[hBadge1] := L(tipKey1)
+        CardAddItem(card, hBadge1, badgeY)
     }
 
-    Gui, Settings:Font, s9 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x500 y%yPos% w170, % L(labelKey2)
+    Gui, Tab2Scroll:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab2Scroll:Add, Text, x274 y%yPos% w166 +HwndhLbl2, % L(labelKey2)
+    CardAddItem(card, hLbl2, yPos)
     if (hBmp2) {
-        Gui, Settings:Add, Picture, x676 y%badgeY% +0x100 HwndhBadge2, HBITMAP:*%hBmp2%
+        Gui, Tab2Scroll:Add, Picture, x446 y%badgeY% +0x100 +HwndhBadge2, HBITMAP:*%hBmp2%
         SettingsTooltips[hBadge2] := L(tipKey2)
+        CardAddItem(card, hBadge2, badgeY)
     }
+    card.curY += 24
 }
 
 WM_MOUSEMOVE_SETTINGS(wParam, lParam, msg, hwnd) {
@@ -527,7 +391,7 @@ UpdateSettingsGuiControls() {
     ; Đọc trạng thái khởi động cùng Windows
     RegRead, AutoStart, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run, GestureMouse
     AutoStart := (AutoStart != "") ? 1 : 0
-    GuiControl, Settings:, AutoStart, %AutoStart%
+    GuiControl, Tab1Scroll:, AutoStart, %AutoStart%
 
     ; Đọc phương pháp cuộn chuột
     RegRead, ScrollStyle, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ScrollStyle
@@ -535,35 +399,35 @@ UpdateSettingsGuiControls() {
         ScrollStyle := 1
     chkS1 := (ScrollStyle = 1) ? 1 : 0
     chkS2 := (ScrollStyle = 2) ? 1 : 0
-    GuiControl, Settings:, ScrollStyle1, %chkS1%
-    GuiControl, Settings:, ScrollStyle2, %chkS2%
+    GuiControl, Tab2Scroll:, ScrollStyle1, %chkS1%
+    GuiControl, Tab2Scroll:, ScrollStyle2, %chkS2%
 
     ; Đọc trạng thái Cử chỉ chuột
-    GuiControl, Settings:, GestureEnabled, %GestureScrollEnabled%
+    GuiControl, Tab2Scroll:, GestureEnabled, %GestureScrollEnabled%
 
     ; Cập nhật cấu hình khóa
     if (IsFunc("LoadLockSettings"))
         LoadLockSettings()
 
-    GuiControl, Settings:, lockKeyboardEnabled, %lockKeyboardEnabled%
-    GuiControl, Settings:, mouseLockEnabled, %mouseLockEnabled%
+    GuiControl, Tab3Scroll:, lockKeyboardEnabled, %lockKeyboardEnabled%
+    GuiControl, Tab3Scroll:, mouseLockEnabled, %mouseLockEnabled%
 
-    GuiControl, Settings:, autoLockIdleEnabled, %autoLockIdleEnabled%
-    GuiControl, Settings:Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
+    GuiControl, Tab3Scroll:, autoLockIdleEnabled, %autoLockIdleEnabled%
+    GuiControl, Tab3Scroll:Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
     selIdleIdx := GetIdleMinuteIndex(autoLockIdleMinutes)
-    GuiControl, Settings:Choose, autoLockIdleMinutesChoice, %selIdleIdx%
+    GuiControl, Tab3Scroll:Choose, autoLockIdleMinutesChoice, %selIdleIdx%
 
-    GuiControl, Settings:, preventScreenOff, %preventScreenOff%
-    GuiControl, Settings:, preventSleep, %preventSleep%
-    GuiControl, Settings:, alwaysShowLockToast, %alwaysShowLockToast%
-    GuiControl, Settings:, requireCodeForTimerEdit, %requireCodeForTimerEdit%
-    GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
+    GuiControl, Tab3Scroll:, preventScreenOff, %preventScreenOff%
+    GuiControl, Tab3Scroll:, preventSleep, %preventSleep%
+    GuiControl, Tab3Scroll:, alwaysShowLockToast, %alwaysShowLockToast%
+    GuiControl, Tab3Scroll:, requireCodeForTimerEdit, %requireCodeForTimerEdit%
+    GuiControl, Tab3Scroll:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
     UpdateLockAuthControlsState(windowsLogonOnly)
 
     chkVI := (CurrentLang = "vi") ? 1 : 0
     chkEN := (CurrentLang = "en") ? 1 : 0
-    GuiControl, Settings:, LangVI, %chkVI%
-    GuiControl, Settings:, LangEN, %chkEN%
+    GuiControl, Tab1Scroll:, LangVI, %chkVI%
+    GuiControl, Tab1Scroll:, LangEN, %chkEN%
 
     GuiControl, ShortcutsScroll:, AOTEnabled, %AOTEnabled%
     GuiControl, ShortcutsScroll:, AOTBorderEnabled, %AOTBorderEnabled%
@@ -574,7 +438,7 @@ UpdateSettingsGuiControls() {
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTUnpinAllBtn
 
     SyncMicControlsFromState()
-    UpdateShortcutsCardSummaries()
+    UpdateAllCardSummaries()
 }
 
 ; ========================================================
@@ -597,22 +461,34 @@ OnNav5:
 return
 
 SwitchSettingsTab(tabNum, skipRedraw := false) {
-    global currentSettingsTab, hSettingsGui, hShortcutsScroll, SidebarNavBitmaps, SidebarIconHwnds
+    global currentSettingsTab, hSettingsGui, hSettingsTabNav, TabScrollHwnds, SidebarNavBitmaps, SidebarIconHwnds
     ClearSettingsTooltip()
+    if (tabNum < 1 || tabNum > 5)
+        tabNum := 1
     currentSettingsTab := tabNum
     if (!hSettingsGui)
         return
     Gui, Settings:Default
-    GuiControl, Settings:Choose, SettingsTabNav, %tabNum%
-    if (hShortcutsScroll) {
-        if (tabNum = 4) {
-            SyncShortcutsScrollPanelSize()
-            DllCall("SetWindowPos", "Ptr", hShortcutsScroll, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0053) ; HWND_TOP|SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW
-            UpdateShortcutsScrollInfo()
-            DllCall("RedrawWindow", "Ptr", hShortcutsScroll, "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
+
+    Loop, 4 {
+        hPanel := TabScrollHwnds[A_Index]
+        if (!hPanel)
+            continue
+        if (A_Index == tabNum) {
+            SyncTabScrollPanelSize(A_Index)
+            DllCall("SetWindowPos", "Ptr", hPanel, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0053) ; HWND_TOP|SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW
+            UpdateTabScrollInfo(A_Index)
+            DllCall("RedrawWindow", "Ptr", hPanel, "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
         } else {
-            DllCall("ShowWindow", "Ptr", hShortcutsScroll, "Int", 0) ; SW_HIDE
+            DllCall("ShowWindow", "Ptr", hPanel, "Int", 0) ; SW_HIDE
         }
+    }
+
+    if (tabNum = 5) {
+        GuiControl, Settings:Show, SettingsTabNav
+        GuiControl, Settings:Choose, SettingsTabNav, 5
+    } else {
+        GuiControl, Settings:Hide, SettingsTabNav
     }
     Loop 5 {
         isActive := (A_Index == tabNum)
@@ -644,12 +520,12 @@ SwitchSettingsTab(tabNum, skipRedraw := false) {
 ToggleRevealCode:
     isCodeRevealed := !isCodeRevealed
     if (isCodeRevealed) {
-        GuiControl, -Password, UnlockCodeDisplay
+        GuiControl, Tab3Scroll:-Password, UnlockCodeDisplay
     } else {
-        GuiControl, +Password, UnlockCodeDisplay
+        GuiControl, Tab3Scroll:+Password, UnlockCodeDisplay
     }
     UpdateRevealButtonVisual(isCodeRevealed)
-    GuiControl,, UnlockCodeDisplay, %UNLOCK_KEYWORD%
+    GuiControl, Tab3Scroll:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
 return
 
 UpdateRevealButtonVisual(revealed) {
@@ -709,7 +585,7 @@ SubmitChangeCode:
     RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, UnlockKeyword, %UNLOCK_KEYWORD%
 
     ; Cập nhật hiển thị trên GUI Settings
-    GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
+    GuiControl, Tab3Scroll:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
 
     MsgBox, 64, GestureMouse, % L("Lock_CodeSuccess"), 1.2
     Gosub, CloseChangeCodeGui
@@ -746,8 +622,8 @@ ActionFocusLockFromSettings:
 return
 
 OnToggleIdleCheck:
-    Gui, Settings:Submit, NoHide
-    GuiControl, Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
+    Gui, Tab3Scroll:Submit, NoHide
+    GuiControl, Tab3Scroll:Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
     Gosub, SaveSettings
 return
 
@@ -767,23 +643,23 @@ UpdateLockAuthControlsState(winOnly) {
     global isCodeRevealed, UNLOCK_KEYWORD
     winOnlyFlag := winOnly ? 1 : 0
     enableCustom := winOnlyFlag ? 0 : 1
-    GuiControl, Settings:, UnlockModeCustom, %enableCustom%
-    GuiControl, Settings:, UnlockModeWinOnly, %winOnlyFlag%
+    GuiControl, Tab3Scroll:, UnlockModeCustom, %enableCustom%
+    GuiControl, Tab3Scroll:, UnlockModeWinOnly, %winOnlyFlag%
     if (winOnlyFlag && isCodeRevealed) {
         isCodeRevealed := 0
-        GuiControl, Settings:+Password, UnlockCodeDisplay
+        GuiControl, Tab3Scroll:+Password, UnlockCodeDisplay
         UpdateRevealButtonVisual(false)
-        GuiControl, Settings:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
+        GuiControl, Tab3Scroll:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
     }
-    GuiControl, Settings:Enable%enableCustom%, LockKeyPromptLbl
-    GuiControl, Settings:Enable%enableCustom%, UnlockCodeDisplay
-    GuiControl, Settings:Enable%enableCustom%, BtnToggleReveal
-    GuiControl, Settings:Enable%enableCustom%, BtnChangeCode
-    GuiControl, Settings:Enable%enableCustom%, requireCodeForTimerEdit
+    GuiControl, Tab3Scroll:Enable%enableCustom%, LockKeyPromptLbl
+    GuiControl, Tab3Scroll:Enable%enableCustom%, UnlockCodeDisplay
+    GuiControl, Tab3Scroll:Enable%enableCustom%, BtnToggleReveal
+    GuiControl, Tab3Scroll:Enable%enableCustom%, BtnChangeCode
+    GuiControl, Tab3Scroll:Enable%enableCustom%, requireCodeForTimerEdit
 }
 
 OnLangRadio:
-    Gui, Settings:Submit, NoHide
+    Gui, Tab1Scroll:Submit, NoHide
     if (LangVI && CurrentLang != "vi") {
         SetLanguage("vi")
     } else if (LangEN && CurrentLang != "en") {
@@ -804,10 +680,11 @@ RefreshSettingsGui:
 return
 
 OnToggleGestureCheckbox:
-    Gui, Settings:Submit, NoHide
+    Gui, Tab2Scroll:Submit, NoHide
     if (GestureEnabled != GestureScrollEnabled) {
         ToggleGestureScroll()
     }
+    UpdateAllCardSummaries()
 return
 
 OpenAboutFromSettings:
@@ -820,7 +697,9 @@ return
 SaveSettings:
 Save:
     ; Lấy giá trị hiện tại từ GUI mà không đóng GUI
-    Gui, Settings:Submit, NoHide
+    Gui, Tab1Scroll:Submit, NoHide
+    Gui, Tab2Scroll:Submit, NoHide
+    Gui, Tab3Scroll:Submit, NoHide
 
     ; Lưu cài đặt khởi động cùng Windows
     if (AutoStart) {
@@ -878,6 +757,7 @@ Save:
     fnTip := "UpdateTrayTip"
     if (IsFunc(fnTip))
         %fnTip%()
+    UpdateAllCardSummaries()
 return
 
 ; ========================================================
@@ -1088,16 +968,16 @@ HandleSettingsGuiResize(guiW, guiH) {
     GuiControl, Settings:MoveDraw, SettingsAutoSaveHint, % "y" . hintY . " w" . hintW
     GuiControl, Settings:MoveDraw, SettingsCloseBtn, % "x" . btnX . " y" . btnY
 
-    if (hShortcutsScroll) {
-        SyncShortcutsScrollPanelSize()
-        if (currentSettingsTab = 4)
-            UpdateShortcutsScrollInfo()
+    if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
+        SyncTabScrollPanelSize(currentSettingsTab)
+        UpdateTabScrollInfo(currentSettingsTab)
     }
 }
 
-SyncShortcutsScrollPanelSize() {
-    global hSettingsGui, hShortcutsScroll
-    if (!hSettingsGui || !hShortcutsScroll)
+SyncTabScrollPanelSize(tabNum) {
+    global hSettingsGui, TabScrollHwnds
+    hPanel := TabScrollHwnds[tabNum]
+    if (!hSettingsGui || !hPanel)
         return
     VarSetCapacity(rc, 16, 0)
     DllCall("GetClientRect", "Ptr", hSettingsGui, "Ptr", &rc)
@@ -1112,31 +992,266 @@ SyncShortcutsScrollPanelSize() {
     bottomMarginPx := Round(48 * scale)
     panelW := (clientW > leftPx) ? (clientW - leftPx) : Round(564 * scale)
     panelH := (clientH > bottomMarginPx) ? (clientH - bottomMarginPx) : Round(407 * scale)
-    DllCall("SetWindowPos", "Ptr", hShortcutsScroll, "Ptr", 0, "Int", leftPx, "Int", 0, "Int", panelW, "Int", panelH, "UInt", 0x0010) ; HWND_TOP|SWP_NOACTIVATE
+    DllCall("SetWindowPos", "Ptr", hPanel, "Ptr", 0, "Int", leftPx, "Int", 0, "Int", panelW, "Int", panelH, "UInt", 0x0010) ; HWND_TOP|SWP_NOACTIVATE
 }
 
+; ========================================================
+; TAB 1: CÀI ĐẶT CHUNG && HỆ THỐNG (CARD CUỘN DỌC)
+; ========================================================
+BuildTab1ScrollPanel(initAutoStart, hasPriv) {
+    global
+    BeginCardTab(1, "Tab1Scroll", L("Set_HeaderGeneral"), L("Set_SubGeneral"))
+
+    ; Card 1: Cài đặt chung (Khởi động + Ngôn ngữ)
+    c1 := BeginCard(1, "Tab1Scroll", "t1_gen", L("Set_GroupGeneral"), 1, "OnToggleT1Gen")
+    y := c1.curY
+    Gui, Tab1Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab1Scroll:Add, Checkbox, x28 y%y% w490 vAutoStart gSaveSettings Checked%initAutoStart% +HwndhChkAuto, % L("Set_AutoStart")
+    CardAddItem(c1, hChkAuto, y)
+    c1.curY += 30
+
+    y := c1.curY
+    Gui, Tab1Scroll:Add, Text, x28 y%y% w142 +HwndhLangLbl, % L("Set_Language")
+    CardAddItem(c1, hLangLbl, y)
+    chkVI := (CurrentLang = "vi") ? 1 : 0
+    chkEN := (CurrentLang = "en") ? 1 : 0
+    hFlagVn := AddSettingsIcon(176, y + 1, 16, 16, "image\flag_vn.ico", 312, "Tab1Scroll")
+    Gui, Tab1Scroll:Add, Radio, x198 y%y% w105 vLangVI gOnLangRadio Group Checked%chkVI% +HwndhRadVi, Tiếng Việt
+    hFlagEn := AddSettingsIcon(316, y + 1, 16, 16, "image\flag_en.ico", 313, "Tab1Scroll")
+    Gui, Tab1Scroll:Add, Radio, x338 y%y% w90 vLangEN gOnLangRadio Checked%chkEN% +HwndhRadEn, English
+    CardAddItem(c1, hFlagVn, y + 1)
+    CardAddItem(c1, hRadVi, y)
+    CardAddItem(c1, hFlagEn, y + 1)
+    CardAddItem(c1, hRadEn, y)
+    c1.curY += 24
+    EndCard(c1, 8)
+
+    ; Card 2: Đặc quyền hệ thống (UIPI & UIAccess)
+    c2 := BeginCard(1, "Tab1Scroll", "t1_priv", L("Set_Privilege"), 1, "OnToggleT1Priv")
+    y := c2.curY
+    if (hasPriv = "Admin") {
+        Gui, Tab1Scroll:Font, s9.5 Bold c007A00, Segoe UI
+        Gui, Tab1Scroll:Add, Text, x28 y%y% w490 +HwndhPrivTitle, % "✔ " . L("Set_PrivAdmin")
+        Gui, Tab1Scroll:Font, s8.5 Norm c555555, Segoe UI
+        Gui, Tab1Scroll:Add, Text, % "x28 y" . (y + 21) . " w490 +HwndhPrivSub", % L("Set_PrivSubAdmin")
+        CardAddItem(c2, hPrivTitle, y)
+        CardAddItem(c2, hPrivSub, y + 21)
+    } else if (hasPriv = "UIAccess") {
+        Gui, Tab1Scroll:Font, s9.5 Bold c0078D7, Segoe UI
+        Gui, Tab1Scroll:Add, Text, x28 y%y% w490 +HwndhPrivTitle, % "✔ " . L("Set_PrivUIA")
+        Gui, Tab1Scroll:Font, s8.5 Norm c555555, Segoe UI
+        Gui, Tab1Scroll:Add, Text, % "x28 y" . (y + 21) . " w490 +HwndhPrivSub", % L("Set_PrivSubUIA")
+        CardAddItem(c2, hPrivTitle, y)
+        CardAddItem(c2, hPrivSub, y + 21)
+    } else {
+        Gui, Tab1Scroll:Font, s9.5 Bold cC0392B, Segoe UI
+        Gui, Tab1Scroll:Add, Text, x28 y%y% w328 +HwndhPrivTitle, % "⚠ " . L("Set_PrivStandard")
+        Gui, Tab1Scroll:Font, s8.5 Norm c555555, Segoe UI
+        Gui, Tab1Scroll:Add, Text, % "x28 y" . (y + 21) . " w328 +HwndhPrivSub", % L("Set_PrivSubStandard")
+        Gui, Tab1Scroll:Font, s9 Norm c222222, Segoe UI
+        Gui, Tab1Scroll:Add, Button, x364 y%y% w156 h30 gRunAsAdmin +HwndhPrivBtn, % L("Set_RunAdminBtn")
+        CardAddItem(c2, hPrivTitle, y)
+        CardAddItem(c2, hPrivSub, y + 21)
+        CardAddItem(c2, hPrivBtn, y)
+    }
+    c2.curY += 44
+    y := c2.curY
+    Gui, Tab1Scroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, Tab1Scroll:Add, Text, x28 y%y% w490 h46 +HwndhPrivHelp, % L("Set_PrivHelp")
+    CardAddItem(c2, hPrivHelp, y)
+    c2.curY += 46
+    EndCard(c2, 8)
+
+    ; Card 3: Lưu ý nhanh
+    c3 := BeginCard(1, "Tab1Scroll", "t1_tips", L("Set_GroupTips"), 1, "OnToggleT1Tips")
+    y := c3.curY
+    Gui, Tab1Scroll:Font, s8.5 Norm c444444, Segoe UI
+    Gui, Tab1Scroll:Add, Text, x28 y%y% w490 h72 +HwndhTipsTxt, % L("Set_QuickTips")
+    CardAddItem(c3, hTipsTxt, y)
+    c3.curY += 72
+    EndCard(c3, 8)
+
+    Gui, Tab1Scroll:Show, Hide x216 y0 w564 h407
+    LayoutCardTab(1, true)
+}
+
+; ========================================================
+; TAB 2: CUỘN && CỬ CHỈ CHUỘT (CARD CUỘN DỌC)
+; ========================================================
+BuildTab2ScrollPanel(chkS1, chkS2) {
+    global
+    BeginCardTab(2, "Tab2Scroll", L("Set_HeaderScrollGesture"), L("Set_SubScrollGesture"))
+
+    ; Card 1: Bật/tắt, Ứng dụng loại trừ & Phương pháp cuộn
+    c1 := BeginCard(2, "Tab2Scroll", "t2_gesture", L("Set_GroupGesture"), 1, "OnToggleT2Gesture")
+    y := c1.curY
+    Gui, Tab2Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab2Scroll:Add, Checkbox, % "x28 y" . (y + 2) . " w294 vGestureEnabled gOnToggleGestureCheckbox Checked" . GestureScrollEnabled . " +HwndhChkGest", % L("Set_EnableGesture")
+    Gui, Tab2Scroll:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab2Scroll:Add, Button, x330 y%y% w190 h26 gOpenExcludedAppsGui +HwndhBtnExcl, % L("Set_ExcludedAppsBtn")
+    CardAddItem(c1, hChkGest, y + 2)
+    CardAddItem(c1, hBtnExcl, y)
+    c1.curY += 34
+
+    y := c1.curY
+    Gui, Tab2Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab2Scroll:Add, Radio, x28 y%y% w492 vScrollStyle1 gSaveSettings Group Checked%chkS1% +HwndhRadS1, % L("Set_ScrollStyle1")
+    CardAddItem(c1, hRadS1, y)
+    c1.curY += 22
+    y := c1.curY
+    Gui, Tab2Scroll:Add, Radio, x28 y%y% w492 vScrollStyle2 gSaveSettings Checked%chkS2% +HwndhRadS2, % L("Set_ScrollStyle2")
+    CardAddItem(c1, hRadS2, y)
+    c1.curY += 24
+    EndCard(c1, 8)
+
+    ; Card 2: Thao tác chuột & Cử chỉ trình duyệt
+    c2 := BeginCard(2, "Tab2Scroll", "t2_actions", L("Set_GroupMouseActions"), 1, "OnToggleT2Actions")
+    AddMouseActionRow(c2, "image\scroll_manual.ico", 314, "Set_ManualScroll", "Set_ManualScrollBtn")
+    AddMouseActionRow(c2, "image\scroll_auto.ico",   315, "Set_AutoScroll",   "Set_AutoScrollBtn")
+    AddMouseActionRow(c2, "image\scroll_page.ico",   316, "Set_PgScroll",     "Set_PgScrollBtn")
+    AddMouseActionRow(c2, "image\mouse_volume.ico",  317, "Set_MouseVolume",  "Set_MouseVolumeBtn")
+
+    c2.curY += 4
+    y := c2.curY
+    Gui, Tab2Scroll:Font, s9 Bold c004499, Segoe UI
+    Gui, Tab2Scroll:Add, Text, x28 y%y% w492 +HwndhBrTitle, % L("Set_BrowserGesturesTitle")
+    CardAddItem(c2, hBrTitle, y)
+    c2.curY += 24
+
+    AddBrowserGestureRow(c2, GestureBadgeBitmaps["L"],  "Set_Back",     "Set_TipGestureL",  GestureBadgeBitmaps["R"],  "Set_Forward", "Set_TipGestureR")
+    AddBrowserGestureRow(c2, GestureBadgeBitmaps["LU"], "Set_PrevTab",  "Set_TipGestureLU", GestureBadgeBitmaps["LD"], "Set_NextTab", "Set_TipGestureLD")
+    AddBrowserGestureRow(c2, GestureBadgeBitmaps["RU"], "Set_CloseTab", "Set_TipGestureRU", GestureBadgeBitmaps["RD"], "Set_Refresh", "Set_TipGestureRD")
+    EndCard(c2, 8)
+
+    Gui, Tab2Scroll:Show, Hide x216 y0 w564 h407
+    LayoutCardTab(2, true)
+}
+
+; ========================================================
+; TAB 3: KHÓA BÀN PHÍM && CHUỘT (CARD CUỘN DỌC)
+; ========================================================
+BuildTab3ScrollPanel(idleMinutesList, selIdleIdx, initPreventScreenOff, initPreventSleep) {
+    global
+
+    BeginCardTab(3, "Tab3Scroll", L("Set_HeaderLock"), L("Set_SubLock"), 346)
+    Gui, Tab3Scroll:Font, s8.5 Bold c004499, Segoe UI
+    Gui, Tab3Scroll:Add, Button, x368 y9 w168 h39 +0x2000 gActionOpenLockCenter +HwndhBtnLockCenterHeader, % L("Lock_CenterBtnTwoLine")
+    SettingsTooltips[hBtnLockCenterHeader] := L("Lock_CenterBtnTip")
+
+    ; Card 1: Thiết lập khóa thiết bị
+    c1 := BeginCard(3, "Tab3Scroll", "t3_target", L("Lock_Card1Title"), 1, "OnToggleT3Target")
+    y := c1.curY
+    Gui, Tab3Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab3Scroll:Add, Picture, x28 y%y% w22 h22 Icon28 +HwndhPicKB, %A_WinDir%\System32\ddores.dll
+    Gui, Tab3Scroll:Add, Checkbox, % "x54 y" . (y + 1) . " w116 h22 vlockKeyboardEnabled gSaveSettings Checked" . lockKeyboardEnabled . " +HwndhChkKB", % L("Lock_TargetKB")
+    Gui, Tab3Scroll:Add, Picture, x176 y%y% w22 h22 Icon32 +HwndhPicMs, %A_WinDir%\System32\ddores.dll
+    Gui, Tab3Scroll:Add, Checkbox, % "x202 y" . (y + 1) . " w96 h22 vmouseLockEnabled gSaveSettings Checked" . mouseLockEnabled . " +HwndhChkMs", % L("Lock_TargetMouse")
+    Gui, Tab3Scroll:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab3Scroll:Add, Button, x304 y%y% w216 h26 gOpenWhitelistGui +HwndhBtnWL, % L("Lock_WhitelistBtn")
+    CardAddItem(c1, hPicKB, y)
+    CardAddItem(c1, hChkKB, y + 1)
+    CardAddItem(c1, hPicMs, y)
+    CardAddItem(c1, hChkMs, y + 1)
+    CardAddItem(c1, hBtnWL, y)
+    c1.curY += 32
+
+    y := c1.curY
+    Gui, Tab3Scroll:Font, s9.5 Norm c222222, Segoe UI
+    if (LockTabIcons["idle"]) {
+        Gui, Tab3Scroll:Add, Picture, % "x28 y" . (y + 2) . " w20 h20 +HwndhPicIdle", % "HICON:*" . LockTabIcons["idle"]
+        CardAddItem(c1, hPicIdle, y + 2)
+    }
+    Gui, Tab3Scroll:Add, Checkbox, % "x54 y" . (y + 3) . " w244 vautoLockIdleEnabled gOnToggleIdleCheck Checked" . autoLockIdleEnabled . " +HwndhChkIdle", % L("Lock_AutoIdleCheck")
+    Gui, Tab3Scroll:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab3Scroll:Add, DropDownList, x304 y%y% w216 vautoLockIdleMinutesChoice gSaveSettings Choose%selIdleIdx% +HwndhDdlIdle, %idleMinutesList%
+    CardAddItem(c1, hChkIdle, y + 3)
+    CardAddItem(c1, hDdlIdle, y)
+    c1.curY += 28
+    EndCard(c1, 8)
+
+    ; Card 2: Hành vi khi đang khóa
+    c2 := BeginCard(3, "Tab3Scroll", "t3_behavior", L("Lock_Card2BehaviorTitle"), 1, "OnToggleT3Behavior")
+    y := c2.curY
+    Gui, Tab3Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab3Scroll:Add, Checkbox, x28 y%y% w172 h22 vpreventScreenOff gSaveSettings Checked%initPreventScreenOff% +HwndhChkScrOff, % L("Lock_PreventScreenOff")
+    Gui, Tab3Scroll:Add, Checkbox, x204 y%y% w140 h22 vpreventSleep gSaveSettings Checked%initPreventSleep% +HwndhChkSleep, % L("Lock_PreventSleep")
+    Gui, Tab3Scroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, Tab3Scroll:Add, Text, % "x348 y" . (y + 3) . " w172 h18 +Right +HwndhPwrHint", % L("Lock_PowerScopeHint")
+    CardAddItem(c2, hChkScrOff, y)
+    CardAddItem(c2, hChkSleep,  y)
+    CardAddItem(c2, hPwrHint,   y + 3)
+    c2.curY += 28
+
+    y := c2.curY
+    Gui, Tab3Scroll:Font, s9.5 Norm c222222, Segoe UI
+    if (LockTabIcons["toast"]) {
+        Gui, Tab3Scroll:Add, Picture, x28 y%y% w20 h20 +HwndhPicToast, % "HICON:*" . LockTabIcons["toast"]
+        CardAddItem(c2, hPicToast, y)
+    }
+    Gui, Tab3Scroll:Add, Checkbox, x54 y%y% w466 h22 valwaysShowLockToast gSaveSettings Checked%alwaysShowLockToast% +HwndhChkToast, % L("Lock_AlwaysShowToast")
+    CardAddItem(c2, hChkToast, y)
+    c2.curY += 26
+    EndCard(c2, 8)
+
+    ; Card 3: Bảo mật & Mở khóa
+    c3 := BeginCard(3, "Tab3Scroll", "t3_auth", L("Lock_Card2Title"), 1, "OnToggleT3Auth")
+    chkCustomMode := windowsLogonOnly ? 0 : 1
+    chkWinOnlyMode := windowsLogonOnly ? 1 : 0
+    y := c3.curY
+    Gui, Tab3Scroll:Font, s9.5 Norm c222222, Segoe UI
+    if (LockTabIcons["key"]) {
+        Gui, Tab3Scroll:Add, Picture, x28 y%y% w20 h20 +HwndhPicKey, % "HICON:*" . LockTabIcons["key"]
+        CardAddItem(c3, hPicKey, y)
+    }
+    Gui, Tab3Scroll:Add, Radio, x54 y%y% w466 h22 vUnlockModeCustom gOnSelectUnlockModeCustom Checked%chkCustomMode% +HwndhRadCustom, % L("Lock_ModeCustom")
+    CardAddItem(c3, hRadCustom, y)
+    c3.curY += 29
+
+    y := c3.curY
+    Gui, Tab3Scroll:Add, Text, % "x44 y" . (y + 3) . " w92 vLockKeyPromptLbl +HwndhLblKeyPrm", % L("Lock_KeyPrompt")
+    Gui, Tab3Scroll:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab3Scroll:Add, Edit, x140 y%y% w182 h24 vUnlockCodeDisplay ReadOnly Password +HwndhEdtCode, %UNLOCK_KEYWORD%
+    Gui, Tab3Scroll:Add, Button, % "x328 y" . (y - 1) . " w34 h26 +0x0040 gToggleRevealCode vBtnToggleReveal +HwndhBtnToggleReveal"
+    if (LockTabIcons["eye_show"]) {
+        DllCall("SendMessage", "Ptr", hBtnToggleReveal, "UInt", 0x00F7, "Ptr", 1, "Ptr", LockTabIcons["eye_show"])
+        SettingsTooltips[hBtnToggleReveal] := L("Lock_RevealShowTip")
+    }
+    Gui, Tab3Scroll:Add, Button, % "x368 y" . (y - 1) . " w152 h26 gOpenChangeCodeGui vBtnChangeCode +HwndhBtnChgCode", % L("Lock_ChangeCodeBtn")
+    CardAddItem(c3, hLblKeyPrm,       y + 3)
+    CardAddItem(c3, hEdtCode,         y)
+    CardAddItem(c3, hBtnToggleReveal, y - 1)
+    CardAddItem(c3, hBtnChgCode,      y - 1)
+    c3.curY += 32
+
+    y := c3.curY
+    Gui, Tab3Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab3Scroll:Add, Checkbox, x44 y%y% w476 h22 vrequireCodeForTimerEdit gSaveSettings Checked%requireCodeForTimerEdit% +HwndhChkReqCode, % L("Lock_ReqTimerEditCode")
+    CardAddItem(c3, hChkReqCode, y)
+    c3.curY += 30
+
+    y := c3.curY
+    if (LockTabIcons["winlock"]) {
+        Gui, Tab3Scroll:Add, Picture, x28 y%y% w20 h20 +HwndhPicWin, % "HICON:*" . LockTabIcons["winlock"]
+        CardAddItem(c3, hPicWin, y)
+    }
+    Gui, Tab3Scroll:Add, Radio, x54 y%y% w466 h22 vUnlockModeWinOnly gOnSelectUnlockModeWinOnly Checked%chkWinOnlyMode% +HwndhRadWin, % L("Lock_ModeWinOnly")
+    CardAddItem(c3, hRadWin, y)
+    c3.curY += 26
+    EndCard(c3, 8)
+
+    Gui, Tab3Scroll:Show, Hide x216 y0 w564 h407
+    LayoutCardTab(3, true)
+}
+
+; ========================================================
+; TAB 4: PHÍM TẮT && TIỆN ÍCH (CARD CUỘN DỌC)
+; ========================================================
 BuildShortcutsScrollPanel(aboutIcon) {
     global
-    ShortcutsCards := []
-    ShortcutsStaticColors := {}
-    shortcutsScrollPos := 0
+    hShortcutsScroll := BeginCardTab(4, "ShortcutsScroll", L("Set_HeaderShortcuts"), L("Set_SubShortcuts"))
 
-    Gui, ShortcutsScroll:New, -Caption +0x40000000 +0x04000000 +0x200000 +Parent%hSettingsGui% +HwndhShortcutsScroll
-    Gui, ShortcutsScroll:Color, F3F3F3
-    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-
-    ; Tiêu đề Tab 4 (hiển thị trên nền #F3F3F3)
-    Gui, ShortcutsScroll:Font, s13 Bold c004499, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x12 y12 w536 +BackgroundTrans +HwndhShortcutsTitle, % L("Set_HeaderShortcuts")
-    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x12 y35 w536 +BackgroundTrans +HwndhShortcutsSub, % L("Set_SubShortcuts")
-    ShortcutsStaticColors[hShortcutsTitle] := "body"
-    ShortcutsStaticColors[hShortcutsSub]   := "body"
-
-    ; --------------------------------------------------------
     ; CARD 1: PHÍM TẮT HỆ THỐNG (MẶC ĐỊNH MỞ)
-    ; --------------------------------------------------------
-    sysCard := BeginShortcutsCard("sys", L("Set_GroupSystemHotkeys"), 1, "OnToggleSysExpand")
+    sysCard := BeginCard(4, "ShortcutsScroll", "sys", L("Set_GroupSystemHotkeys"), 1, "OnToggleSysExpand")
     CardAddShortcutRow(sysCard, "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",     "ActionOpenLockCenter")
     CardAddShortcutRow(sysCard, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V",   "ActionPastePlain")
     CardAddDescText(sysCard, L("Set_PastePlainDesc"), 58, 18, 4)
@@ -1144,13 +1259,10 @@ BuildShortcutsScrollPanel(aboutIcon) {
     CardAddShortcutRow(sysCard, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"), "ActionVolDown")
     CardAddShortcutRow(sysCard, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp")
     CardAddDescText(sysCard, L("Set_ShortcutsTip"), 28, 18, 2)
-    EndShortcutsCard(sysCard, 8)
+    EndCard(sysCard, 8)
 
-    ; --------------------------------------------------------
     ; CARD 2: MICROPHONE (MẶC ĐỊNH THU GỌN, CHECKBOX TRÊN HEADER)
-    ; --------------------------------------------------------
-    micCard := BeginShortcutsCard("mic", L("Set_GroupMic"), 0, "OnToggleMicExpand", "MicMuteEnabled", "OnToggleMicMuteEnabled", MicMuteEnabled)
-
+    micCard := BeginCard(4, "ShortcutsScroll", "mic", L("Set_GroupMic"), 0, "OnToggleMicExpand", "MicMuteEnabled", "OnToggleMicMuteEnabled", MicMuteEnabled)
     CardAddSubHeader(micCard, L("Mic_SecHotkeys"), 0)
 
     y := micCard.curY
@@ -1236,12 +1348,10 @@ BuildShortcutsScrollPanel(aboutIcon) {
     Gui, ShortcutsScroll:Add, Checkbox, x32 y%y% w496 h22 vMicBeepEnabled +HwndhMicBeepChk gOnSaveMicSettings Checked%MicMuteBeepEnabled% Hidden, % L("Mic_BeepChk")
     CardAddItem(micCard, hMicBeepChk, y)
     micCard.curY += 24
-    EndShortcutsCard(micCard, 8)
+    EndCard(micCard, 8)
 
-    ; --------------------------------------------------------
     ; CARD 3: GHIM CỬA SỔ LUÔN NỔI (MẶC ĐỊNH MỞ, CHECKBOX TRÊN HEADER)
-    ; --------------------------------------------------------
-    aotCard := BeginShortcutsCard("aot", L("Set_GroupAOT"), 1, "OnToggleAotExpand", "AOTEnabled", "OnToggleAOTEnabled", AOTEnabled)
+    aotCard := BeginCard(4, "ShortcutsScroll", "aot", L("Set_GroupAOT"), 1, "OnToggleAotExpand", "AOTEnabled", "OnToggleAOTEnabled", AOTEnabled)
     y := aotCard.curY
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
     Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w64 h18 vAOTHotkeyLbl +HwndhAotHkLbl", % L("AOT_HotkeyLbl")
@@ -1256,15 +1366,13 @@ BuildShortcutsScrollPanel(aboutIcon) {
 
     y := aotCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x28 y%y% w502 h22 vAOTBorderEnabled +HwndhAotBorderChk gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
+    Gui, ShortcutsScroll:Add, Checkbox, x28 y%y% w492 h22 vAOTBorderEnabled +HwndhAotBorderChk gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
     CardAddItem(aotCard, hAotBorderChk, y)
     aotCard.curY += 24
-    EndShortcutsCard(aotCard, 8)
+    EndCard(aotCard, 8)
 
-    ; --------------------------------------------------------
     ; CARD 4: THAO TÁC NHANH TRÊN KHAY HỆ THỐNG (MẶC ĐỊNH MỞ)
-    ; --------------------------------------------------------
-    trayCard := BeginShortcutsCard("tray", L("Set_GroupTrayActions"), 1, "OnToggleTrayExpand")
+    trayCard := BeginCard(4, "ShortcutsScroll", "tray", L("Set_GroupTrayActions"), 1, "OnToggleTrayExpand")
     y := trayCard.curY
     if (aboutIcon != "" && FileExist(aboutIcon)) {
         Gui, ShortcutsScroll:Add, Picture, % "x28 y" . (y + 3) . " w20 h20 Icon1 vTrayToggleIco +HwndhTrayIco", %aboutIcon%
@@ -1278,62 +1386,86 @@ BuildShortcutsScrollPanel(aboutIcon) {
     CardAddItem(trayCard, hTrayBtn, y)
     trayCard.curY += 30
     CardAddDescText(trayCard, "• " . L("Set_TrayDblClickTip"), 28, 18, 2)
-    EndShortcutsCard(trayCard, 8)
+    EndCard(trayCard, 8)
 
     Gui, ShortcutsScroll:Show, Hide x216 y0 w564 h407
     RefreshMicDeviceDropdown()
-    UpdateShortcutsCardSummaries()
-    LayoutShortcutsTab(true)
+    UpdateAllCardSummaries()
+    LayoutCardTab(4, true)
 }
 
 ; ========================================================
-; CARD BUILDER & ROW HELPERS CHO TAB 4 (SHORTCUTS & UTILS)
+; UNIFIED CARD BUILDER & SCROLL ENGINE (TAB 1 - 4)
 ; ========================================================
-BeginShortcutsCard(id, titleText, expanded, toggleGLabel, toggleVar := "", toggleChkGLabel := "", toggleChecked := 0) {
-    global ShortcutsCards, ShortcutsStaticColors, ShortcutsOnLabelMap, ChevronBitmaps
+BeginCardTab(tabNum, guiName, headerTitle, headerSub, headerTitleW := 524) {
+    global hSettingsGui, TabScrollHwnds, TabScrollHwndToNum, TabCards, TabScrollPos, TabContentH, TabStaticColors
+    TabCards[tabNum] := []
+    TabScrollPos[tabNum] := 0
+    TabContentH[tabNum] := 407
+    TabStaticColors[tabNum] := {}
+
+    Gui, %guiName%:New, -Caption +0x40000000 +0x04000000 +0x200000 +Parent%hSettingsGui% +HwndhPanel
+    Gui, %guiName%:Color, F3F3F3
+    Gui, %guiName%:Font, s9.5 Norm c222222, Segoe UI
+
+    Gui, %guiName%:Font, s13 Bold c004499, Segoe UI
+    Gui, %guiName%:Add, Text, x12 y12 w%headerTitleW% +BackgroundTrans +HwndhTabTitle, %headerTitle%
+    Gui, %guiName%:Font, s8.5 Norm c666666, Segoe UI
+    Gui, %guiName%:Add, Text, x12 y35 w%headerTitleW% +BackgroundTrans +HwndhTabSub, %headerSub%
+
+    TabScrollHwnds[tabNum] := hPanel
+    TabScrollHwndToNum[hPanel] := tabNum
+    TabStaticColors[tabNum][hTabTitle] := "body"
+    TabStaticColors[tabNum][hTabSub]   := "body"
+    return hPanel
+}
+
+BeginCard(tabNum, guiName, id, titleText, expanded, toggleGLabel, toggleVar := "", toggleChkGLabel := "", toggleChecked := 0) {
+    global TabCards, TabStaticColors, ShortcutsOnLabelMap, ChevronBitmaps
     if (!IsObject(ShortcutsOnLabelMap))
         ShortcutsOnLabelMap := {}
     headerH := 48
     collapsedH := 50
 
-    ; Khung nền Card dùng Static + WM_CTLCOLORSTATIC: viền phẳng đúng 1px #E5E5E5 cả 4 cạnh, nền #FBFBFB
-    ; Chiều rộng w524 (12+524=536) chừa khoảng thoáng với thanh cuộn dọc (w564 - 17px)
-    Gui, ShortcutsScroll:Add, Text, x12 y0 w524 h50 Disabled +HwndhBorder
-    Gui, ShortcutsScroll:Add, Text, x13 y1 w522 h48 Disabled +HwndhBody
-    Gui, ShortcutsScroll:Add, Text, x22 y48 w504 h1 Disabled +HwndhHeaderDiv
-    ShortcutsStaticColors[hBorder]    := "border"
-    ShortcutsStaticColors[hBody]      := "card"
-    ShortcutsStaticColors[hHeaderDiv] := "border"
+    ; Khung nền Card dùng Static + WM_CTLCOLORSTATIC: viền phẳng 1px #E5E5E5 cả 4 cạnh, nền #FBFBFB
+    Gui, %guiName%:Add, Text, x12 y0 w524 h50 Disabled +HwndhBorder
+    Gui, %guiName%:Add, Text, x13 y1 w522 h48 Disabled +HwndhBody
+    Gui, %guiName%:Add, Text, x22 y48 w504 h1 Disabled +HwndhHeaderDiv
+    TabStaticColors[tabNum][hBorder]    := "border"
+    TabStaticColors[tabNum][hBody]      := "card"
+    TabStaticColors[tabNum][hHeaderDiv] := "border"
 
-    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x22 y7 w415 h18 +0x200 +HwndhTitle, %titleText%
+    Gui, %guiName%:Font, s9.5 Bold c222222, Segoe UI
+    Gui, %guiName%:Add, Text, x22 y7 w415 h18 +0x200 +HwndhTitle, %titleText%
 
-    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x22 y26 w415 h16 +0x200 +HwndhSummary
+    Gui, %guiName%:Font, s8.5 Norm c666666, Segoe UI
+    Gui, %guiName%:Add, Text, x22 y26 w415 h16 +0x200 +HwndhSummary
 
     hToggleChk := 0
     hOnLbl := 0
     hitW := 490
     if (toggleVar != "") {
-        Gui, ShortcutsScroll:Font, s9 Norm c444444, Segoe UI
-        Gui, ShortcutsScroll:Add, Text, x448 y15 w28 h18 +Right +0x200 gOnClickCardOnLabel +HwndhOnLbl, On
-        Gui, ShortcutsScroll:Add, Checkbox, x480 y16 w16 h16 v%toggleVar% g%toggleChkGLabel% Checked%toggleChecked% +HwndhToggleChk
-        ShortcutsOnLabelMap[hOnLbl] := {var: toggleVar, gLabel: toggleChkGLabel}
+        Gui, %guiName%:Font, s9 Norm c444444, Segoe UI
+        Gui, %guiName%:Add, Text, x448 y15 w28 h18 +Right +0x200 gOnClickCardOnLabel +HwndhOnLbl, On
+        Gui, %guiName%:Add, Checkbox, x480 y16 w16 h16 v%toggleVar% g%toggleChkGLabel% Checked%toggleChecked% +HwndhToggleChk
+        ShortcutsOnLabelMap[hOnLbl] := {gui: guiName, var: toggleVar, gLabel: toggleChkGLabel}
         hitW := 432
     }
 
     hArrowBmp := IsObject(ChevronBitmaps) ? ChevronBitmaps[expanded ? "up" : "down"] : 0
     if (hArrowBmp) {
-        Gui, ShortcutsScroll:Add, Picture, x508 y16 +0x100 g%toggleGLabel% +HwndhArrow, HBITMAP:*%hArrowBmp%
+        Gui, %guiName%:Add, Picture, x508 y16 +0x100 g%toggleGLabel% +HwndhArrow, HBITMAP:*%hArrowBmp%
     } else {
-        Gui, ShortcutsScroll:Font, s9.5 Bold c555555, Segoe UI
-        Gui, ShortcutsScroll:Add, Text, x504 y14 w24 h20 +Center +0x200 g%toggleGLabel% +HwndhArrow, % expanded ? "⌃" : "⌄"
+        Gui, %guiName%:Font, s9.5 Bold c555555, Segoe UI
+        Gui, %guiName%:Add, Text, x504 y14 w24 h20 +Center +0x200 g%toggleGLabel% +HwndhArrow, % expanded ? "⌃" : "⌄"
     }
 
-    Gui, ShortcutsScroll:Add, Text, x12 y1 w%hitW% h47 +BackgroundTrans g%toggleGLabel% +HwndhHit
-    ShortcutsStaticColors[hHit] := "trans"
+    Gui, %guiName%:Add, Text, x12 y1 w%hitW% h47 +BackgroundTrans g%toggleGLabel% +HwndhHit
+    TabStaticColors[tabNum][hHit] := "trans"
 
     card := {id: id
+        , tabNum: tabNum
+        , guiName: guiName
         , expanded: expanded ? 1 : 0
         , headerH: headerH
         , collapsedH: collapsedH
@@ -1349,21 +1481,22 @@ BeginShortcutsCard(id, titleText, expanded, toggleGLabel, toggleVar := "", toggl
         , hArrow: hArrow
         , hHit: hHit
         , items: []}
-    ShortcutsCards.Push(card)
+    TabCards[tabNum].Push(card)
     return card
 }
 
 WM_CTLCOLORSTATIC_SETTINGS(wParam, lParam, msg, hwnd) {
-    global hShortcutsScroll, ShortcutsStaticColors
+    global TabScrollHwndToNum, TabStaticColors
     static hBrBorder := 0, hBrCard := 0, hBrBody := 0
-    if (!hShortcutsScroll || hwnd != hShortcutsScroll)
+    if (!IsObject(TabScrollHwndToNum) || !TabScrollHwndToNum.HasKey(hwnd))
         return ""
+    tabNum := TabScrollHwndToNum[hwnd]
     if (!hBrBorder) {
         hBrBorder := DllCall("CreateSolidBrush", "UInt", 0xE5E5E5, "Ptr")
         hBrCard   := DllCall("CreateSolidBrush", "UInt", 0xFBFBFB, "Ptr")
         hBrBody   := DllCall("CreateSolidBrush", "UInt", 0xF3F3F3, "Ptr")
     }
-    role := IsObject(ShortcutsStaticColors) ? ShortcutsStaticColors[lParam] : ""
+    role := IsObject(TabStaticColors[tabNum]) ? TabStaticColors[tabNum][lParam] : ""
     if (role = "border")
         return hBrBorder
     if (role = "trans") {
@@ -1384,53 +1517,53 @@ CardAddItem(card, hwnd, relY) {
 }
 
 CardAddSubHeader(card, titleText, topGap := 2) {
+    guiName := card.guiName
     card.curY += topGap
     y := card.curY
-    Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x28 y%y% w504 h18 +HwndhSub Hidden, %titleText%
-    if (!card.expanded)
-        DllCall("ShowWindow", "Ptr", hSub, "Int", 0)
-    else
-        DllCall("ShowWindow", "Ptr", hSub, "Int", 5)
+    Gui, %guiName%:Font, s9 Bold c005FB8, Segoe UI
+    Gui, %guiName%:Add, Text, x28 y%y% w492 h18 +HwndhSub Hidden, %titleText%
+    DllCall("ShowWindow", "Ptr", hSub, "Int", card.expanded ? 5 : 0)
     CardAddItem(card, hSub, y)
     card.curY += 22
 }
 
 CardAddDescText(card, textStr, indentX := 28, height := 18, bottomGap := 4) {
+    guiName := card.guiName
     y := card.curY
-    w := 532 - indentX
-    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x%indentX% y%y% w%w% h%height% +HwndhDesc, %textStr%
+    w := 520 - indentX
+    Gui, %guiName%:Font, s8.5 Norm c666666, Segoe UI
+    Gui, %guiName%:Add, Text, x%indentX% y%y% w%w% h%height% +HwndhDesc, %textStr%
     CardAddItem(card, hDesc, y)
     card.curY += height + bottomGap
 }
 
 CardAddShortcutRow(card, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text := "", gLabel2 := "") {
+    guiName := card.guiName
     y := card.curY
     icoY := y + 3
     lblY := y + 4
     if (iconFile != "" && FileExist(iconFile)) {
-        Gui, ShortcutsScroll:Add, Picture, x28 y%icoY% w20 h20 %iconOpt% +HwndhPic, %iconFile%
+        Gui, %guiName%:Add, Picture, x28 y%icoY% w20 h20 %iconOpt% +HwndhPic, %iconFile%
         CardAddItem(card, hPic, icoY)
     }
-    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x56 y%lblY% w252 +HwndhLbl, % L(labelKey)
+    Gui, %guiName%:Font, s9.5 Norm c222222, Segoe UI
+    Gui, %guiName%:Add, Text, x56 y%lblY% w252 +HwndhLbl, % L(labelKey)
     CardAddItem(card, hLbl, lblY)
 
-    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    Gui, %guiName%:Font, s9 Norm c222222, Segoe UI
     if (btn2Text = "") {
-        Gui, ShortcutsScroll:Add, Button, x314 y%y% w206 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
+        Gui, %guiName%:Add, Button, x314 y%y% w206 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
         CardAddItem(card, hBtn1, y)
     } else {
-        Gui, ShortcutsScroll:Add, Button, x314 y%y% w100 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
-        Gui, ShortcutsScroll:Add, Button, x420 y%y% w100 h26 Center +HwndhBtn2 g%gLabel2%, %btn2Text%
+        Gui, %guiName%:Add, Button, x314 y%y% w100 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
+        Gui, %guiName%:Add, Button, x420 y%y% w100 h26 Center +HwndhBtn2 g%gLabel2%, %btn2Text%
         CardAddItem(card, hBtn1, y)
         CardAddItem(card, hBtn2, y)
     }
     card.curY += 29
 }
 
-EndShortcutsCard(card, bottomPad := 8) {
+EndCard(card, bottomPad := 8) {
     card.expandedH := card.curY + bottomPad
 }
 
@@ -1438,147 +1571,227 @@ OnClickCardOnLabel:
     MouseGetPos,,,, hClickedOnLbl, 2
     if (IsObject(ShortcutsOnLabelMap) && ShortcutsOnLabelMap.HasKey(hClickedOnLbl)) {
         info := ShortcutsOnLabelMap[hClickedOnLbl]
-        GuiControlGet, curChkVal, ShortcutsScroll:, % info.var
+        guiName := info.gui
+        GuiControlGet, curChkVal, %guiName%:, % info.var
         newChkVal := curChkVal ? 0 : 1
-        GuiControl, ShortcutsScroll:, % info.var, %newChkVal%
+        GuiControl, %guiName%:, % info.var, %newChkVal%
         Gosub, % info.gLabel
     }
 return
 
-UpdateShortcutsCardSummaries() {
-    global ShortcutsCards, CurrentLang, MicMuteHotkey, AOTHotkey
-    if (!IsObject(ShortcutsCards))
+UpdateAllCardSummaries() {
+    global TabCards, TabScrollNames, CurrentLang, MicMuteHotkey, AOTHotkey
+    global AutoStart, GestureScrollEnabled, ScrollStyle
+    global lockKeyboardEnabled, mouseLockEnabled, autoLockIdleEnabled, autoLockIdleMinutes, windowsLogonOnly
+
+    if (!IsObject(TabCards))
         return
 
-    hkPrefix := (CurrentLang = "en") ? "Hotkey: " : "Phím tắt: "
-    noHkTxt  := (CurrentLang = "en") ? "No hotkey assigned" : "Chưa gán phím tắt"
+    isEn := (CurrentLang = "en")
+    hkPrefix := isEn ? "Hotkey: " : "Phím tắt: "
+    noHkTxt  := isEn ? "No hotkey assigned" : "Chưa gán phím tắt"
 
-    for _, card in ShortcutsCards {
-        summary := ""
-        if (card.id = "sys") {
-            summary := (CurrentLang = "en") ? "5 system shortcuts" : "5 phím tắt hệ thống"
-        } else if (card.id = "mic") {
-            hk := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Win + Alt + M"
-            summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
-        } else if (card.id = "aot") {
-            hk := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
-            summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
-        } else if (card.id = "tray") {
-            summary := (CurrentLang = "en") ? "Double-click tray icon to toggle" : "Click đúp biểu tượng khay để bật/tắt"
+    Loop, 4 {
+        tNum := A_Index
+        guiName := TabScrollNames[tNum]
+        cards := TabCards[tNum]
+        if (!IsObject(cards))
+            continue
+
+        for _, card in cards {
+            summary := ""
+            if (card.id = "t1_gen") {
+                langTxt := isEn ? "English" : "Tiếng Việt"
+                bootTxt := AutoStart ? (isEn ? "Auto-start: On" : "Khởi động cùng Windows: Bật") : (isEn ? "Auto-start: Off" : "Khởi động cùng Windows: Tắt")
+                summary := bootTxt . " • " . langTxt
+            } else if (card.id = "t1_priv") {
+                hasPriv := A_IsAdmin ? "Admin" : (IsFunc("HasUIAccessOrAdmin") && HasUIAccessOrAdmin() ? "UIAccess" : "Standard")
+                summary := isEn ? ("Privilege: " . hasPriv) : ("Quyền hiện tại: " . hasPriv)
+            } else if (card.id = "t1_tips") {
+                summary := isEn ? "Quick tips for gestures && lock" : "Mẹo dùng cử chỉ && khóa nhanh"
+            } else if (card.id = "t2_gesture") {
+                if (GestureScrollEnabled) {
+                    stTxt := (ScrollStyle = 1) ? (isEn ? "Drag content" : "Kéo nội dung") : (isEn ? "Drag scrollbar" : "Kéo thanh cuộn")
+                    summary := (isEn ? "Enabled • " : "Đang bật • ") . stTxt
+                } else {
+                    summary := isEn ? "Disabled" : "Đang tắt"
+                }
+            } else if (card.id = "t2_actions") {
+                summary := isEn ? "4 mouse actions • 6 browser gestures" : "4 thao tác chuột • 6 cử chỉ trình duyệt"
+            } else if (card.id = "t3_target") {
+                tParts := ""
+                if (lockKeyboardEnabled && mouseLockEnabled)
+                    tParts := isEn ? "Keyboard & Mouse" : "Bàn phím && Chuột"
+                else if (lockKeyboardEnabled)
+                    tParts := isEn ? "Keyboard only" : "Chỉ bàn phím"
+                else if (mouseLockEnabled)
+                    tParts := isEn ? "Mouse only" : "Chỉ chuột"
+                else
+                    tParts := isEn ? "No device selected" : "Chưa chọn thiết bị"
+                idleTxt := autoLockIdleEnabled ? (isEn ? (" • Idle: " . autoLockIdleMinutes . "m") : (" • Tự khóa: " . autoLockIdleMinutes . " phút")) : ""
+                summary := tParts . idleTxt
+            } else if (card.id = "t3_behavior") {
+                summary := isEn ? "Power policy & lock notifications" : "Nguồn điện && Thông báo khi khóa"
+            } else if (card.id = "t3_auth") {
+                summary := windowsLogonOnly ? (isEn ? "Windows Logon only" : "Chỉ mở khóa Windows") : (isEn ? "Custom unlock code" : "Mã mở khóa tùy chỉnh")
+            } else if (card.id = "sys") {
+                summary := isEn ? "5 system shortcuts" : "5 phím tắt hệ thống"
+            } else if (card.id = "mic") {
+                hk := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Win + Alt + M"
+                summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
+            } else if (card.id = "aot") {
+                hk := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
+                summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
+            } else if (card.id = "tray") {
+                summary := isEn ? "Double-click tray icon to toggle" : "Click đúp biểu tượng khay để bật/tắt"
+            }
+            GuiControl, %guiName%:, % card.hSummary, %summary%
         }
-        GuiControl, ShortcutsScroll:, % card.hSummary, %summary%
     }
 }
 
-ToggleShortcutsCard(cardId) {
-    global ShortcutsCards
-    if (!IsObject(ShortcutsCards))
+UpdateShortcutsCardSummaries() {
+    UpdateAllCardSummaries()
+}
+
+ToggleCard(tabNum, cardId) {
+    global TabCards
+    cards := TabCards[tabNum]
+    if (!IsObject(cards))
         return
-    for _, card in ShortcutsCards {
+    for _, card in cards {
         if (card.id = cardId) {
             card.expanded := !card.expanded
             break
         }
     }
-    LayoutShortcutsTab(false)
+    LayoutCardTab(tabNum, false)
 }
 
-LayoutShortcutsTab(resetScroll := false) {
-    global hShortcutsScroll, ShortcutsCards, shortcutsScrollPos, shortcutsContentH, ChevronBitmaps
-    if (!hShortcutsScroll || !IsObject(ShortcutsCards))
+LayoutCardTab(tabNum, resetScroll := false) {
+    global TabScrollHwnds, TabScrollNames, TabCards, TabScrollPos, TabContentH, ChevronBitmaps
+    hPanel := TabScrollHwnds[tabNum]
+    guiName := TabScrollNames[tabNum]
+    cards := TabCards[tabNum]
+    if (!hPanel || !IsObject(cards))
         return
 
-    if (resetScroll && shortcutsScrollPos != 0)
-        ScrollShortcutsTo(0)
+    if (resetScroll && TabScrollPos[tabNum] != 0)
+        ScrollTabTo(tabNum, 0)
 
-    DllCall("SendMessage", "Ptr", hShortcutsScroll, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
+    DllCall("SendMessage", "Ptr", hPanel, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
 
-    off := shortcutsScrollPos
-    curY := 56
+    off := TabScrollPos[tabNum]
+    curY := 58
 
-    for _, card in ShortcutsCards {
+    for _, card in cards {
         cardH := card.expanded ? card.expandedH : card.collapsedH
         yVis := curY - off
 
-        GuiControl, ShortcutsScroll:Move, % card.hBorder, % "y" . yVis . " h" . cardH
-        GuiControl, ShortcutsScroll:Move, % card.hBody,   % "y" . (yVis + 1) . " h" . (cardH - 2)
+        GuiControl, %guiName%:Move, % card.hBorder, % "y" . yVis . " h" . cardH
+        GuiControl, %guiName%:Move, % card.hBody,   % "y" . (yVis + 1) . " h" . (cardH - 2)
 
         DllCall("ShowWindow", "Ptr", card.hHeaderDiv, "Int", card.expanded ? 5 : 0)
         if (card.expanded)
-            GuiControl, ShortcutsScroll:Move, % card.hHeaderDiv, % "y" . (yVis + card.headerH)
+            GuiControl, %guiName%:Move, % card.hHeaderDiv, % "y" . (yVis + card.headerH)
 
         if (card.hOnLbl)
-            GuiControl, ShortcutsScroll:Move, % card.hOnLbl, % "y" . (yVis + 15)
+            GuiControl, %guiName%:Move, % card.hOnLbl, % "y" . (yVis + 15)
         if (card.hToggleChk)
-            GuiControl, ShortcutsScroll:Move, % card.hToggleChk, % "y" . (yVis + 16)
-        GuiControl, ShortcutsScroll:Move, % card.hTitle,   % "y" . (yVis + 7)
-        GuiControl, ShortcutsScroll:Move, % card.hSummary, % "y" . (yVis + 26)
+            GuiControl, %guiName%:Move, % card.hToggleChk, % "y" . (yVis + 16)
+        GuiControl, %guiName%:Move, % card.hTitle,   % "y" . (yVis + 7)
+        GuiControl, %guiName%:Move, % card.hSummary, % "y" . (yVis + 26)
         if (IsObject(ChevronBitmaps) && ChevronBitmaps.HasKey("down")) {
-            GuiControl, ShortcutsScroll:Move, % card.hArrow, % "y" . (yVis + 16)
+            GuiControl, %guiName%:Move, % card.hArrow, % "y" . (yVis + 16)
             DllCall("SendMessage", "Ptr", card.hArrow, "UInt", 0x0172, "Ptr", 0, "Ptr", ChevronBitmaps[card.expanded ? "up" : "down"])
         } else {
-            GuiControl, ShortcutsScroll:Move, % card.hArrow, % "y" . (yVis + 14)
-            GuiControl, ShortcutsScroll:,     % card.hArrow, % card.expanded ? "⌃" : "⌄"
+            GuiControl, %guiName%:Move, % card.hArrow, % "y" . (yVis + 14)
+            GuiControl, %guiName%:,     % card.hArrow, % card.expanded ? "⌃" : "⌄"
         }
-        GuiControl, ShortcutsScroll:Move, % card.hHit,     % "y" . (yVis + 1)
+        GuiControl, %guiName%:Move, % card.hHit,     % "y" . (yVis + 1)
 
-        ApplyAccordionGroupLayout(card.items, curY, off, card.expanded)
+        ApplyAccordionGroupLayout(guiName, card.items, curY, off, card.expanded)
         curY += cardH + 10
     }
 
-    shortcutsContentH := curY + 4
+    TabContentH[tabNum] := curY + 4
 
-    DllCall("SendMessage", "Ptr", hShortcutsScroll, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
-    DllCall("RedrawWindow", "Ptr", hShortcutsScroll, "Ptr", 0, "Ptr", 0, "UInt", 0x0185) ; RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN|RDW_UPDATENOW
+    DllCall("SendMessage", "Ptr", hPanel, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
+    DllCall("RedrawWindow", "Ptr", hPanel, "Ptr", 0, "Ptr", 0, "UInt", 0x0185) ; RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN|RDW_UPDATENOW
 
-    UpdateShortcutsScrollInfo()
+    UpdateTabScrollInfo(tabNum)
 }
 
-ApplyAccordionGroupLayout(itemsArr, groupY, scrollOff, isExpanded) {
+ApplyAccordionGroupLayout(guiName, itemsArr, groupY, scrollOff, isExpanded) {
     showFlag := isExpanded ? 5 : 0 ; SW_SHOW : SW_HIDE
     for _, item in itemsArr {
         DllCall("ShowWindow", "Ptr", item.hwnd, "Int", showFlag)
         if (isExpanded)
-            GuiControl, ShortcutsScroll:Move, % item.hwnd, % "y" . (groupY + item.relY - scrollOff)
+            GuiControl, %guiName%:Move, % item.hwnd, % "y" . (groupY + item.relY - scrollOff)
     }
 }
 
+OnToggleT1Gen:
+    ToggleCard(1, "t1_gen")
+return
+OnToggleT1Priv:
+    ToggleCard(1, "t1_priv")
+return
+OnToggleT1Tips:
+    ToggleCard(1, "t1_tips")
+return
+
+OnToggleT2Gesture:
+    ToggleCard(2, "t2_gesture")
+return
+OnToggleT2Actions:
+    ToggleCard(2, "t2_actions")
+return
+
+OnToggleT3Target:
+    ToggleCard(3, "t3_target")
+return
+OnToggleT3Behavior:
+    ToggleCard(3, "t3_behavior")
+return
+OnToggleT3Auth:
+    ToggleCard(3, "t3_auth")
+return
+
 OnToggleSysExpand:
-    ToggleShortcutsCard("sys")
+    ToggleCard(4, "sys")
 return
-
 OnToggleMicExpand:
-    ToggleShortcutsCard("mic")
+    ToggleCard(4, "mic")
 return
-
 OnToggleAotExpand:
-    ToggleShortcutsCard("aot")
+    ToggleCard(4, "aot")
 return
-
 OnToggleTrayExpand:
-    ToggleShortcutsCard("tray")
+    ToggleCard(4, "tray")
 return
 
-UpdateShortcutsScrollInfo() {
-    global hShortcutsScroll, shortcutsContentH, shortcutsScrollPos
-    if (!hShortcutsScroll)
+UpdateTabScrollInfo(tabNum) {
+    global TabScrollHwnds, TabContentH, TabScrollPos
+    hPanel := TabScrollHwnds[tabNum]
+    if (!hPanel)
         return
 
     VarSetCapacity(rc, 16, 0)
-    DllCall("GetClientRect", "Ptr", hShortcutsScroll, "Ptr", &rc)
+    DllCall("GetClientRect", "Ptr", hPanel, "Ptr", &rc)
     viewH := NumGet(rc, 12, "Int")
     if (viewH <= 0)
         return
 
     scale := A_ScreenDPI / 96.0
-    totalPx := Round(shortcutsContentH * scale)
+    totalPx := Round(TabContentH[tabNum] * scale)
     maxScrollPx := (totalPx > viewH) ? (totalPx - viewH) : 0
     maxScrollLogical := Round(maxScrollPx / scale)
 
-    if (shortcutsScrollPos > maxScrollLogical)
-        ScrollShortcutsTo(maxScrollLogical)
+    if (TabScrollPos[tabNum] > maxScrollLogical)
+        ScrollTabTo(tabNum, maxScrollLogical)
 
-    posPx := Round(shortcutsScrollPos * scale)
+    posPx := Round(TabScrollPos[tabNum] * scale)
     VarSetCapacity(si, 28, 0)
     NumPut(28, si, 0, "UInt")
     NumPut(0x17, si, 4, "UInt") ; SIF_ALL
@@ -1586,19 +1799,20 @@ UpdateShortcutsScrollInfo() {
     NumPut(totalPx > 0 ? totalPx - 1 : 0, si, 12, "Int")
     NumPut(viewH, si, 16, "UInt")
     NumPut(posPx, si, 20, "Int")
-    DllCall("SetScrollInfo", "Ptr", hShortcutsScroll, "Int", 1, "Ptr", &si, "Int", 1) ; SB_VERT = 1
+    DllCall("SetScrollInfo", "Ptr", hPanel, "Int", 1, "Ptr", &si, "Int", 1) ; SB_VERT = 1
 }
 
-ScrollShortcutsTo(newLogicalPos) {
-    global hShortcutsScroll, shortcutsContentH, shortcutsScrollPos
-    if (!hShortcutsScroll)
+ScrollTabTo(tabNum, newLogicalPos) {
+    global TabScrollHwnds, TabContentH, TabScrollPos
+    hPanel := TabScrollHwnds[tabNum]
+    if (!hPanel)
         return
 
     VarSetCapacity(rc, 16, 0)
-    DllCall("GetClientRect", "Ptr", hShortcutsScroll, "Ptr", &rc)
+    DllCall("GetClientRect", "Ptr", hPanel, "Ptr", &rc)
     viewH := NumGet(rc, 12, "Int")
     scale := A_ScreenDPI / 96.0
-    totalPx := Round(shortcutsContentH * scale)
+    totalPx := Round(TabContentH[tabNum] * scale)
     maxLogical := (totalPx > viewH) ? Round((totalPx - viewH) / scale) : 0
 
     if (newLogicalPos < 0)
@@ -1606,36 +1820,37 @@ ScrollShortcutsTo(newLogicalPos) {
     if (newLogicalPos > maxLogical)
         newLogicalPos := maxLogical
 
-    if (newLogicalPos = shortcutsScrollPos)
+    if (newLogicalPos = TabScrollPos[tabNum])
         return
 
-    oldPx := Round(shortcutsScrollPos * scale)
+    oldPx := Round(TabScrollPos[tabNum] * scale)
     newPx := Round(newLogicalPos * scale)
     deltaPx := oldPx - newPx
-    shortcutsScrollPos := newLogicalPos
+    TabScrollPos[tabNum] := newLogicalPos
 
-    DllCall("ScrollWindowEx", "Ptr", hShortcutsScroll, "Int", 0, "Int", deltaPx, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr", 0, "UInt", 0x0007) ; SW_SCROLLCHILDREN|SW_INVALIDATE|SW_ERASE
-    DllCall("RedrawWindow", "Ptr", hShortcutsScroll, "Ptr", 0, "Ptr", 0, "UInt", 0x0185) ; RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN|RDW_UPDATENOW
+    DllCall("ScrollWindowEx", "Ptr", hPanel, "Int", 0, "Int", deltaPx, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr", 0, "UInt", 0x0007) ; SW_SCROLLCHILDREN|SW_INVALIDATE|SW_ERASE
+    DllCall("RedrawWindow", "Ptr", hPanel, "Ptr", 0, "Ptr", 0, "UInt", 0x0185) ; RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN|RDW_UPDATENOW
 
     VarSetCapacity(si, 28, 0)
     NumPut(28, si, 0, "UInt")
     NumPut(0x04, si, 4, "UInt") ; SIF_POS
     NumPut(newPx, si, 20, "Int")
-    DllCall("SetScrollInfo", "Ptr", hShortcutsScroll, "Int", 1, "Ptr", &si, "Int", 1)
+    DllCall("SetScrollInfo", "Ptr", hPanel, "Int", 1, "Ptr", &si, "Int", 1)
 }
 
 OnShortcutsVScroll(wParam, lParam, msg, hwnd) {
-    global hShortcutsScroll, shortcutsScrollPos, shortcutsContentH
-    if (!hShortcutsScroll || hwnd != hShortcutsScroll)
+    global TabScrollHwndToNum, TabScrollPos
+    if (!IsObject(TabScrollHwndToNum) || !TabScrollHwndToNum.HasKey(hwnd))
         return
+    tabNum := TabScrollHwndToNum[hwnd]
 
     sbCode := wParam & 0xFFFF
     scale := A_ScreenDPI / 96.0
     VarSetCapacity(rc, 16, 0)
-    DllCall("GetClientRect", "Ptr", hShortcutsScroll, "Ptr", &rc)
+    DllCall("GetClientRect", "Ptr", hwnd, "Ptr", &rc)
     pageLogical := Round(NumGet(rc, 12, "Int") / scale)
 
-    newPos := shortcutsScrollPos
+    newPos := TabScrollPos[tabNum]
     if (sbCode = 0)        ; SB_LINEUP
         newPos -= 24
     else if (sbCode = 1)   ; SB_LINEDOWN
@@ -1648,28 +1863,31 @@ OnShortcutsVScroll(wParam, lParam, msg, hwnd) {
         VarSetCapacity(si, 28, 0)
         NumPut(28, si, 0, "UInt")
         NumPut(0x10, si, 4, "UInt") ; SIF_TRACKPOS
-        DllCall("GetScrollInfo", "Ptr", hShortcutsScroll, "Int", 1, "Ptr", &si)
+        DllCall("GetScrollInfo", "Ptr", hwnd, "Int", 1, "Ptr", &si)
         trackPx := NumGet(si, 24, "Int")
         newPos := Round(trackPx / scale)
     } else {
         return
     }
-    ScrollShortcutsTo(newPos)
+    ScrollTabTo(tabNum, newPos)
     return 0
 }
 
 OnShortcutsMouseWheel(wParam, lParam, msg, hwnd) {
-    global hShortcutsScroll, shortcutsScrollPos, currentSettingsTab
-    if (!hShortcutsScroll || currentSettingsTab != 4)
+    global TabScrollHwnds, TabScrollPos, currentSettingsTab
+    if (currentSettingsTab < 1 || currentSettingsTab > 4)
         return
-    if (hwnd != hShortcutsScroll && !DllCall("IsChild", "Ptr", hShortcutsScroll, "Ptr", hwnd))
+    hPanel := TabScrollHwnds[currentSettingsTab]
+    if (!hPanel)
+        return
+    if (hwnd != hPanel && !DllCall("IsChild", "Ptr", hPanel, "Ptr", hwnd))
         return
 
     delta := (wParam >> 16) & 0xFFFF
     if (delta > 0x7FFF)
         delta -= 0x10000
     step := (delta > 0) ? -45 : 45
-    ScrollShortcutsTo(shortcutsScrollPos + step)
+    ScrollTabTo(currentSettingsTab, TabScrollPos[currentSettingsTab] + step)
     return 0
 }
 
