@@ -16,7 +16,7 @@ InitMicMute() {
 
     MicMuteEnabled       := 1
     MicMuteHotkey        := "#!m"      ; Phím tắt Toggle mặc định: Win + Alt + M
-    MicPttHotkey         := "LCtrl"    ; Phím tắt Push-to-Talk mặc định: Right Ctrl
+    MicPttHotkey         := "LCtrl"    ; Phím tắt Push-to-Talk mặc định: Left Ctrl
     MicPttInvert         := 1          ; 1: Đảo chiều thông minh (nếu mic đang bật -> giữ để tắt tạm thời)
     MicMuteAllDevices    := 1          ; 1: Áp dụng tất cả thiết bị thu đang hoạt động, 0: Thiết bị chỉ định hoặc mặc định
     MicTargetDeviceId    := ""         ; Rỗng = thiết bị mặc định (khi MicMuteAllDevices = 0)
@@ -31,6 +31,7 @@ InitMicMute() {
     MicMuteRegPttUpHk     := ""
     MicPttKeyHeld         := false
     MicPttActionMode      := ""        ; "talk" hoặc "mute"
+    MicPttLastActionMode  := ""
     MicMutePendingRelease := false
 
     hMicOsdGui   := 0
@@ -186,6 +187,7 @@ ApplyMicMuteHotkey() {
 }
 
 MicToggleKeyHandler:
+    MicPttLastActionMode := ""
     if (MicMuteEnabled)
         ToggleMicMute(true)
 return
@@ -199,7 +201,7 @@ MicPttKeyUpHandler:
 return
 
 HandleMicPttKeyDown() {
-    global MicMuteEnabled, MicPttInvert, MicPttKeyHeld, MicPttActionMode, MicMutePendingRelease
+    global MicMuteEnabled, MicPttInvert, MicPttKeyHeld, MicPttActionMode, MicPttLastActionMode, MicMutePendingRelease, MicMuteOsdEnabled
     if (!MicMuteEnabled || MicPttKeyHeld)
         return
     MicPttKeyHeld := true
@@ -207,48 +209,62 @@ HandleMicPttKeyDown() {
     if (MicMutePendingRelease) {
         SetTimer, MicMutePttReleaseTimer, Off
         MicMutePendingRelease := false
+        MicPttActionMode := "talk"
+        MicPttLastActionMode := "talk"
+        if (MicMuteOsdEnabled)
+            ShowMicMuteOsd(false)
+        SetTimer, MicMuteWatchKeyUpTimer, 30
+        return
     }
 
     curMuted := GetMicMuteState()
     if (curMuted = 1) {
         ; Mic đang tắt -> Nhấn giữ để nói (Push-to-Talk)
         MicPttActionMode := "talk"
+        MicPttLastActionMode := "talk"
         SetMicMuteState(false, true)
     } else if (curMuted = 0 && MicPttInvert) {
         ; Mic đang bật & cho phép đảo -> Nhấn giữ để tắt tạm thời (Push-to-Mute)
         MicPttActionMode := "mute"
+        MicPttLastActionMode := "mute"
         SetMicMuteState(true, true)
     } else {
         MicPttActionMode := ""
+        MicPttLastActionMode := ""
     }
 
     SetTimer, MicMuteWatchKeyUpTimer, 30
 }
 
 HandleMicPttKeyUp() {
-    global MicPttKeyHeld, MicPttActionMode, MicMuteReleaseDelay, MicMutePendingRelease
+    global MicPttKeyHeld, MicPttActionMode, MicPttLastActionMode, MicMuteReleaseDelay, MicMutePendingRelease
     if (!MicPttKeyHeld)
         return
     MicPttKeyHeld := false
     SetTimer, MicMuteWatchKeyUpTimer, Off
 
+    MicPttLastActionMode := MicPttActionMode
     if (MicPttActionMode = "talk") {
         if (MicMuteReleaseDelay > 0) {
             MicMutePendingRelease := true
             SetTimer, MicMutePttReleaseTimer, % -MicMuteReleaseDelay
         } else {
             SetMicMuteState(true, true)
+            MicPttLastActionMode := ""
         }
     } else if (MicPttActionMode = "mute") {
         SetMicMuteState(false, true)
+        MicPttLastActionMode := ""
     }
     MicPttActionMode := ""
 }
 
 MicMutePttReleaseTimer:
     MicMutePendingRelease := false
-    if (!MicPttKeyHeld)
+    if (!MicPttKeyHeld) {
         SetMicMuteState(true, true)
+        MicPttLastActionMode := ""
+    }
 return
 
 MicMuteWatchKeyUpTimer:
@@ -525,7 +541,7 @@ EnsureMicGdip() {
 
 ShowMicMuteOsd(isMuted) {
     global hMicOsdGui, MicOsdVisible, MicOsdAlpha, MicMuteOsdDuration
-    global MicMuteMode, MicOsdW, MicOsdH, MicOsdX, MicOsdY
+    global MicPttKeyHeld, MicPttLastActionMode, MicOsdW, MicOsdH, MicOsdX, MicOsdY
 
     if (!EnsureMicGdip())
         return
@@ -563,8 +579,13 @@ ShowMicMuteOsd(isMuted) {
     DllCall("SetWindowPos", "Ptr", hMicOsdGui, "Ptr", -1, "Int", osdX, "Int", osdY, "Int", osdW, "Int", osdH, "UInt", 0x0053) ; SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE|SWP_SHOWWINDOW
     MicOsdVisible := true
 
-    duration := (MicMuteOsdDuration >= 400) ? MicMuteOsdDuration : 1500
-    SetTimer, MicMuteOsdHoldTimer, % -duration
+    ; Khi đang nhấn giữ Push-to-Talk/Mute thì giữ OSD sáng liên tục, chỉ đếm ngược ẩn sau khi nhả phím
+    if (!MicPttKeyHeld) {
+        duration := (MicMuteOsdDuration >= 400) ? MicMuteOsdDuration : 1500
+        if (MicPttLastActionMode != "" && duration > 800)
+            duration := 800
+        SetTimer, MicMuteOsdHoldTimer, % -duration
+    }
 }
 
 GetMicOsdTitle(isMuted) {
@@ -578,10 +599,11 @@ GetMicOsdTitle(isMuted) {
 }
 
 GetMicOsdSubtitle() {
-    global MicPttKeyHeld, MicPttActionMode
-    if (MicPttKeyHeld && MicPttActionMode = "talk")
+    global MicPttKeyHeld, MicPttActionMode, MicPttLastActionMode
+    mode := MicPttKeyHeld ? MicPttActionMode : MicPttLastActionMode
+    if (mode = "talk")
         return "Push-to-Talk"
-    if (MicPttKeyHeld && MicPttActionMode = "mute")
+    if (mode = "mute")
         return "Push-to-Mute"
     return "Microphone"
 }

@@ -1245,7 +1245,7 @@ BuildShortcutsScrollPanel(aboutIcon) {
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
     Gui, ShortcutsScroll:Add, Text, x38 y352 w212 h20 +HwndhMicPttLbl Hidden, % L("Mic_PttHkLbl")
-    pttHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicPttHotkey) : "Right Ctrl"
+    pttHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicPttHotkey) : "Left Ctrl"
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
     Gui, ShortcutsScroll:Add, Button, x256 y348 w278 h26 vMicPttHotkeyBtn +HwndhMicPttBtn gOnChangeMicPttHotkey Hidden, %pttHkDisplay%
     MicGroupItems.Push({hwnd: hMicPttLbl, relY: 352 - micBaseY})
@@ -1758,16 +1758,15 @@ ShowMicHotkeyDialog(targetMode := "toggle") {
     Gui, MicHotkeyDlg:Color, FFFFFF
     Gui, MicHotkeyDlg:Font, s9 Norm c555555, Segoe UI
     promptTxt := (targetMode = "ptt") ? L("Mic_PttPrompt") : L("Mic_HotkeyPrompt")
-    Gui, MicHotkeyDlg:Add, Text, x16 y12 w328, %promptTxt%
+    Gui, MicHotkeyDlg:Add, Text, x16 y12 w368 h32, %promptTxt%
     Gui, MicHotkeyDlg:Font, s10.5 Bold c005FB8, Segoe UI
     disp := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
-    Gui, MicHotkeyDlg:Add, Edit, x16 y36 w328 h28 ReadOnly Center vMicHotkeyPreview, %disp%
+    Gui, MicHotkeyDlg:Add, Edit, x16 y48 w368 h28 ReadOnly Center vMicHotkeyPreview, %disp%
     Gui, MicHotkeyDlg:Font, s9.5 Norm c222222, Segoe UI
-    Gui, MicHotkeyDlg:Add, Button, x16 y74 w78 h26 Default gOnSaveMicHotkey, OK
-    resetLbl := (targetMode = "ptt") ? "Right Ctrl" : "Win + Alt + M"
-    Gui, MicHotkeyDlg:Add, Button, x100 y74 w126 h26 gOnResetMicHotkey, %resetLbl%
-    Gui, MicHotkeyDlg:Add, Button, x266 y74 w78 h26 gMicHotkeyDlgGuiClose, % L("Set_Close")
-    Gui, MicHotkeyDlg:Show, w360 h112 Center
+    Gui, MicHotkeyDlg:Add, Button, x16 y86 w82 h26 Default gOnSaveMicHotkey, OK
+    Gui, MicHotkeyDlg:Add, Button, x104 y86 w132 h26 gOnResetMicHotkey, % L("Mic_ResetBtn")
+    Gui, MicHotkeyDlg:Add, Button, x302 y86 w82 h26 gMicHotkeyDlgGuiClose, % L("Set_Close")
+    Gui, MicHotkeyDlg:Show, w400 h124 Center
 
     OnMessage(0x100, "OnMicHotkeyDlgKeyDown")    ; WM_KEYDOWN
     OnMessage(0x104, "OnMicHotkeyDlgKeyDown")    ; WM_SYSKEYDOWN
@@ -1896,7 +1895,7 @@ OnMicHotkeyDlgMouseBtn(wParam, lParam, msg, hwnd) {
 
 OnResetMicHotkey:
     if (MicHotkeyTargetMode = "ptt")
-        MicHotkeyCaptured := "RCtrl"
+        MicHotkeyCaptured := "LCtrl"
     else
         MicHotkeyCaptured := "#!m"
     GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
