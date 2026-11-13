@@ -15,6 +15,22 @@ global GestureBadgeBitmaps  := {}
 global hBtnToggleReveal     := 0
 global hAboutHeroBmp        := 0
 global SettingsPreloadOnly  := false
+global hSettingsSep         := 0
+global hSettingsTabNav      := 0
+global hShortcutsScroll     := 0
+global sysExpanded          := 1
+global micExpanded          := 0
+global aotExpanded          := 1
+global trayExpanded         := 1
+global shortcutsScrollPos   := 0
+global shortcutsContentH    := 470
+global SysGroupItems        := []
+global MicGroupItems        := []
+global AotGroupItems        := []
+global TrayGroupItems       := []
+global hMicHotkeyDlg        := 0
+global MicHotkeyCaptured    := ""
+global MicHotkeyCapturing   := false
 
 ; Dựng sẵn GUI Cài đặt ở trạng thái ẩn sau khi khởi động app để lần mở đầu tiên tức thì
 PreloadSettingsGui:
@@ -46,7 +62,14 @@ Settings:
             targetTab := currentSettingsTab ? currentSettingsTab : 1
             if (!isVisible || targetTab != currentSettingsTab)
                 SwitchSettingsTab(targetTab, !isVisible)
-            Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+            if (isVisible)
+                Gui, Settings:Show
+            else
+                Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+            if (currentSettingsTab = 4 && hShortcutsScroll) {
+                SyncShortcutsScrollPanelSize()
+                UpdateShortcutsScrollInfo()
+            }
             WinActivate, ahk_id %hSettingsGui%
             return
         }
@@ -64,7 +87,7 @@ Settings:
     SidebarIconHwnds := {}
     EnsureSettingsVectorIcons()
 
-    Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
+    Gui, Settings:New, +Resize +MinSize780x455 +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
     DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
     SetGuiYellowIcon(hSettingsGui)
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -115,12 +138,12 @@ Settings:
     AddSidebarNav(5, 176, "ℹ️", L("Nav_About"))
 
     ; Vách phân cách dọc duy nhất giữa Sidebar và Vùng nội dung
-    Gui, Add, Text, x212 y12 w1 h428 0x11
+    Gui, Add, Text, x212 y12 w1 h428 0x11 +HwndhSettingsSep
 
     ; ========================================================
     ; VÙNG NỘI DUNG BÊN PHẢI (TAB2 +Buttons ẨN HOÀN TOÀN VIỀN KHUNG)
     ; ========================================================
-    Gui, Add, Tab2, x216 y-35 w564 h439 +Buttons -Theme -Wrap vSettingsTabNav, TabGeneral|TabScrollGesture|TabLock|TabShortcuts|TabAbout
+    Gui, Add, Tab2, x216 y-35 w564 h439 +Buttons -Theme -Wrap +0x04000000 vSettingsTabNav +HwndhSettingsTabNav, TabGeneral|TabScrollGesture|TabLock|TabShortcuts|TabAbout
 
     ; --------------------------------------------------------
     ; TAB 1: CÀI ĐẶT CHUNG && HỆ THỐNG
@@ -280,47 +303,9 @@ Settings:
     Gui, Add, Radio, x272 y362 w474 h22 vUnlockModeWinOnly gOnSelectUnlockModeWinOnly Checked%chkWinOnlyMode%, % L("Lock_ModeWinOnly")
 
     ; --------------------------------------------------------
-    ; TAB 4: PHÍM TẮT && TIỆN ÍCH
+    ; TAB 4: PHÍM TẮT && TIỆN ÍCH (DỰNG TRONG CHILD GUI CÓ THANH CUỘN DỌC)
     ; --------------------------------------------------------
     Gui, Tab, TabShortcuts
-    AddSettingsTabHeader("Set_HeaderShortcuts", "Set_SubShortcuts")
-
-    ; Card 1: Phím tắt hệ thống
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y54 w536 h202, % L("Set_GroupSystemHotkeys")
-
-    AddShortcutRow(74,  "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",   "ActionOpenLockCenter")
-    AddShortcutRow(102, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V", "ActionPastePlain")
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x274 y124 w472 h18, % L("Set_PastePlainDesc")
-    AddShortcutRow(146, "Icon3",   A_WinDir . "\System32\SndVol.exe",  "Set_Mute",       "Ctrl + Shift + M", "ActionMute")
-    AddShortcutRow(174, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"),  "ActionVolDown")
-    AddShortcutRow(202, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp")
-
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x246 y233 w500 h18, % L("Set_ShortcutsTip")
-
-    ; Card 2: Ghim cửa sổ luôn nổi (Always On Top)
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y262 w536 h78, % L("Set_GroupAOT")
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y283 w214 h22 vAOTEnabled gOnToggleAOTEnabled Checked%AOTEnabled%, % L("AOT_EnableChk")
-    Gui, Font, s9 Norm c555555, Segoe UI
-    Gui, Add, Text, x464 y286 w56 h18, % L("AOT_HotkeyLbl")
-    Gui, Font, s9 Norm c222222, Segoe UI
-    aotHkDisplay := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
-    Gui, Add, Button, x522 y281 w120 h25 vAOTHotkeyBtn gOnChangeAOTHotkey, %aotHkDisplay%
-    Gui, Add, Button, x648 y281 w104 h25 vAOTUnpinAllBtn gOnUnpinAllAOT, % L("AOT_UnpinAllBtn")
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Checkbox, x246 y310 w500 h22 vAOTBorderEnabled gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
-
-    ; Card 3: Thao tác nhanh trên khay hệ thống
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, GroupBox, x228 y344 w536 h60, % L("Set_GroupTrayActions")
-
-    AddShortcutRow(362, "Icon1", aboutIcon, "Set_TrayToggleLabel", L("Set_TrayToggleBtn"), "ActionToggleGestures")
-    Gui, Font, s8.5 Norm c555555, Segoe UI
-    Gui, Add, Text, x246 y385 w500 h16, % "• " . L("Set_TrayDblClickTip")
 
     ; --------------------------------------------------------
     ; TAB 5: THÔNG TIN && BẢN QUYỀN (HERO BANNER HIỆN ĐẠI)
@@ -391,22 +376,28 @@ Settings:
     ; ========================================================
     Gui, Tab
     Gui, Font, s8.5 Norm c777777, Segoe UI
-    Gui, Add, Text, x228 y418 w415, % L("Set_AutoSaveHint")
+    Gui, Add, Text, x228 y418 w415 vSettingsAutoSaveHint, % L("Set_AutoSaveHint")
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Button, x658 y411 w106 h30 gSettingsCloseBtn Default, % L("Set_Close")
+    Gui, Add, Button, x658 y411 w106 h30 vSettingsCloseBtn gSettingsCloseBtn Default, % L("Set_Close")
+
+    ; Dựng vùng cuộn dọc cho Tab Phím tắt & Tiện ích
+    BuildShortcutsScrollPanel(aboutIcon)
 
     ; Khởi tạo trạng thái Enable/Disable của control
-    GuiControl, Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
+    GuiControl, Settings:Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
     UpdateLockAuthControlsState(windowsLogonOnly)
-    GuiControl, Enable%AOTEnabled%, AOTHotkeyBtn
-    GuiControl, Enable%AOTEnabled%, AOTBorderEnabled
-    GuiControl, Enable%AOTEnabled%, AOTUnpinAllBtn
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTBorderEnabled
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTUnpinAllBtn
+    UpdateMicControlsState()
 
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
     SwitchSettingsTab(currentSettingsTab ? currentSettingsTab : 1, true)
 
-    ; Đăng ký theo dõi hover để hiển thị chú thích cho icon cử chỉ
+    ; Đăng ký theo dõi hover, cuộn dọc & lăn chuột cho vùng Phím tắt
     OnMessage(0x200, "WM_MOUSEMOVE_SETTINGS")
+    OnMessage(0x115, "OnShortcutsVScroll")
+    OnMessage(0x20A, "OnShortcutsMouseWheel")
 
     DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
     SetBatchLines, %prevBatchLines%
@@ -417,6 +408,10 @@ Settings:
         Gui, Settings:Show, Hide w780 h455 Center, % "GestureMouse - " . L("Set_Title")
     else
         Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+    if (currentSettingsTab = 4 && hShortcutsScroll) {
+        SyncShortcutsScrollPanelSize()
+        UpdateShortcutsScrollInfo()
+    }
 return
 
 ; ========================================================
@@ -519,19 +514,30 @@ CheckSettingsTooltipLeave:
     }
 return
 
-AddShortcutRow(yPos, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text := "", gLabel2 := "") {
+AddShortcutRow(yPos, iconOpt, iconFile, labelKey, btn1Text, gLabel1, btn2Text := "", gLabel2 := "", itemsArr := 0, groupBaseY := 54) {
     icoY := yPos - 1
     btnY := yPos - 4
-    if (iconFile != "" && FileExist(iconFile))
-        Gui, Settings:Add, Picture, x246 y%icoY% w20 h20 %iconOpt%, %iconFile%
-    Gui, Settings:Font, s9.5 Norm c222222, Segoe UI
-    Gui, Settings:Add, Text, x274 y%yPos% w256, % L(labelKey)
-    Gui, Settings:Font, s9 Norm c222222, Segoe UI
+    if (iconFile != "" && FileExist(iconFile)) {
+        Gui, ShortcutsScroll:Add, Picture, x30 y%icoY% w20 h20 %iconOpt% +HwndhPic, %iconFile%
+        if (IsObject(itemsArr))
+            itemsArr.Push({hwnd: hPic, relY: icoY - groupBaseY})
+    }
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x58 y%yPos% w256 +HwndhLbl, % L(labelKey)
+    if (IsObject(itemsArr))
+        itemsArr.Push({hwnd: hLbl, relY: yPos - groupBaseY})
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
     if (btn2Text = "") {
-        Gui, Settings:Add, Button, x536 y%btnY% w210 h26 Center g%gLabel1%, %btn1Text%
+        Gui, ShortcutsScroll:Add, Button, x320 y%btnY% w210 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
+        if (IsObject(itemsArr))
+            itemsArr.Push({hwnd: hBtn1, relY: btnY - groupBaseY})
     } else {
-        Gui, Settings:Add, Button, x536 y%btnY% w102 h26 Center g%gLabel1%, %btn1Text%
-        Gui, Settings:Add, Button, x644 y%btnY% w102 h26 Center g%gLabel2%, %btn2Text%
+        Gui, ShortcutsScroll:Add, Button, x320 y%btnY% w102 h26 Center +HwndhBtn1 g%gLabel1%, %btn1Text%
+        Gui, ShortcutsScroll:Add, Button, x428 y%btnY% w102 h26 Center +HwndhBtn2 g%gLabel2%, %btn2Text%
+        if (IsObject(itemsArr)) {
+            itemsArr.Push({hwnd: hBtn1, relY: btnY - groupBaseY})
+            itemsArr.Push({hwnd: hBtn2, relY: btnY - groupBaseY})
+        }
     }
 }
 
@@ -591,13 +597,15 @@ UpdateSettingsGuiControls() {
     GuiControl, Settings:, LangVI, %chkVI%
     GuiControl, Settings:, LangEN, %chkEN%
 
-    GuiControl, Settings:, AOTEnabled, %AOTEnabled%
-    GuiControl, Settings:, AOTBorderEnabled, %AOTBorderEnabled%
+    GuiControl, ShortcutsScroll:, AOTEnabled, %AOTEnabled%
+    GuiControl, ShortcutsScroll:, AOTBorderEnabled, %AOTBorderEnabled%
     if (IsFunc("FormatAOTHotkeyText"))
-        GuiControl, Settings:, AOTHotkeyBtn, % FormatAOTHotkeyText(AOTHotkey)
-    GuiControl, Settings:Enable%AOTEnabled%, AOTHotkeyBtn
-    GuiControl, Settings:Enable%AOTEnabled%, AOTBorderEnabled
-    GuiControl, Settings:Enable%AOTEnabled%, AOTUnpinAllBtn
+        GuiControl, ShortcutsScroll:, AOTHotkeyBtn, % FormatAOTHotkeyText(AOTHotkey)
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTBorderEnabled
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTUnpinAllBtn
+
+    SyncMicControlsFromState()
 }
 
 ; ========================================================
@@ -620,13 +628,23 @@ OnNav5:
 return
 
 SwitchSettingsTab(tabNum, skipRedraw := false) {
-    global currentSettingsTab, hSettingsGui, SidebarNavBitmaps, SidebarIconHwnds
+    global currentSettingsTab, hSettingsGui, hShortcutsScroll, SidebarNavBitmaps, SidebarIconHwnds
     ClearSettingsTooltip()
     currentSettingsTab := tabNum
     if (!hSettingsGui)
         return
     Gui, Settings:Default
     GuiControl, Settings:Choose, SettingsTabNav, %tabNum%
+    if (hShortcutsScroll) {
+        if (tabNum = 4) {
+            SyncShortcutsScrollPanelSize()
+            DllCall("SetWindowPos", "Ptr", hShortcutsScroll, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0053) ; HWND_TOP|SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW
+            UpdateShortcutsScrollInfo()
+            DllCall("RedrawWindow", "Ptr", hShortcutsScroll, "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
+        } else {
+            DllCall("ShowWindow", "Ptr", hShortcutsScroll, "Int", 0) ; SW_HIDE
+        }
+    }
     Loop 5 {
         isActive := (A_Index == tabNum)
         if (isActive) {
@@ -897,12 +915,12 @@ return
 ; CÀI ĐẶT ALWAYS ON TOP
 ; ========================================================
 OnToggleAOTEnabled:
-    Gui, Settings:Submit, NoHide
+    Gui, ShortcutsScroll:Submit, NoHide
     AOTEnabled := AOTEnabled ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTEnabled, %AOTEnabled%
-    GuiControl, Settings:Enable%AOTEnabled%, AOTHotkeyBtn
-    GuiControl, Settings:Enable%AOTEnabled%, AOTBorderEnabled
-    GuiControl, Settings:Enable%AOTEnabled%, AOTUnpinAllBtn
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTBorderEnabled
+    GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTUnpinAllBtn
     if (IsFunc("ApplyAOTHotkey"))
         ApplyAOTHotkey()
     if (!AOTEnabled && IsFunc("UnpinAllAlwaysOnTop"))
@@ -910,7 +928,7 @@ OnToggleAOTEnabled:
 return
 
 OnToggleAOTBorder:
-    Gui, Settings:Submit, NoHide
+    Gui, ShortcutsScroll:Submit, NoHide
     AOTBorderEnabled := AOTBorderEnabled ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTBorderEnabled, %AOTBorderEnabled%
     if (IsFunc("RefreshAllAOTBorders"))
@@ -966,7 +984,7 @@ OnSaveAOTHotkey:
     AOTHotkey := AOTNewKeyCtrl
     RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTHotkey, %AOTHotkey%
     if (IsFunc("FormatAOTHotkeyText"))
-        GuiControl, Settings:, AOTHotkeyBtn, % FormatAOTHotkeyText(AOTHotkey)
+        GuiControl, ShortcutsScroll:, AOTHotkeyBtn, % FormatAOTHotkeyText(AOTHotkey)
     Gosub, AOTHotkeyDlgGuiClose
 return
 
@@ -1108,3 +1126,742 @@ CleanupSettingsIcons() {
         hAboutHeroBmp := 0
     }
 }
+
+; ========================================================
+; RESIZE CỬA SỔ SETTINGS & VÙNG CUỘN DỌC TAB PHÍM TẮT
+; ========================================================
+SettingsGuiSize:
+    if (A_EventInfo = 1) ; Đang thu nhỏ (Minimize)
+        return
+    HandleSettingsGuiResize(A_GuiWidth, A_GuiHeight)
+return
+
+HandleSettingsGuiResize(guiW, guiH) {
+    global hSettingsGui, hSettingsSep, hSettingsTabNav, hShortcutsScroll, currentSettingsTab
+    if (!hSettingsGui)
+        return
+
+    sepH := (guiH > 28) ? (guiH - 28) : 10
+    if (hSettingsSep)
+        GuiControl, Settings:MoveDraw, %hSettingsSep%, % "h" . sepH
+
+    tabW := (guiW > 216) ? (guiW - 216) : 100
+    tabH := (guiH > 16) ? (guiH - 16) : 100
+    if (hSettingsTabNav)
+        GuiControl, Settings:Move, %hSettingsTabNav%, % "w" . tabW . " h" . tabH
+
+    hintY := guiH - 37
+    btnY := guiH - 44
+    btnX := guiW - 122
+    hintW := (btnX - 240 > 120) ? (btnX - 240) : 120
+    GuiControl, Settings:MoveDraw, SettingsAutoSaveHint, % "y" . hintY . " w" . hintW
+    GuiControl, Settings:MoveDraw, SettingsCloseBtn, % "x" . btnX . " y" . btnY
+
+    if (hShortcutsScroll) {
+        SyncShortcutsScrollPanelSize()
+        if (currentSettingsTab = 4)
+            UpdateShortcutsScrollInfo()
+    }
+}
+
+SyncShortcutsScrollPanelSize() {
+    global hSettingsGui, hShortcutsScroll
+    if (!hSettingsGui || !hShortcutsScroll)
+        return
+    VarSetCapacity(rc, 16, 0)
+    DllCall("GetClientRect", "Ptr", hSettingsGui, "Ptr", &rc)
+    clientW := NumGet(rc, 8, "Int")
+    clientH := NumGet(rc, 12, "Int")
+    scale := A_ScreenDPI / 96.0
+    if (clientW <= 0 || clientH <= 0) {
+        clientW := Round(780 * scale)
+        clientH := Round(455 * scale)
+    }
+    leftPx := Round(216 * scale)
+    bottomMarginPx := Round(48 * scale)
+    panelW := (clientW > leftPx) ? (clientW - leftPx) : Round(564 * scale)
+    panelH := (clientH > bottomMarginPx) ? (clientH - bottomMarginPx) : Round(407 * scale)
+    DllCall("SetWindowPos", "Ptr", hShortcutsScroll, "Ptr", 0, "Int", leftPx, "Int", 0, "Int", panelW, "Int", panelH, "UInt", 0x0010) ; HWND_TOP|SWP_NOACTIVATE
+}
+
+BuildShortcutsScrollPanel(aboutIcon) {
+    global
+    sysExpanded := 1
+    micExpanded := 0
+    aotExpanded := 1
+    trayExpanded := 1
+    shortcutsScrollPos := 0
+    SysGroupItems := []
+    MicGroupItems := []
+    AotGroupItems := []
+    TrayGroupItems := []
+
+    Gui, ShortcutsScroll:New, -Caption +0x40000000 +0x04000000 +0x200000 +Parent%hSettingsGui% +HwndhShortcutsScroll
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+
+    ; Tiêu đề Tab 4
+    Gui, ShortcutsScroll:Font, s13 Bold c004499, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x12 y12 w536, % L("Set_HeaderShortcuts")
+    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x12 y35 w536, % L("Set_SubShortcuts")
+
+    ; --------------------------------------------------------
+    ; ACCORDION 1: PHÍM TẮT HỆ THỐNG (MẶC ĐỊNH MỞ)
+    ; --------------------------------------------------------
+    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, GroupBox, x12 y54 w536 h202 vSysGroupBox, % L("Set_GroupSystemHotkeys")
+    Gui, ShortcutsScroll:Font, s8.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x510 y69 w28 h20 vSysExpandBtn gOnToggleSysExpand, ▴
+
+    AddShortcutRow(76,  "Icon28",  A_WinDir . "\System32\ddores.dll",  "Set_LockCenter", "Ctrl + Alt + L",     "ActionOpenLockCenter", "", "", SysGroupItems, 54)
+    AddShortcutRow(104, "Icon261", A_WinDir . "\System32\shell32.dll", "Set_PastePlain", "Ctrl + Shift + V",   "ActionPastePlain", "", "", SysGroupItems, 54)
+    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x58 y126 w472 h18 +HwndhSysPasteDesc, % L("Set_PastePlainDesc")
+    SysGroupItems.Push({hwnd: hSysPasteDesc, relY: 126 - 54})
+    AddShortcutRow(148, "Icon3",   A_WinDir . "\System32\SndVol.exe",  "Set_Mute",       "Ctrl + Shift + M",   "ActionMute", "", "", SysGroupItems, 54)
+    AddShortcutRow(176, "Icon2",   A_WinDir . "\System32\SndVol.exe",  "Set_Volume",     L("Set_VolUpBtn"),    "ActionVolUp",     L("Set_VolDownBtn"), "ActionVolDown", SysGroupItems, 54)
+    AddShortcutRow(204, "Icon26",  A_WinDir . "\System32\shell32.dll", "Set_Brightness", L("Set_BrightDownBtn"), "ActionBrightDown", L("Set_BrightUpBtn"), "ActionBrightUp", SysGroupItems, 54)
+
+    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x30 y235 w500 h18 +HwndhSysTip, % L("Set_ShortcutsTip")
+    SysGroupItems.Push({hwnd: hSysTip, relY: 235 - 54})
+
+    ; --------------------------------------------------------
+    ; ACCORDION 2: MICROPHONE (MẶC ĐỊNH THU GỌN)
+    ; --------------------------------------------------------
+    micBaseY := 264
+    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, GroupBox, x12 y%micBaseY% w536 h54 vMicGroupBox, % L("Set_GroupMic")
+
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Checkbox, x30 y285 w220 h22 vMicMuteEnabled gOnToggleMicMuteEnabled Checked%MicMuteEnabled%, % L("Mic_EnableChk")
+    micHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Ctrl + Shift + A"
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x256 y282 w246 h26 vMicHotkeyBtn gOnChangeMicHotkey, %micHkDisplay%
+    Gui, ShortcutsScroll:Font, s8.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x510 y284 w28 h22 vMicExpandBtn gOnToggleMicExpand, ▾
+
+    ; Phần mở rộng 1 cột của Card Microphone (tọa độ tương đối so với micBaseY = 264)
+    Gui, ShortcutsScroll:Add, Text, x30 y316 w502 h1 0x10 +HwndhMicDiv Hidden
+    MicGroupItems.Push({hwnd: hMicDiv, relY: 316 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x30 y326 w502 h18 +HwndhMicSecMode Hidden, % L("Mic_SecMode")
+    MicGroupItems.Push({hwnd: hMicSecMode, relY: 326 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    chkM0 := (MicMuteMode = 0) ? 1 : 0
+    chkM1 := (MicMuteMode = 1) ? 1 : 0
+    chkM2 := (MicMuteMode = 2) ? 1 : 0
+    Gui, ShortcutsScroll:Add, Radio, x38 y348 w492 h20 vMicModeToggle +HwndhMicR0 gOnSelectMicMode Checked%chkM0% Hidden, % L("Mic_ModeToggle")
+    Gui, ShortcutsScroll:Add, Radio, x38 y372 w492 h20 vMicModePTT +HwndhMicR1 gOnSelectMicMode Checked%chkM1% Hidden, % L("Mic_ModePTT")
+    MicGroupItems.Push({hwnd: hMicR0, relY: 348 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicR1, relY: 372 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x58 y397 w196 h18 +HwndhMicDelayLbl Hidden, % L("Mic_DelayLbl")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Edit, x258 y394 w72 h22 Number vMicReleaseDelayInput +HwndhMicDelayEdit gOnChangeMicDelay Hidden, %MicMuteReleaseDelay%
+    Gui, ShortcutsScroll:Add, UpDown, Range0-2000 vMicReleaseDelayUpDown +HwndhMicDelayUD Hidden, %MicMuteReleaseDelay%
+    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x336 y397 w120 h18 +HwndhMicDelayUnit Hidden, (0 - 2000 ms)
+    MicGroupItems.Push({hwnd: hMicDelayLbl,  relY: 397 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayEdit, relY: 394 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayUD,   relY: 394 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayUnit, relY: 397 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Radio, x38 y422 w492 h20 vMicModePTM +HwndhMicR2 gOnSelectMicMode Checked%chkM2% Hidden, % L("Mic_ModePTM")
+    MicGroupItems.Push({hwnd: hMicR2, relY: 422 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x30 y450 w502 h18 +HwndhMicSecDev Hidden, % L("Mic_SecDevice")
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, DropDownList, x38 y473 w464 AltSubmit vMicDeviceChoice +HwndhMicDevDDL gOnSelectMicDevice Hidden, % L("Mic_DevAll")
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x506 y472 w28 h24 vMicRefreshDevBtn +HwndhMicDevRefresh gOnRefreshMicDevices Hidden, ↻
+    Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x38 y500 w492 h18 +HwndhMicAllDesc Hidden, % L("Mic_AllDevicesDesc")
+    MicGroupItems.Push({hwnd: hMicSecDev,     relY: 450 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDevDDL,     relY: 473 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDevRefresh, relY: 472 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicAllDesc,    relY: 500 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x30 y520 w502 h18 +HwndhMicSecOsd Hidden, % L("Mic_SecOsd")
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y542 w492 h22 vMicOsdEnabled +HwndhMicOsdChk gOnToggleMicOsd Checked%MicMuteOsdEnabled% Hidden, % L("Mic_OsdChk")
+    MicGroupItems.Push({hwnd: hMicSecOsd, relY: 520 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdChk, relY: 542 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x58 y569 w196 h18 +HwndhMicOsdDurLbl Hidden, % L("Mic_OsdDurLbl")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Edit, x258 y566 w72 h22 Number vMicOsdDurationInput +HwndhMicOsdEdit gOnChangeMicOsdDuration Hidden, %MicMuteOsdDuration%
+    Gui, ShortcutsScroll:Add, UpDown, Range400-10000 vMicOsdDurationUpDown +HwndhMicOsdUD Hidden, %MicMuteOsdDuration%
+    Gui, ShortcutsScroll:Add, Button, x340 y564 w116 h25 vMicTestOsdBtn +HwndhMicTestBtn gOnTestMicOsd Hidden, % L("Mic_TestOsdBtn")
+    MicGroupItems.Push({hwnd: hMicOsdDurLbl, relY: 569 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdEdit,   relY: 566 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdUD,     relY: 566 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicTestBtn,   relY: 564 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y595 w492 h22 vMicBeepEnabled +HwndhMicBeepChk gOnSaveMicSettings Checked%MicMuteBeepEnabled% Hidden, % L("Mic_BeepChk")
+    MicGroupItems.Push({hwnd: hMicBeepChk, relY: 595 - micBaseY})
+
+    ; --------------------------------------------------------
+    ; ACCORDION 3: GHIM CỬA SỔ LUÔN NỔI (MẶC ĐỊNH MỞ)
+    ; --------------------------------------------------------
+    aotBaseY := 326
+    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, GroupBox, x12 y%aotBaseY% w536 h82 vAOTGroupBox, % L("Set_GroupAOT")
+    Gui, ShortcutsScroll:Font, s8.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x510 y341 w28 h20 vAotExpandBtn gOnToggleAotExpand, ▴
+
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Checkbox, x30 y347 w200 h22 vAOTEnabled +HwndhAotChk gOnToggleAOTEnabled Checked%AOTEnabled%, % L("AOT_EnableChk")
+    Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x234 y350 w54 h18 vAOTHotkeyLbl +HwndhAotHkLbl, % L("AOT_HotkeyLbl")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    aotHkDisplay := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
+    Gui, ShortcutsScroll:Add, Button, x290 y345 w112 h25 vAOTHotkeyBtn +HwndhAotHkBtn gOnChangeAOTHotkey, %aotHkDisplay%
+    Gui, ShortcutsScroll:Add, Button, x406 y345 w98 h25 vAOTUnpinAllBtn +HwndhAotUnpinBtn gOnUnpinAllAOT, % L("AOT_UnpinAllBtn")
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Checkbox, x30 y375 w498 h22 vAOTBorderEnabled +HwndhAotBorderChk gOnToggleAOTBorder Checked%AOTBorderEnabled%, % L("AOT_BorderChk")
+    AotGroupItems.Push({hwnd: hAotChk,       relY: 21})
+    AotGroupItems.Push({hwnd: hAotHkLbl,     relY: 24})
+    AotGroupItems.Push({hwnd: hAotHkBtn,     relY: 19})
+    AotGroupItems.Push({hwnd: hAotUnpinBtn,  relY: 19})
+    AotGroupItems.Push({hwnd: hAotBorderChk, relY: 49})
+
+    ; --------------------------------------------------------
+    ; ACCORDION 4: THAO TÁC NHANH TRÊN KHAY HỆ THỐNG (MẶC ĐỊNH MỞ)
+    ; --------------------------------------------------------
+    trayBaseY := 416
+    Gui, ShortcutsScroll:Font, s9.5 Bold c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, GroupBox, x12 y%trayBaseY% w536 h64 vTrayGroupBox, % L("Set_GroupTrayActions")
+    Gui, ShortcutsScroll:Font, s8.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x510 y431 w28 h20 vTrayExpandBtn gOnToggleTrayExpand, ▴
+
+    if (aboutIcon != "" && FileExist(aboutIcon)) {
+        Gui, ShortcutsScroll:Add, Picture, x30 y434 w20 h20 Icon1 vTrayToggleIco +HwndhTrayIco, %aboutIcon%
+        TrayGroupItems.Push({hwnd: hTrayIco, relY: 18})
+    }
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x58 y435 w244 vTrayToggleLbl +HwndhTrayLbl, % L("Set_TrayToggleLabel")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x306 y431 w198 h26 Center gActionToggleGestures vTrayToggleBtn +HwndhTrayBtn, % L("Set_TrayToggleBtn")
+    Gui, ShortcutsScroll:Font, s8.5 Norm c555555, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, x30 y458 w498 h16 vTrayDblClickLbl +HwndhTrayTip, % "• " . L("Set_TrayDblClickTip")
+    TrayGroupItems.Push({hwnd: hTrayLbl, relY: 19})
+    TrayGroupItems.Push({hwnd: hTrayBtn, relY: 15})
+    TrayGroupItems.Push({hwnd: hTrayTip, relY: 42})
+
+    Gui, ShortcutsScroll:Show, Hide x216 y0 w564 h407
+    RefreshMicDeviceDropdown()
+    LayoutShortcutsTab(true)
+}
+
+LayoutShortcutsTab(resetScroll := false) {
+    global hShortcutsScroll, sysExpanded, micExpanded, aotExpanded, trayExpanded
+    global SysGroupItems, MicGroupItems, AotGroupItems, TrayGroupItems
+    global shortcutsScrollPos, shortcutsContentH
+    if (!hShortcutsScroll)
+        return
+
+    if (resetScroll && shortcutsScrollPos != 0)
+        ScrollShortcutsTo(0)
+
+    DllCall("SendMessage", "Ptr", hShortcutsScroll, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
+
+    off := shortcutsScrollPos
+    curY := 54
+
+    ; 1. System Shortcuts
+    sysH := sysExpanded ? 202 : 40
+    GuiControl, ShortcutsScroll:Move, SysGroupBox, % "y" . (curY - off) . " h" . sysH
+    GuiControl, ShortcutsScroll:Move, SysExpandBtn, % "y" . (curY + 15 - off)
+    GuiControl, ShortcutsScroll:, SysExpandBtn, % sysExpanded ? "▴" : "▾"
+    ApplyAccordionGroupLayout(SysGroupItems, curY, off, sysExpanded)
+    curY += sysH + 8
+
+    ; 2. Microphone
+    micH := micExpanded ? 364 : 54
+    GuiControl, ShortcutsScroll:Move, MicGroupBox,     % "y" . (curY - off) . " h" . micH
+    GuiControl, ShortcutsScroll:Move, MicMuteEnabled,  % "y" . (curY + 21 - off)
+    GuiControl, ShortcutsScroll:Move, MicHotkeyBtn,    % "y" . (curY + 18 - off)
+    GuiControl, ShortcutsScroll:Move, MicExpandBtn,    % "y" . (curY + 20 - off)
+    GuiControl, ShortcutsScroll:, MicExpandBtn, % micExpanded ? "▴" : "▾"
+    ApplyAccordionGroupLayout(MicGroupItems, curY, off, micExpanded)
+    curY += micH + 8
+
+    ; 3. Always On Top
+    aotH := aotExpanded ? 82 : 40
+    GuiControl, ShortcutsScroll:Move, AOTGroupBox, % "y" . (curY - off) . " h" . aotH
+    GuiControl, ShortcutsScroll:Move, AotExpandBtn, % "y" . (curY + 15 - off)
+    GuiControl, ShortcutsScroll:, AotExpandBtn, % aotExpanded ? "▴" : "▾"
+    ApplyAccordionGroupLayout(AotGroupItems, curY, off, aotExpanded)
+    curY += aotH + 8
+
+    ; 4. Tray Actions
+    trayH := trayExpanded ? 64 : 40
+    GuiControl, ShortcutsScroll:Move, TrayGroupBox, % "y" . (curY - off) . " h" . trayH
+    GuiControl, ShortcutsScroll:Move, TrayExpandBtn, % "y" . (curY + 15 - off)
+    GuiControl, ShortcutsScroll:, TrayExpandBtn, % trayExpanded ? "▴" : "▾"
+    ApplyAccordionGroupLayout(TrayGroupItems, curY, off, trayExpanded)
+    curY += trayH + 12
+
+    shortcutsContentH := curY
+
+    DllCall("SendMessage", "Ptr", hShortcutsScroll, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
+    DllCall("RedrawWindow", "Ptr", hShortcutsScroll, "Ptr", 0, "Ptr", 0, "UInt", 0x0185) ; RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN|RDW_UPDATENOW
+
+    UpdateShortcutsScrollInfo()
+}
+
+ApplyAccordionGroupLayout(itemsArr, groupY, scrollOff, isExpanded) {
+    showFlag := isExpanded ? 5 : 0 ; SW_SHOW : SW_HIDE
+    for _, item in itemsArr {
+        DllCall("ShowWindow", "Ptr", item.hwnd, "Int", showFlag)
+        if (isExpanded)
+            GuiControl, ShortcutsScroll:Move, % item.hwnd, % "y" . (groupY + item.relY - scrollOff)
+    }
+}
+
+OnToggleSysExpand:
+    sysExpanded := !sysExpanded
+    LayoutShortcutsTab(false)
+return
+
+OnToggleAotExpand:
+    aotExpanded := !aotExpanded
+    LayoutShortcutsTab(false)
+return
+
+OnToggleTrayExpand:
+    trayExpanded := !trayExpanded
+    LayoutShortcutsTab(false)
+return
+
+UpdateShortcutsScrollInfo() {
+    global hShortcutsScroll, shortcutsContentH, shortcutsScrollPos
+    if (!hShortcutsScroll)
+        return
+
+    VarSetCapacity(rc, 16, 0)
+    DllCall("GetClientRect", "Ptr", hShortcutsScroll, "Ptr", &rc)
+    viewH := NumGet(rc, 12, "Int")
+    if (viewH <= 0)
+        return
+
+    scale := A_ScreenDPI / 96.0
+    totalPx := Round(shortcutsContentH * scale)
+    maxScrollPx := (totalPx > viewH) ? (totalPx - viewH) : 0
+    maxScrollLogical := Round(maxScrollPx / scale)
+
+    if (shortcutsScrollPos > maxScrollLogical)
+        ScrollShortcutsTo(maxScrollLogical)
+
+    posPx := Round(shortcutsScrollPos * scale)
+    VarSetCapacity(si, 28, 0)
+    NumPut(28, si, 0, "UInt")
+    NumPut(0x17, si, 4, "UInt") ; SIF_ALL
+    NumPut(0, si, 8, "Int")
+    NumPut(totalPx > 0 ? totalPx - 1 : 0, si, 12, "Int")
+    NumPut(viewH, si, 16, "UInt")
+    NumPut(posPx, si, 20, "Int")
+    DllCall("SetScrollInfo", "Ptr", hShortcutsScroll, "Int", 1, "Ptr", &si, "Int", 1) ; SB_VERT = 1
+}
+
+ScrollShortcutsTo(newLogicalPos) {
+    global hShortcutsScroll, shortcutsContentH, shortcutsScrollPos
+    if (!hShortcutsScroll)
+        return
+
+    VarSetCapacity(rc, 16, 0)
+    DllCall("GetClientRect", "Ptr", hShortcutsScroll, "Ptr", &rc)
+    viewH := NumGet(rc, 12, "Int")
+    scale := A_ScreenDPI / 96.0
+    totalPx := Round(shortcutsContentH * scale)
+    maxLogical := (totalPx > viewH) ? Round((totalPx - viewH) / scale) : 0
+
+    if (newLogicalPos < 0)
+        newLogicalPos := 0
+    if (newLogicalPos > maxLogical)
+        newLogicalPos := maxLogical
+
+    if (newLogicalPos = shortcutsScrollPos)
+        return
+
+    oldPx := Round(shortcutsScrollPos * scale)
+    newPx := Round(newLogicalPos * scale)
+    deltaPx := oldPx - newPx
+    shortcutsScrollPos := newLogicalPos
+
+    DllCall("ScrollWindowEx", "Ptr", hShortcutsScroll, "Int", 0, "Int", deltaPx, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr", 0, "UInt", 0x0007) ; SW_SCROLLCHILDREN|SW_INVALIDATE|SW_ERASE
+    DllCall("RedrawWindow", "Ptr", hShortcutsScroll, "Ptr", 0, "Ptr", 0, "UInt", 0x0185) ; RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN|RDW_UPDATENOW
+
+    VarSetCapacity(si, 28, 0)
+    NumPut(28, si, 0, "UInt")
+    NumPut(0x04, si, 4, "UInt") ; SIF_POS
+    NumPut(newPx, si, 20, "Int")
+    DllCall("SetScrollInfo", "Ptr", hShortcutsScroll, "Int", 1, "Ptr", &si, "Int", 1)
+}
+
+OnShortcutsVScroll(wParam, lParam, msg, hwnd) {
+    global hShortcutsScroll, shortcutsScrollPos, shortcutsContentH
+    if (!hShortcutsScroll || hwnd != hShortcutsScroll)
+        return
+
+    sbCode := wParam & 0xFFFF
+    scale := A_ScreenDPI / 96.0
+    VarSetCapacity(rc, 16, 0)
+    DllCall("GetClientRect", "Ptr", hShortcutsScroll, "Ptr", &rc)
+    pageLogical := Round(NumGet(rc, 12, "Int") / scale)
+
+    newPos := shortcutsScrollPos
+    if (sbCode = 0)        ; SB_LINEUP
+        newPos -= 24
+    else if (sbCode = 1)   ; SB_LINEDOWN
+        newPos += 24
+    else if (sbCode = 2)   ; SB_PAGEUP
+        newPos -= pageLogical
+    else if (sbCode = 3)   ; SB_PAGEDOWN
+        newPos += pageLogical
+    else if (sbCode = 4 || sbCode = 5) { ; SB_THUMBPOSITION / SB_THUMBTRACK
+        VarSetCapacity(si, 28, 0)
+        NumPut(28, si, 0, "UInt")
+        NumPut(0x10, si, 4, "UInt") ; SIF_TRACKPOS
+        DllCall("GetScrollInfo", "Ptr", hShortcutsScroll, "Int", 1, "Ptr", &si)
+        trackPx := NumGet(si, 24, "Int")
+        newPos := Round(trackPx / scale)
+    } else {
+        return
+    }
+    ScrollShortcutsTo(newPos)
+    return 0
+}
+
+OnShortcutsMouseWheel(wParam, lParam, msg, hwnd) {
+    global hShortcutsScroll, shortcutsScrollPos, currentSettingsTab
+    if (!hShortcutsScroll || currentSettingsTab != 4)
+        return
+    if (hwnd != hShortcutsScroll && !DllCall("IsChild", "Ptr", hShortcutsScroll, "Ptr", hwnd))
+        return
+
+    delta := (wParam >> 16) & 0xFFFF
+    if (delta > 0x7FFF)
+        delta -= 0x10000
+    step := (delta > 0) ? -45 : 45
+    ScrollShortcutsTo(shortcutsScrollPos + step)
+    return 0
+}
+
+; ========================================================
+; CÀI ĐẶT MICROPHONE (MỞ RỘNG ACCORDION & BẮT PHÍM TẮT)
+; ========================================================
+OnToggleMicExpand:
+    micExpanded := !micExpanded
+    LayoutShortcutsTab(false)
+return
+
+OnToggleMicMuteEnabled:
+    Gui, ShortcutsScroll:Submit, NoHide
+    MicMuteEnabled := MicMuteEnabled ? 1 : 0
+    if (IsFunc("SaveMicMuteSettings"))
+        SaveMicMuteSettings()
+    if (IsFunc("ApplyMicMuteHotkey"))
+        ApplyMicMuteHotkey()
+    if (MicMuteEnabled && MicMuteMode = 1 && IsFunc("SetMicMuteState"))
+        SetMicMuteState(true, false)
+    UpdateMicControlsState()
+return
+
+OnSelectMicMode:
+    Gui, ShortcutsScroll:Submit, NoHide
+    newMode := MicModePTT ? 1 : (MicModePTM ? 2 : 0)
+    if (IsFunc("SetMicMuteMode"))
+        SetMicMuteMode(newMode)
+    UpdateMicControlsState()
+return
+
+OnChangeMicDelay:
+    Gui, ShortcutsScroll:Submit, NoHide
+    val := MicReleaseDelayInput + 0
+    if (val < 0)
+        val := 0
+    else if (val > 2000)
+        val := 2000
+    MicMuteReleaseDelay := val
+    if (IsFunc("SaveMicMuteSettings"))
+        SaveMicMuteSettings()
+return
+
+OnToggleMicOsd:
+    Gui, ShortcutsScroll:Submit, NoHide
+    MicMuteOsdEnabled := MicMuteOsdEnabled ? 1 : 0
+    if (IsFunc("SaveMicMuteSettings"))
+        SaveMicMuteSettings()
+    UpdateMicControlsState()
+return
+
+OnChangeMicOsdDuration:
+    Gui, ShortcutsScroll:Submit, NoHide
+    val := MicOsdDurationInput + 0
+    if (val < 400)
+        val := 400
+    else if (val > 10000)
+        val := 10000
+    MicMuteOsdDuration := val
+    if (IsFunc("SaveMicMuteSettings"))
+        SaveMicMuteSettings()
+return
+
+OnTestMicOsd:
+    if (IsFunc("ShowMicMuteOsd")) {
+        curMuted := IsFunc("GetMicMuteState") ? GetMicMuteState() : 1
+        ShowMicMuteOsd(curMuted = 0 ? false : true)
+    }
+return
+
+OnSaveMicSettings:
+    Gui, ShortcutsScroll:Submit, NoHide
+    MicMuteBeepEnabled := MicMuteBeepEnabled ? 1 : 0
+    if (IsFunc("SaveMicMuteSettings"))
+        SaveMicMuteSettings()
+return
+
+OnSelectMicDevice:
+    Gui, ShortcutsScroll:Submit, NoHide
+    if (IsObject(MicDeviceIdList) && MicDeviceChoice >= 1 && MicDeviceChoice <= MicDeviceIdList.Length()) {
+        selId := MicDeviceIdList[MicDeviceChoice]
+        if (selId = "__ALL__") {
+            MicMuteAllDevices := 1
+            MicTargetDeviceId := ""
+        } else if (selId = "__DEFAULT__") {
+            MicMuteAllDevices := 0
+            MicTargetDeviceId := ""
+        } else {
+            MicMuteAllDevices := 0
+            MicTargetDeviceId := selId
+        }
+        if (IsFunc("SaveMicMuteSettings"))
+            SaveMicMuteSettings()
+    }
+return
+
+OnRefreshMicDevices:
+    RefreshMicDeviceDropdown()
+return
+
+RefreshMicDeviceDropdown() {
+    global MicDeviceIdList, MicMuteAllDevices, MicTargetDeviceId, CurrentLang
+    MicDeviceIdList := ["__ALL__", "__DEFAULT__"]
+    listStr := L("Mic_DevAll") . "|" . L("Mic_DevDefault")
+    selIdx := MicMuteAllDevices ? 1 : 2
+
+    if (IsFunc("GetCaptureDevices")) {
+        devs := GetCaptureDevices()
+        defTag := (CurrentLang = "en") ? " (Default)" : " (Mặc định)"
+        for _, d in devs {
+            cleanName := StrReplace(d.name, "|", "-")
+            dispName := d.isDefault ? (cleanName . defTag) : cleanName
+            listStr .= "|" . dispName
+            MicDeviceIdList.Push(d.id)
+            if (!MicMuteAllDevices && MicTargetDeviceId != "" && d.id = MicTargetDeviceId)
+                selIdx := MicDeviceIdList.Length()
+        }
+    }
+
+    GuiControl, ShortcutsScroll:, MicDeviceChoice, |%listStr%
+    GuiControl, ShortcutsScroll:Choose, MicDeviceChoice, %selIdx%
+}
+
+UpdateMicControlsState() {
+    global MicMuteEnabled, MicMuteMode, MicMuteOsdEnabled
+    en := MicMuteEnabled ? 1 : 0
+    pttEn := (en && MicMuteMode = 1) ? 1 : 0
+    osdEn := (en && MicMuteOsdEnabled) ? 1 : 0
+
+    GuiControl, ShortcutsScroll:Enable%en%, MicHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%en%, MicModeToggle
+    GuiControl, ShortcutsScroll:Enable%en%, MicModePTT
+    GuiControl, ShortcutsScroll:Enable%en%, MicModePTM
+    GuiControl, ShortcutsScroll:Enable%en%, MicDeviceChoice
+    GuiControl, ShortcutsScroll:Enable%en%, MicRefreshDevBtn
+    GuiControl, ShortcutsScroll:Enable%en%, MicOsdEnabled
+    GuiControl, ShortcutsScroll:Enable%en%, MicBeepEnabled
+
+    GuiControl, ShortcutsScroll:Enable%pttEn%, MicReleaseDelayInput
+    GuiControl, ShortcutsScroll:Enable%pttEn%, MicReleaseDelayUpDown
+
+    GuiControl, ShortcutsScroll:Enable%osdEn%, MicOsdDurationInput
+    GuiControl, ShortcutsScroll:Enable%osdEn%, MicOsdDurationUpDown
+    GuiControl, ShortcutsScroll:Enable%osdEn%, MicTestOsdBtn
+}
+
+SyncMicControlsFromState() {
+    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices
+    global MicMuteReleaseDelay, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
+
+    GuiControl, ShortcutsScroll:, MicMuteEnabled, %MicMuteEnabled%
+    if (IsFunc("FormatMicHotkeyText"))
+        GuiControl, ShortcutsScroll:, MicHotkeyBtn, % FormatMicHotkeyText(MicMuteHotkey)
+    GuiControl, ShortcutsScroll:, MicModeToggle, % (MicMuteMode = 0) ? 1 : 0
+    GuiControl, ShortcutsScroll:, MicModePTT, % (MicMuteMode = 1) ? 1 : 0
+    GuiControl, ShortcutsScroll:, MicModePTM, % (MicMuteMode = 2) ? 1 : 0
+    GuiControl, ShortcutsScroll:, MicReleaseDelayInput, %MicMuteReleaseDelay%
+    RefreshMicDeviceDropdown()
+    GuiControl, ShortcutsScroll:, MicOsdEnabled, %MicMuteOsdEnabled%
+    GuiControl, ShortcutsScroll:, MicOsdDurationInput, %MicMuteOsdDuration%
+    GuiControl, ShortcutsScroll:, MicBeepEnabled, %MicMuteBeepEnabled%
+    UpdateMicControlsState()
+}
+
+OnChangeMicHotkey:
+    ShowMicHotkeyDialog()
+return
+
+ShowMicHotkeyDialog() {
+    global MicMuteHotkey, MicMuteRegisteredHk, MicMuteRegisteredUpHk
+    global hSettingsGui, hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyPreview
+
+    if (hMicHotkeyDlg && WinExist("ahk_id " . hMicHotkeyDlg)) {
+        WinActivate, ahk_id %hMicHotkeyDlg%
+        return
+    }
+
+    if (MicMuteRegisteredHk != "")
+        try Hotkey, %MicMuteRegisteredHk%, MicMuteKeyDownHandler, Off
+    if (MicMuteRegisteredUpHk != "")
+        try Hotkey, %MicMuteRegisteredUpHk%, MicMuteKeyUpHandler, Off
+
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
+        Gui, Settings:+Disabled
+
+    MicHotkeyCaptured := MicMuteHotkey
+    MicHotkeyCapturing := true
+
+    ownerOpt := (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) ? "+Owner" . hSettingsGui : ""
+    Gui, MicHotkeyDlg:New, -MaximizeBox -MinimizeBox %ownerOpt% +HwndhMicHotkeyDlg, % L("Mic_HotkeyDlgTitle")
+    if (IsFunc("SetGuiYellowIcon"))
+        SetGuiYellowIcon(hMicHotkeyDlg)
+    Gui, MicHotkeyDlg:Color, FFFFFF
+    Gui, MicHotkeyDlg:Font, s9 Norm c555555, Segoe UI
+    Gui, MicHotkeyDlg:Add, Text, x16 y12 w328, % L("Mic_HotkeyPrompt")
+    Gui, MicHotkeyDlg:Font, s10.5 Bold c005FB8, Segoe UI
+    disp := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : MicMuteHotkey
+    Gui, MicHotkeyDlg:Add, Edit, x16 y36 w328 h28 ReadOnly Center vMicHotkeyPreview, %disp%
+    Gui, MicHotkeyDlg:Font, s9.5 Norm c222222, Segoe UI
+    Gui, MicHotkeyDlg:Add, Button, x16 y74 w78 h26 Default gOnSaveMicHotkey, OK
+    Gui, MicHotkeyDlg:Add, Button, x100 y74 w126 h26 gOnResetMicHotkey, Ctrl + Shift + A
+    Gui, MicHotkeyDlg:Add, Button, x266 y74 w78 h26 gMicHotkeyDlgGuiClose, % L("Set_Close")
+    Gui, MicHotkeyDlg:Show, w360 h112 Center
+
+    OnMessage(0x100, "OnMicHotkeyDlgKeyDown")    ; WM_KEYDOWN
+    OnMessage(0x104, "OnMicHotkeyDlgKeyDown")    ; WM_SYSKEYDOWN
+    OnMessage(0x207, "OnMicHotkeyDlgMouseBtn")   ; WM_MBUTTONDOWN
+    OnMessage(0x20B, "OnMicHotkeyDlgMouseBtn")   ; WM_XBUTTONDOWN
+}
+
+OnMicHotkeyDlgKeyDown(wParam, lParam, msg, hwnd) {
+    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing
+    if (!MicHotkeyCapturing || !hMicHotkeyDlg)
+        return
+    if (hwnd != hMicHotkeyDlg && !DllCall("IsChild", "Ptr", hMicHotkeyDlg, "Ptr", hwnd))
+        return
+
+    ; Bỏ qua khi nhấn riêng phím modifier (Ctrl, Shift, Alt, Win)
+    if (wParam = 16 || wParam = 17 || wParam = 18 || wParam = 91 || wParam = 92
+        || wParam = 160 || wParam = 161 || wParam = 162 || wParam = 163 || wParam = 164 || wParam = 165)
+        return 0
+
+    if (wParam = 27) ; Esc để đóng
+        return
+
+    vkHex := Format("vk{:02X}", wParam)
+    keyName := GetKeyName(vkHex)
+    if (keyName = "")
+        return 0
+
+    mods := ""
+    if (GetKeyState("Ctrl", "P"))
+        mods .= "^"
+    if (GetKeyState("Alt", "P"))
+        mods .= "!"
+    if (GetKeyState("Shift", "P"))
+        mods .= "+"
+    if (GetKeyState("LWin", "P") || GetKeyState("RWin", "P"))
+        mods .= "#"
+
+    MicHotkeyCaptured := mods . keyName
+    GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
+    return 0
+}
+
+OnMicHotkeyDlgMouseBtn(wParam, lParam, msg, hwnd) {
+    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing
+    if (!MicHotkeyCapturing || !hMicHotkeyDlg)
+        return
+    if (hwnd != hMicHotkeyDlg && !DllCall("IsChild", "Ptr", hMicHotkeyDlg, "Ptr", hwnd))
+        return
+
+    btnName := ""
+    if (msg = 0x207) {
+        btnName := "MButton"
+    } else if (msg = 0x20B) {
+        xBtn := (wParam >> 16) & 0xFFFF
+        btnName := (xBtn = 1) ? "XButton1" : (xBtn = 2 ? "XButton2" : "")
+    }
+    if (btnName = "")
+        return
+
+    mods := ""
+    if (GetKeyState("Ctrl", "P"))
+        mods .= "^"
+    if (GetKeyState("Alt", "P"))
+        mods .= "!"
+    if (GetKeyState("Shift", "P"))
+        mods .= "+"
+    if (GetKeyState("LWin", "P") || GetKeyState("RWin", "P"))
+        mods .= "#"
+
+    MicHotkeyCaptured := mods . btnName
+    GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
+    return 0
+}
+
+OnResetMicHotkey:
+    MicHotkeyCaptured := "^+a"
+    GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : "Ctrl + Shift + A"
+return
+
+OnSaveMicHotkey:
+    if (MicHotkeyCaptured = "")
+        return
+    MicMuteHotkey := MicHotkeyCaptured
+    if (IsFunc("SaveMicMuteSettings"))
+        SaveMicMuteSettings()
+    if (IsFunc("FormatMicHotkeyText"))
+        GuiControl, ShortcutsScroll:, MicHotkeyBtn, % FormatMicHotkeyText(MicMuteHotkey)
+    if (IsFunc("RebuildTrayMenu"))
+        RebuildTrayMenu()
+    Gosub, MicHotkeyDlgGuiClose
+return
+
+MicHotkeyDlgGuiClose:
+MicHotkeyDlgGuiEscape:
+    MicHotkeyCapturing := false
+    OnMessage(0x100, "OnMicHotkeyDlgKeyDown", 0)
+    OnMessage(0x104, "OnMicHotkeyDlgKeyDown", 0)
+    OnMessage(0x207, "OnMicHotkeyDlgMouseBtn", 0)
+    OnMessage(0x20B, "OnMicHotkeyDlgMouseBtn", 0)
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+        Gui, Settings:-Disabled
+        WinActivate, ahk_id %hSettingsGui%
+    }
+    Gui, MicHotkeyDlg:Destroy
+    hMicHotkeyDlg := 0
+    if (IsFunc("ApplyMicMuteHotkey"))
+        ApplyMicMuteHotkey()
+return

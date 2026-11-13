@@ -69,6 +69,10 @@ RebuildTrayMenu() {
     ; Sub-menu Phím tắt (gắn với GestureScrollEnabled)
     Menu, PhimTat, Add, % L("Sub_PlainText"), PastePlainText
     Menu, PhimTat, Add, % L("Sub_Mute"), MuteFunc
+    micHkTxt := (IsFunc("FormatMicHotkeyText") && MicMuteHotkey != "") ? ("`t" . FormatMicHotkeyText(MicMuteHotkey)) : ""
+    Menu, PhimTat, Add, % L("Sub_MicMute") . micHkTxt, MenuActionToggleMicMute
+    Menu, PhimTat, Add
+    Menu, PhimTat, Add, % L("Sub_ShortcutSettings"), MenuActionOpenShortcuts
 
     ; Sub-menu Ngôn ngữ / Language kèm icon lá cờ
     if (A_IsCompiled) {
@@ -483,6 +487,16 @@ ExitMenu:
 return
 
 MenuActionSettings:
+    SetTimer, Settings, -30
+return
+
+MenuActionToggleMicMute:
+    if (IsFunc("ToggleMicMute"))
+        ToggleMicMute(true)
+return
+
+MenuActionOpenShortcuts:
+    currentSettingsTab := 4
     SetTimer, Settings, -30
 return
 

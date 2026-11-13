@@ -5,7 +5,7 @@
 ; KHỞI TẠO MODULE MIC MUTE
 ; ========================================================
 InitMicMute() {
-    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices
+    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices, MicTargetDeviceId
     global MicMuteReleaseDelay, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
     global MicMuteRegisteredHk, MicMuteRegisteredUpHk, MicMuteKeyHeld
     global MicMutePtmPrevMuted, MicMutePendingRelease
@@ -15,7 +15,8 @@ InitMicMute() {
     MicMuteEnabled       := 1
     MicMuteMode          := 0          ; 0: Toggle, 1: Push-to-Talk, 2: Push-to-Mute
     MicMuteHotkey        := "^+a"      ; Mặc định: Ctrl + Shift + A (giống PowerToys)
-    MicMuteAllDevices    := 1          ; 1: Áp dụng tất cả thiết bị thu đang hoạt động, 0: Chỉ thiết bị mặc định
+    MicMuteAllDevices    := 1          ; 1: Áp dụng tất cả thiết bị thu đang hoạt động, 0: Thiết bị chỉ định hoặc mặc định
+    MicTargetDeviceId    := ""         ; Rỗng = thiết bị mặc định (khi MicMuteAllDevices = 0)
     MicMuteReleaseDelay  := 200        ; Độ trễ (ms) trước khi tắt mic lại khi nhả phím ở chế độ Push-to-Talk
     MicMuteOsdEnabled    := 1          ; 1: Hiển thị OSD GDI+ tự ẩn khi chuyển trạng thái
     MicMuteOsdDuration   := 1500       ; Thời gian hiển thị OSD (ms) trước khi mờ dần
@@ -46,7 +47,7 @@ InitMicMute() {
 }
 
 LoadMicMuteSettings() {
-    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices
+    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices, MicTargetDeviceId
     global MicMuteReleaseDelay, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
 
     regKey := "HKEY_CURRENT_USER\Software\TRIAN\GestureMouse"
@@ -69,6 +70,10 @@ LoadMicMuteSettings() {
     RegRead, val, %regKey%, MicMuteAllDevices
     if (!ErrorLevel && val != "")
         MicMuteAllDevices := val ? 1 : 0
+
+    RegRead, val, %regKey%, MicTargetDeviceId
+    if (!ErrorLevel)
+        MicTargetDeviceId := val
 
     RegRead, val, %regKey%, MicMuteReleaseDelay
     if (!ErrorLevel && val != "") {
@@ -94,7 +99,7 @@ LoadMicMuteSettings() {
 }
 
 SaveMicMuteSettings() {
-    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices
+    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices, MicTargetDeviceId
     global MicMuteReleaseDelay, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
 
     regKey := "HKEY_CURRENT_USER\Software\TRIAN\GestureMouse"
@@ -102,6 +107,7 @@ SaveMicMuteSettings() {
     RegWrite, REG_DWORD, %regKey%, MicMuteMode, %MicMuteMode%
     RegWrite, REG_SZ,    %regKey%, MicMuteHotkey, %MicMuteHotkey%
     RegWrite, REG_DWORD, %regKey%, MicMuteAllDevices, %MicMuteAllDevices%
+    RegWrite, REG_SZ,    %regKey%, MicTargetDeviceId, %MicTargetDeviceId%
     RegWrite, REG_DWORD, %regKey%, MicMuteReleaseDelay, %MicMuteReleaseDelay%
     RegWrite, REG_DWORD, %regKey%, MicMuteOsdEnabled, %MicMuteOsdEnabled%
     RegWrite, REG_DWORD, %regKey%, MicMuteOsdDuration, %MicMuteOsdDuration%
@@ -268,21 +274,29 @@ ToggleMicMute(showFeedback := true) {
     return newMuted ? 1 : 0
 }
 
-; Lấy trạng thái mute của thiết bị thu mặc định (1: đang tắt, 0: đang bật, -1: không tìm thấy mic)
+; Lấy trạng thái mute của thiết bị thu mục tiêu (1: đang tắt, 0: đang bật, -1: không tìm thấy mic)
 GetMicMuteState() {
+    global MicMuteAllDevices, MicTargetDeviceId
     enumerator := 0, device := 0, epVol := 0
     result := -1
     try {
         enumerator := ComObjCreate("{BCDE0395-E52F-467C-8E3D-C4579291692E}", "{A95664D2-9614-4F35-A746-DE8DB63617E6}")
         if (!enumerator)
             return -1
-        ; IMMDeviceEnumerator::GetDefaultAudioEndpoint(eCapture = 1, eConsole = 0, &device)
-        hr := DllCall(NumGet(NumGet(enumerator + 0) + 4 * A_PtrSize), "Ptr", enumerator, "UInt", 1, "UInt", 0, "Ptr*", device)
-        if (hr != 0 || !device) {
-            ; Fallback sang eCommunications = 2
-            hr := DllCall(NumGet(NumGet(enumerator + 0) + 4 * A_PtrSize), "Ptr", enumerator, "UInt", 1, "UInt", 2, "Ptr*", device)
+
+        if (!MicMuteAllDevices && MicTargetDeviceId != "") {
+            ; IMMDeviceEnumerator::GetDevice(pwstrId, &device) - index 5
+            DllCall(NumGet(NumGet(enumerator + 0) + 5 * A_PtrSize), "Ptr", enumerator, "WStr", MicTargetDeviceId, "Ptr*", device)
         }
-        if (hr = 0 && device) {
+        if (!device) {
+            ; IMMDeviceEnumerator::GetDefaultAudioEndpoint(eCapture = 1, eConsole = 0, &device)
+            hr := DllCall(NumGet(NumGet(enumerator + 0) + 4 * A_PtrSize), "Ptr", enumerator, "UInt", 1, "UInt", 0, "Ptr*", device)
+            if (hr != 0 || !device) {
+                ; Fallback sang eCommunications = 2
+                DllCall(NumGet(NumGet(enumerator + 0) + 4 * A_PtrSize), "Ptr", enumerator, "UInt", 1, "UInt", 2, "Ptr*", device)
+            }
+        }
+        if (device) {
             epVol := ActivateAudioEndpointVolume(device)
             if (epVol) {
                 muted := 0
@@ -302,13 +316,13 @@ GetMicMuteState() {
     return result
 }
 
-; Đặt trạng thái mute cho thiết bị thu (tất cả thiết bị đang bật hoặc chỉ thiết bị mặc định)
+; Đặt trạng thái mute cho thiết bị thu (tất cả thiết bị đang bật, thiết bị chỉ định, hoặc thiết bị mặc định)
 SetMicMuteState(mute, showFeedback := true) {
-    global MicMuteAllDevices, MicMuteOsdEnabled, MicMuteBeepEnabled
+    global MicMuteAllDevices, MicTargetDeviceId, MicMuteOsdEnabled, MicMuteBeepEnabled
 
     bMute := mute ? 1 : 0
     changedAny := false
-    enumerator := 0, collection := 0, device := 0, epVol := 0
+    enumerator := 0, collection := 0
 
     try {
         enumerator := ComObjCreate("{BCDE0395-E52F-467C-8E3D-C4579291692E}", "{A95664D2-9614-4F35-A746-DE8DB63617E6}")
@@ -320,16 +334,13 @@ SetMicMuteState(mute, showFeedback := true) {
             hr := DllCall(NumGet(NumGet(enumerator + 0) + 3 * A_PtrSize), "Ptr", enumerator, "UInt", 1, "UInt", 1, "Ptr*", collection)
             if (hr = 0 && collection) {
                 count := 0
-                ; IMMDeviceCollection::GetCount(&count) - index 3
                 DllCall(NumGet(NumGet(collection + 0) + 3 * A_PtrSize), "Ptr", collection, "UInt*", count)
                 Loop, %count% {
                     idx := A_Index - 1
                     dev := 0, vol := 0
-                    ; IMMDeviceCollection::Item(idx, &dev) - index 4
                     if (DllCall(NumGet(NumGet(collection + 0) + 4 * A_PtrSize), "Ptr", collection, "UInt", idx, "Ptr*", dev) = 0 && dev) {
                         vol := ActivateAudioEndpointVolume(dev)
                         if (vol) {
-                            ; IAudioEndpointVolume::SetMute(bMute, NULL) - index 14
                             if (DllCall(NumGet(NumGet(vol + 0) + 14 * A_PtrSize), "Ptr", vol, "Int", bMute, "Ptr", 0) = 0)
                                 changedAny := true
                             ObjRelease(vol)
@@ -338,10 +349,21 @@ SetMicMuteState(mute, showFeedback := true) {
                     }
                 }
             }
+        } else if (MicTargetDeviceId != "") {
+            dev := 0, vol := 0
+            if (DllCall(NumGet(NumGet(enumerator + 0) + 5 * A_PtrSize), "Ptr", enumerator, "WStr", MicTargetDeviceId, "Ptr*", dev) = 0 && dev) {
+                vol := ActivateAudioEndpointVolume(dev)
+                if (vol) {
+                    if (DllCall(NumGet(NumGet(vol + 0) + 14 * A_PtrSize), "Ptr", vol, "Int", bMute, "Ptr", 0) = 0)
+                        changedAny := true
+                    ObjRelease(vol)
+                }
+                ObjRelease(dev)
+            }
         }
 
-        ; Đảm bảo thiết bị mặc định (eConsole + eCommunications) cũng được đồng bộ
-        if (!MicMuteAllDevices || !changedAny) {
+        ; Đảm bảo thiết bị mặc định (eConsole + eCommunications) nếu đang chọn Default hoặc không tìm thấy thiết bị chỉ định
+        if ((!MicMuteAllDevices && !changedAny) || (MicMuteAllDevices && !changedAny)) {
             Loop, 2 {
                 role := (A_Index = 1) ? 0 : 2
                 dev := 0, vol := 0
@@ -370,6 +392,84 @@ SetMicMuteState(mute, showFeedback := true) {
             PlayMicMuteBeep(bMute)
     }
     return changedAny
+}
+
+; Liệt kê toàn bộ thiết bị thu âm đang hoạt động (giống Windows Sound Input)
+GetCaptureDevices() {
+    devices := []
+    enumerator := 0, collection := 0, defDev := 0
+    defaultId := ""
+
+    try {
+        enumerator := ComObjCreate("{BCDE0395-E52F-467C-8E3D-C4579291692E}", "{A95664D2-9614-4F35-A746-DE8DB63617E6}")
+        if (!enumerator)
+            return devices
+
+        ; Lấy ID của thiết bị mặc định hiện tại để đánh dấu
+        if (DllCall(NumGet(NumGet(enumerator + 0) + 4 * A_PtrSize), "Ptr", enumerator, "UInt", 1, "UInt", 0, "Ptr*", defDev) = 0 && defDev) {
+            pDefId := 0
+            if (DllCall(NumGet(NumGet(defDev + 0) + 5 * A_PtrSize), "Ptr", defDev, "Ptr*", pDefId) = 0 && pDefId) {
+                defaultId := StrGet(pDefId, "UTF-16")
+                DllCall("ole32\CoTaskMemFree", "Ptr", pDefId)
+            }
+            ObjRelease(defDev)
+        }
+
+        if (DllCall(NumGet(NumGet(enumerator + 0) + 3 * A_PtrSize), "Ptr", enumerator, "UInt", 1, "UInt", 1, "Ptr*", collection) = 0 && collection) {
+            count := 0
+            DllCall(NumGet(NumGet(collection + 0) + 3 * A_PtrSize), "Ptr", collection, "UInt*", count)
+            Loop, %count% {
+                idx := A_Index - 1
+                dev := 0
+                if (DllCall(NumGet(NumGet(collection + 0) + 4 * A_PtrSize), "Ptr", collection, "UInt", idx, "Ptr*", dev) = 0 && dev) {
+                    devId := "", devName := ""
+                    pId := 0
+                    if (DllCall(NumGet(NumGet(dev + 0) + 5 * A_PtrSize), "Ptr", dev, "Ptr*", pId) = 0 && pId) {
+                        devId := StrGet(pId, "UTF-16")
+                        DllCall("ole32\CoTaskMemFree", "Ptr", pId)
+                    }
+                    devName := GetAudioDeviceFriendlyName(dev)
+                    if (devId != "" && devName != "")
+                        devices.Push({id: devId, name: devName, isDefault: (devId = defaultId)})
+                    ObjRelease(dev)
+                }
+            }
+        }
+    }
+    if (collection)
+        ObjRelease(collection)
+    if (enumerator)
+        ObjRelease(enumerator)
+    return devices
+}
+
+GetAudioDeviceFriendlyName(pDevice) {
+    static initKey := 0, pkeyFriendly
+    if (!initKey) {
+        VarSetCapacity(pkeyFriendly, 20, 0)
+        ; PKEY_Device_FriendlyName = {A45C254E-DF1C-4EFD-8020-67D146A850E0}, pid = 14
+        DllCall("ole32\CLSIDFromString", "WStr", "{A45C254E-DF1C-4EFD-8020-67D146A850E0}", "Ptr", &pkeyFriendly)
+        NumPut(14, pkeyFriendly, 16, "UInt")
+        initKey := 1
+    }
+    name := ""
+    pProps := 0
+    ; IMMDevice::OpenPropertyStore(STGM_READ = 0, &pProps) - index 4
+    if (DllCall(NumGet(NumGet(pDevice + 0) + 4 * A_PtrSize), "Ptr", pDevice, "UInt", 0, "Ptr*", pProps) = 0 && pProps) {
+        VarSetCapacity(pv, 24, 0)
+        ; IPropertyStore::GetValue(&key, &pv) - index 5
+        if (DllCall(NumGet(NumGet(pProps + 0) + 5 * A_PtrSize), "Ptr", pProps, "Ptr", &pkeyFriendly, "Ptr", &pv) = 0) {
+            vt := NumGet(pv, 0, "UShort")
+            if (vt = 31) { ; VT_LPWSTR
+                pStr := NumGet(pv, 8, "Ptr")
+                if (pStr)
+                    name := StrGet(pStr, "UTF-16")
+            }
+            DllCall("ole32\PropVariantClear", "Ptr", &pv)
+        }
+        ObjRelease(pProps)
+    }
+    return name
 }
 
 ActivateAudioEndpointVolume(pDevice) {
@@ -727,4 +827,23 @@ CleanupMicMute() {
         DllCall("FreeLibrary", "Ptr", MicGdipModule)
         MicGdipModule := 0
     }
+}
+
+; Chuyển đổi chuỗi phím tắt AHK (vd: ^+a, XButton1) sang dạng dễ đọc
+FormatMicHotkeyText(hk) {
+    if (hk = "")
+        return IsFunc("L") ? L("AOT_NoHotkey") : "Chưa gán"
+    res := ""
+    if (InStr(hk, "#"))
+        res .= "Win + "
+    if (InStr(hk, "^"))
+        res .= "Ctrl + "
+    if (InStr(hk, "!"))
+        res .= "Alt + "
+    if (InStr(hk, "+"))
+        res .= "Shift + "
+    keyPart := RegExReplace(hk, "^[*~$#!^+<>]+", "")
+    if (StrLen(keyPart) = 1)
+        StringUpper, keyPart, keyPart
+    return res . keyPart
 }
