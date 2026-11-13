@@ -1736,7 +1736,7 @@ return
 ShowMicHotkeyDialog(targetMode := "toggle") {
     global MicMuteHotkey, MicPttHotkey, MicMuteRegToggleHk, MicMuteRegPttDownHk, MicMuteRegPttUpHk
     global hSettingsGui, hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyPreview
-    global MicHotkeyTargetMode, MicHotkeyPendingMod
+    global MicHotkeyTargetMode, MicHotkeyPendingMod, MicCaptureIH
 
     if (hMicHotkeyDlg && WinExist("ahk_id " . hMicHotkeyDlg)) {
         WinActivate, ahk_id %hMicHotkeyDlg%
@@ -1775,66 +1775,59 @@ ShowMicHotkeyDialog(targetMode := "toggle") {
     Gui, MicHotkeyDlg:Add, Button, x302 y86 w82 h26 gMicHotkeyDlgGuiClose, % L("Set_Close")
     Gui, MicHotkeyDlg:Show, w400 h124 Center
 
-    OnMessage(0x100, "OnMicHotkeyDlgKeyDown")    ; WM_KEYDOWN
-    OnMessage(0x104, "OnMicHotkeyDlgKeyDown")    ; WM_SYSKEYDOWN
-    OnMessage(0x101, "OnMicHotkeyDlgKeyUp")      ; WM_KEYUP
-    OnMessage(0x105, "OnMicHotkeyDlgKeyUp")      ; WM_SYSKEYUP
+    ; Dùng InputHook (low-level keyboard hook) để bắt được cả tổ hợp bị Windows/IME chặn như Alt+`
+    MicCaptureIH := InputHook("L0")
+    MicCaptureIH.KeyOpt("{All}", "N S")
+    MicCaptureIH.OnKeyDown := Func("OnMicHotkeyDlgKeyDown")
+    MicCaptureIH.OnKeyUp := Func("OnMicHotkeyDlgKeyUp")
+    MicCaptureIH.Start()
+
+    OnMessage(0x0006, "OnMicHotkeyDlgActivate")  ; WM_ACTIVATE
     OnMessage(0x207, "OnMicHotkeyDlgMouseBtn")   ; WM_MBUTTONDOWN
     OnMessage(0x20B, "OnMicHotkeyDlgMouseBtn")   ; WM_XBUTTONDOWN
 }
 
-GetSideModifierName(wParam, lParam) {
-    isExt := (lParam >> 24) & 1
-    if (wParam = 17) ; VK_CONTROL
-        return isExt ? "RCtrl" : "LCtrl"
-    if (wParam = 18) ; VK_MENU (Alt)
-        return isExt ? "RAlt" : "LAlt"
-    if (wParam = 16) { ; VK_SHIFT
-        sc := (lParam >> 16) & 0xFF
-        vkEx := DllCall("MapVirtualKey", "UInt", sc, "UInt", 3, "UInt") ; MAPVK_VSC_TO_VK_EX
-        return (vkEx = 0xA1) ? "RShift" : "LShift"
-    }
-    if (wParam = 91)
-        return "LWin"
-    if (wParam = 92)
-        return "RWin"
-    if (wParam = 160)
-        return "LShift"
-    if (wParam = 161)
-        return "RShift"
-    if (wParam = 162)
-        return "LCtrl"
-    if (wParam = 163)
-        return "RCtrl"
-    if (wParam = 164)
-        return "LAlt"
-    if (wParam = 165)
-        return "RAlt"
-    return ""
+OnMicHotkeyDlgActivate(wParam, lParam, msg, hwnd) {
+    global hMicHotkeyDlg, MicHotkeyCapturing, MicCaptureIH
+    if (!MicHotkeyCapturing || !hMicHotkeyDlg || hwnd != hMicHotkeyDlg || !IsObject(MicCaptureIH))
+        return
+    if ((wParam & 0xFFFF) = 0)
+        MicCaptureIH.Stop()
+    else
+        MicCaptureIH.Start()
 }
 
-OnMicHotkeyDlgKeyDown(wParam, lParam, msg, hwnd) {
+GetSideModifierNameFromVK(vk) {
+    static vkMap := {91: "LWin", 92: "RWin"
+        , 160: "LShift", 161: "RShift"
+        , 162: "LCtrl",  163: "RCtrl"
+        , 164: "LAlt",   165: "RAlt"}
+    return vkMap.HasKey(vk) ? vkMap[vk] : ""
+}
+
+OnMicHotkeyDlgKeyDown(ih, vk, sc) {
     global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyTargetMode, MicHotkeyPendingMod
-    if (!MicHotkeyCapturing || !hMicHotkeyDlg)
-        return
-    if (hwnd != hMicHotkeyDlg && !DllCall("IsChild", "Ptr", hMicHotkeyDlg, "Ptr", hwnd))
+    if (!MicHotkeyCapturing || !hMicHotkeyDlg || !WinActive("ahk_id " . hMicHotkeyDlg))
         return
 
-    modName := GetSideModifierName(wParam, lParam)
+    modName := GetSideModifierNameFromVK(vk)
     if (modName != "") {
         if (MicHotkeyTargetMode = "ptt")
             MicHotkeyPendingMod := modName
-        return 0
+        return
     }
 
     MicHotkeyPendingMod := ""
-    if (wParam = 27) ; Esc để đóng
+    if (vk = 27) { ; Esc để đóng
+        SetTimer, MicHotkeyDlgGuiClose, -1
         return
+    }
 
-    vkHex := Format("vk{:02X}", wParam)
-    keyName := GetKeyName(vkHex)
+    keyName := GetKeyName(Format("vk{:02X}", vk))
     if (keyName = "")
-        return 0
+        keyName := GetKeyName(Format("sc{:03X}", sc))
+    if (keyName = "")
+        return
 
     mods := ""
     if (GetKeyState("Ctrl", "P"))
@@ -1848,22 +1841,18 @@ OnMicHotkeyDlgKeyDown(wParam, lParam, msg, hwnd) {
 
     MicHotkeyCaptured := mods . keyName
     GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
-    return 0
 }
 
-OnMicHotkeyDlgKeyUp(wParam, lParam, msg, hwnd) {
+OnMicHotkeyDlgKeyUp(ih, vk, sc) {
     global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyTargetMode, MicHotkeyPendingMod
     if (!MicHotkeyCapturing || !hMicHotkeyDlg || MicHotkeyTargetMode != "ptt")
         return
-    if (hwnd != hMicHotkeyDlg && !DllCall("IsChild", "Ptr", hMicHotkeyDlg, "Ptr", hwnd))
-        return
 
-    modName := GetSideModifierName(wParam, lParam)
+    modName := GetSideModifierNameFromVK(vk)
     if (modName != "" && MicHotkeyPendingMod != "" && modName = MicHotkeyPendingMod) {
         MicHotkeyPendingMod := ""
         MicHotkeyCaptured := modName
         GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
-        return 0
     }
 }
 
@@ -1929,12 +1918,14 @@ return
 
 MicHotkeyDlgGuiClose:
 MicHotkeyDlgGuiEscape:
+    global MicCaptureIH
     MicHotkeyCapturing := false
     MicHotkeyPendingMod := ""
-    OnMessage(0x100, "OnMicHotkeyDlgKeyDown", 0)
-    OnMessage(0x104, "OnMicHotkeyDlgKeyDown", 0)
-    OnMessage(0x101, "OnMicHotkeyDlgKeyUp", 0)
-    OnMessage(0x105, "OnMicHotkeyDlgKeyUp", 0)
+    if (IsObject(MicCaptureIH)) {
+        MicCaptureIH.Stop()
+        MicCaptureIH := ""
+    }
+    OnMessage(0x0006, "OnMicHotkeyDlgActivate", 0)
     OnMessage(0x207, "OnMicHotkeyDlgMouseBtn", 0)
     OnMessage(0x20B, "OnMicHotkeyDlgMouseBtn", 0)
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
