@@ -60,12 +60,8 @@ Settings:
             isVisible := DllCall("IsWindowVisible", "Ptr", hSettingsGui)
             UpdateSettingsGuiControls()
             targetTab := currentSettingsTab ? currentSettingsTab : 1
-            if (!isVisible || targetTab != currentSettingsTab)
-                SwitchSettingsTab(targetTab, !isVisible)
-            if (isVisible)
-                Gui, Settings:Show
-            else
-                Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+            SwitchSettingsTab(targetTab, !isVisible)
+            Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
             if (currentSettingsTab = 4 && hShortcutsScroll) {
                 SyncShortcutsScrollPanelSize()
                 UpdateShortcutsScrollInfo()
@@ -87,7 +83,7 @@ Settings:
     SidebarIconHwnds := {}
     EnsureSettingsVectorIcons()
 
-    Gui, Settings:New, +Resize +MinSize780x455 +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
+    Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
     DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
     SetGuiYellowIcon(hSettingsGui)
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -1235,77 +1231,78 @@ BuildShortcutsScrollPanel(aboutIcon) {
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
     Gui, ShortcutsScroll:Add, Checkbox, x30 y285 w220 h22 vMicMuteEnabled gOnToggleMicMuteEnabled Checked%MicMuteEnabled%, % L("Mic_EnableChk")
-    micHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Ctrl + Shift + A"
+    micHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : "Win + Alt + M"
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x256 y282 w278 h26 vMicHotkeyBtn gOnChangeMicHotkey, %micHkDisplay%
+    Gui, ShortcutsScroll:Add, Button, x256 y282 w278 h26 vMicHotkeyBtn gOnChangeMicToggleHotkey, %micHkDisplay%
 
     ; Phần mở rộng 1 cột của Card Microphone (tọa độ tương đối so với micBaseY = 264)
     Gui, ShortcutsScroll:Add, Text, x30 y316 w502 h1 0x10 +HwndhMicDiv Hidden
     MicGroupItems.Push({hwnd: hMicDiv, relY: 316 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y326 w502 h18 +HwndhMicSecMode Hidden, % L("Mic_SecMode")
+    Gui, ShortcutsScroll:Add, Text, x30 y326 w502 h18 +HwndhMicSecMode Hidden, % L("Mic_SecHotkeys")
     MicGroupItems.Push({hwnd: hMicSecMode, relY: 326 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    chkM0 := (MicMuteMode = 0) ? 1 : 0
-    chkM1 := (MicMuteMode = 1) ? 1 : 0
-    chkM2 := (MicMuteMode = 2) ? 1 : 0
-    Gui, ShortcutsScroll:Add, Radio, x38 y348 w492 h20 vMicModeToggle +HwndhMicR0 gOnSelectMicMode Checked%chkM0% Hidden, % L("Mic_ModeToggle")
-    Gui, ShortcutsScroll:Add, Radio, x38 y372 w492 h20 vMicModePTT +HwndhMicR1 gOnSelectMicMode Checked%chkM1% Hidden, % L("Mic_ModePTT")
-    MicGroupItems.Push({hwnd: hMicR0, relY: 348 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicR1, relY: 372 - micBaseY})
+    Gui, ShortcutsScroll:Add, Text, x38 y352 w212 h20 +HwndhMicPttLbl Hidden, % L("Mic_PttHkLbl")
+    pttHkDisplay := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicPttHotkey) : "Right Ctrl"
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x256 y348 w278 h26 vMicPttHotkeyBtn +HwndhMicPttBtn gOnChangeMicPttHotkey Hidden, %pttHkDisplay%
+    MicGroupItems.Push({hwnd: hMicPttLbl, relY: 352 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicPttBtn, relY: 348 - micBaseY})
+
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y380 w494 h22 vMicPttInvert +HwndhMicPttInv gOnSaveMicSettings Checked%MicPttInvert% Hidden, % L("Mic_PttInvertChk")
+    MicGroupItems.Push({hwnd: hMicPttInv, relY: 380 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y397 w196 h18 +HwndhMicDelayLbl Hidden, % L("Mic_DelayLbl")
+    Gui, ShortcutsScroll:Add, Text, x38 y409 w214 h18 +HwndhMicDelayLbl Hidden, % L("Mic_DelayLbl")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Edit, x258 y394 w72 h22 Number vMicReleaseDelayInput +HwndhMicDelayEdit gOnChangeMicDelay Hidden, %MicMuteReleaseDelay%
+    Gui, ShortcutsScroll:Add, Edit, x258 y406 w72 h22 Number vMicReleaseDelayInput +HwndhMicDelayEdit gOnChangeMicDelay Hidden, %MicMuteReleaseDelay%
     Gui, ShortcutsScroll:Add, UpDown, Range0-2000 vMicReleaseDelayUpDown +HwndhMicDelayUD Hidden, %MicMuteReleaseDelay%
     Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x336 y397 w120 h18 +HwndhMicDelayUnit Hidden, (0 - 2000 ms)
-    MicGroupItems.Push({hwnd: hMicDelayLbl,  relY: 397 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayEdit, relY: 394 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayUD,   relY: 394 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDelayUnit, relY: 397 - micBaseY})
-
-    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Radio, x38 y422 w492 h20 vMicModePTM +HwndhMicR2 gOnSelectMicMode Checked%chkM2% Hidden, % L("Mic_ModePTM")
-    MicGroupItems.Push({hwnd: hMicR2, relY: 422 - micBaseY})
+    Gui, ShortcutsScroll:Add, Text, x336 y409 w120 h18 +HwndhMicDelayUnit Hidden, (0 - 2000 ms)
+    MicGroupItems.Push({hwnd: hMicDelayLbl,  relY: 409 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayEdit, relY: 406 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayUD,   relY: 406 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDelayUnit, relY: 409 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y450 w502 h18 +HwndhMicSecDev Hidden, % L("Mic_SecDevice")
+    Gui, ShortcutsScroll:Add, Text, x30 y438 w502 h18 +HwndhMicSecDev Hidden, % L("Mic_SecDevice")
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, DropDownList, x38 y473 w464 AltSubmit vMicDeviceChoice +HwndhMicDevDDL gOnSelectMicDevice Hidden, % L("Mic_DevAll")
+    Gui, ShortcutsScroll:Add, DropDownList, x38 y461 w464 AltSubmit vMicDeviceChoice +HwndhMicDevDDL gOnSelectMicDevice Hidden, % L("Mic_DevAll")
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x506 y472 w28 h24 vMicRefreshDevBtn +HwndhMicDevRefresh gOnRefreshMicDevices Hidden, ↻
+    Gui, ShortcutsScroll:Add, Button, x506 y460 w28 h24 vMicRefreshDevBtn +HwndhMicDevRefresh gOnRefreshMicDevices Hidden, ↻
     Gui, ShortcutsScroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x38 y500 w492 h18 +HwndhMicAllDesc Hidden, % L("Mic_AllDevicesDesc")
-    MicGroupItems.Push({hwnd: hMicSecDev,     relY: 450 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDevDDL,     relY: 473 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicDevRefresh, relY: 472 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicAllDesc,    relY: 500 - micBaseY})
+    Gui, ShortcutsScroll:Add, Text, x38 y488 w492 h18 +HwndhMicAllDesc Hidden, % L("Mic_AllDevicesDesc")
+    MicGroupItems.Push({hwnd: hMicSecDev,     relY: 438 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDevDDL,     relY: 461 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicDevRefresh, relY: 460 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicAllDesc,    relY: 488 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Bold c005FB8, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x30 y520 w502 h18 +HwndhMicSecOsd Hidden, % L("Mic_SecOsd")
+    Gui, ShortcutsScroll:Add, Text, x30 y512 w502 h18 +HwndhMicSecOsd Hidden, % L("Mic_SecOsd")
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y542 w492 h22 vMicOsdEnabled +HwndhMicOsdChk gOnToggleMicOsd Checked%MicMuteOsdEnabled% Hidden, % L("Mic_OsdChk")
-    MicGroupItems.Push({hwnd: hMicSecOsd, relY: 520 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdChk, relY: 542 - micBaseY})
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y534 w492 h22 vMicMuteBadgeEnabled +HwndhMicBadgeChk gOnToggleMicBadge Checked%MicMuteBadgeEnabled% Hidden, % L("Mic_BadgeChk")
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y558 w492 h22 vMicOsdEnabled +HwndhMicOsdChk gOnToggleMicOsd Checked%MicMuteOsdEnabled% Hidden, % L("Mic_OsdChk")
+    MicGroupItems.Push({hwnd: hMicSecOsd,   relY: 512 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicBadgeChk, relY: 534 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdChk,   relY: 558 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, x58 y569 w196 h18 +HwndhMicOsdDurLbl Hidden, % L("Mic_OsdDurLbl")
+    Gui, ShortcutsScroll:Add, Text, x58 y585 w196 h18 +HwndhMicOsdDurLbl Hidden, % L("Mic_OsdDurLbl")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Edit, x258 y566 w72 h22 Number vMicOsdDurationInput +HwndhMicOsdEdit gOnChangeMicOsdDuration Hidden, %MicMuteOsdDuration%
+    Gui, ShortcutsScroll:Add, Edit, x258 y582 w72 h22 Number vMicOsdDurationInput +HwndhMicOsdEdit gOnChangeMicOsdDuration Hidden, %MicMuteOsdDuration%
     Gui, ShortcutsScroll:Add, UpDown, Range400-10000 vMicOsdDurationUpDown +HwndhMicOsdUD Hidden, %MicMuteOsdDuration%
-    Gui, ShortcutsScroll:Add, Button, x340 y564 w116 h25 vMicTestOsdBtn +HwndhMicTestBtn gOnTestMicOsd Hidden, % L("Mic_TestOsdBtn")
-    MicGroupItems.Push({hwnd: hMicOsdDurLbl, relY: 569 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdEdit,   relY: 566 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicOsdUD,     relY: 566 - micBaseY})
-    MicGroupItems.Push({hwnd: hMicTestBtn,   relY: 564 - micBaseY})
+    Gui, ShortcutsScroll:Add, Button, x340 y580 w116 h25 vMicTestOsdBtn +HwndhMicTestBtn gOnTestMicOsd Hidden, % L("Mic_TestOsdBtn")
+    MicGroupItems.Push({hwnd: hMicOsdDurLbl, relY: 585 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdEdit,   relY: 582 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicOsdUD,     relY: 582 - micBaseY})
+    MicGroupItems.Push({hwnd: hMicTestBtn,   relY: 580 - micBaseY})
 
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Checkbox, x38 y595 w492 h22 vMicBeepEnabled +HwndhMicBeepChk gOnSaveMicSettings Checked%MicMuteBeepEnabled% Hidden, % L("Mic_BeepChk")
-    MicGroupItems.Push({hwnd: hMicBeepChk, relY: 595 - micBaseY})
+    Gui, ShortcutsScroll:Add, Checkbox, x38 y611 w492 h22 vMicBeepEnabled +HwndhMicBeepChk gOnSaveMicSettings Checked%MicMuteBeepEnabled% Hidden, % L("Mic_BeepChk")
+    MicGroupItems.Push({hwnd: hMicBeepChk, relY: 611 - micBaseY})
 
     ; --------------------------------------------------------
     ; ACCORDION 3: GHIM CỬA SỔ LUÔN NỔI (MẶC ĐỊNH MỞ)
@@ -1382,7 +1379,7 @@ LayoutShortcutsTab(resetScroll := false) {
     curY += sysH + 8
 
     ; 2. Microphone
-    micH := micExpanded ? 364 : 54
+    micH := micExpanded ? 380 : 54
     GuiControl, ShortcutsScroll:Move, MicGroupBox,    % "y" . (curY - off) . " h" . micH
     GuiControl, ShortcutsScroll:Move, MicHeaderTxt,   % "y" . (curY - 2 - off)
     GuiControl, ShortcutsScroll:, MicHeaderTxt, % (micExpanded ? " ▾  " : " ▸  ") . L("Set_GroupMic") . " "
@@ -1568,16 +1565,10 @@ OnToggleMicMuteEnabled:
         SaveMicMuteSettings()
     if (IsFunc("ApplyMicMuteHotkey"))
         ApplyMicMuteHotkey()
-    if (MicMuteEnabled && MicMuteMode = 1 && IsFunc("SetMicMuteState"))
-        SetMicMuteState(true, false)
-    UpdateMicControlsState()
-return
-
-OnSelectMicMode:
-    Gui, ShortcutsScroll:Submit, NoHide
-    newMode := MicModePTT ? 1 : (MicModePTM ? 2 : 0)
-    if (IsFunc("SetMicMuteMode"))
-        SetMicMuteMode(newMode)
+    if (IsFunc("UpdateMicBadge"))
+        UpdateMicBadge()
+    if (IsFunc("SyncMicBadgeTimer"))
+        SyncMicBadgeTimer()
     UpdateMicControlsState()
 return
 
@@ -1591,6 +1582,17 @@ OnChangeMicDelay:
     MicMuteReleaseDelay := val
     if (IsFunc("SaveMicMuteSettings"))
         SaveMicMuteSettings()
+return
+
+OnToggleMicBadge:
+    Gui, ShortcutsScroll:Submit, NoHide
+    MicMuteBadgeEnabled := MicMuteBadgeEnabled ? 1 : 0
+    if (IsFunc("SaveMicMuteSettings"))
+        SaveMicMuteSettings()
+    if (IsFunc("UpdateMicBadge"))
+        UpdateMicBadge()
+    if (IsFunc("SyncMicBadgeTimer"))
+        SyncMicBadgeTimer()
 return
 
 OnToggleMicOsd:
@@ -1622,6 +1624,7 @@ return
 
 OnSaveMicSettings:
     Gui, ShortcutsScroll:Submit, NoHide
+    MicPttInvert := MicPttInvert ? 1 : 0
     MicMuteBeepEnabled := MicMuteBeepEnabled ? 1 : 0
     if (IsFunc("SaveMicMuteSettings"))
         SaveMicMuteSettings()
@@ -1643,6 +1646,8 @@ OnSelectMicDevice:
         }
         if (IsFunc("SaveMicMuteSettings"))
             SaveMicMuteSettings()
+        if (IsFunc("UpdateMicBadge"))
+            UpdateMicBadge()
     }
 return
 
@@ -1674,22 +1679,20 @@ RefreshMicDeviceDropdown() {
 }
 
 UpdateMicControlsState() {
-    global MicMuteEnabled, MicMuteMode, MicMuteOsdEnabled
+    global MicMuteEnabled, MicMuteOsdEnabled
     en := MicMuteEnabled ? 1 : 0
-    pttEn := (en && MicMuteMode = 1) ? 1 : 0
     osdEn := (en && MicMuteOsdEnabled) ? 1 : 0
 
     GuiControl, ShortcutsScroll:Enable%en%, MicHotkeyBtn
-    GuiControl, ShortcutsScroll:Enable%en%, MicModeToggle
-    GuiControl, ShortcutsScroll:Enable%en%, MicModePTT
-    GuiControl, ShortcutsScroll:Enable%en%, MicModePTM
+    GuiControl, ShortcutsScroll:Enable%en%, MicPttHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%en%, MicPttInvert
+    GuiControl, ShortcutsScroll:Enable%en%, MicReleaseDelayInput
+    GuiControl, ShortcutsScroll:Enable%en%, MicReleaseDelayUpDown
     GuiControl, ShortcutsScroll:Enable%en%, MicDeviceChoice
     GuiControl, ShortcutsScroll:Enable%en%, MicRefreshDevBtn
+    GuiControl, ShortcutsScroll:Enable%en%, MicMuteBadgeEnabled
     GuiControl, ShortcutsScroll:Enable%en%, MicOsdEnabled
     GuiControl, ShortcutsScroll:Enable%en%, MicBeepEnabled
-
-    GuiControl, ShortcutsScroll:Enable%pttEn%, MicReleaseDelayInput
-    GuiControl, ShortcutsScroll:Enable%pttEn%, MicReleaseDelayUpDown
 
     GuiControl, ShortcutsScroll:Enable%osdEn%, MicOsdDurationInput
     GuiControl, ShortcutsScroll:Enable%osdEn%, MicOsdDurationUpDown
@@ -1697,45 +1700,55 @@ UpdateMicControlsState() {
 }
 
 SyncMicControlsFromState() {
-    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices
-    global MicMuteReleaseDelay, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
+    global MicMuteEnabled, MicMuteHotkey, MicPttHotkey, MicPttInvert
+    global MicMuteReleaseDelay, MicMuteBadgeEnabled, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
 
     GuiControl, ShortcutsScroll:, MicMuteEnabled, %MicMuteEnabled%
-    if (IsFunc("FormatMicHotkeyText"))
+    if (IsFunc("FormatMicHotkeyText")) {
         GuiControl, ShortcutsScroll:, MicHotkeyBtn, % FormatMicHotkeyText(MicMuteHotkey)
-    GuiControl, ShortcutsScroll:, MicModeToggle, % (MicMuteMode = 0) ? 1 : 0
-    GuiControl, ShortcutsScroll:, MicModePTT, % (MicMuteMode = 1) ? 1 : 0
-    GuiControl, ShortcutsScroll:, MicModePTM, % (MicMuteMode = 2) ? 1 : 0
+        GuiControl, ShortcutsScroll:, MicPttHotkeyBtn, % FormatMicHotkeyText(MicPttHotkey)
+    }
+    GuiControl, ShortcutsScroll:, MicPttInvert, %MicPttInvert%
     GuiControl, ShortcutsScroll:, MicReleaseDelayInput, %MicMuteReleaseDelay%
     RefreshMicDeviceDropdown()
+    GuiControl, ShortcutsScroll:, MicMuteBadgeEnabled, %MicMuteBadgeEnabled%
     GuiControl, ShortcutsScroll:, MicOsdEnabled, %MicMuteOsdEnabled%
     GuiControl, ShortcutsScroll:, MicOsdDurationInput, %MicMuteOsdDuration%
     GuiControl, ShortcutsScroll:, MicBeepEnabled, %MicMuteBeepEnabled%
     UpdateMicControlsState()
 }
 
-OnChangeMicHotkey:
-    ShowMicHotkeyDialog()
+OnChangeMicToggleHotkey:
+    ShowMicHotkeyDialog("toggle")
 return
 
-ShowMicHotkeyDialog() {
-    global MicMuteHotkey, MicMuteRegisteredHk, MicMuteRegisteredUpHk
+OnChangeMicPttHotkey:
+    ShowMicHotkeyDialog("ptt")
+return
+
+ShowMicHotkeyDialog(targetMode := "toggle") {
+    global MicMuteHotkey, MicPttHotkey, MicMuteRegToggleHk, MicMuteRegPttDownHk, MicMuteRegPttUpHk
     global hSettingsGui, hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyPreview
+    global MicHotkeyTargetMode, MicHotkeyPendingMod
 
     if (hMicHotkeyDlg && WinExist("ahk_id " . hMicHotkeyDlg)) {
         WinActivate, ahk_id %hMicHotkeyDlg%
         return
     }
 
-    if (MicMuteRegisteredHk != "")
-        try Hotkey, %MicMuteRegisteredHk%, MicMuteKeyDownHandler, Off
-    if (MicMuteRegisteredUpHk != "")
-        try Hotkey, %MicMuteRegisteredUpHk%, MicMuteKeyUpHandler, Off
+    if (MicMuteRegToggleHk != "")
+        try Hotkey, %MicMuteRegToggleHk%, MicToggleKeyHandler, Off
+    if (MicMuteRegPttDownHk != "")
+        try Hotkey, %MicMuteRegPttDownHk%, MicPttKeyDownHandler, Off
+    if (MicMuteRegPttUpHk != "")
+        try Hotkey, %MicMuteRegPttUpHk%, MicPttKeyUpHandler, Off
 
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
         Gui, Settings:+Disabled
 
-    MicHotkeyCaptured := MicMuteHotkey
+    MicHotkeyTargetMode := targetMode
+    MicHotkeyCaptured := (targetMode = "ptt") ? MicPttHotkey : MicMuteHotkey
+    MicHotkeyPendingMod := ""
     MicHotkeyCapturing := true
 
     ownerOpt := (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) ? "+Owner" . hSettingsGui : ""
@@ -1744,34 +1757,71 @@ ShowMicHotkeyDialog() {
         SetGuiYellowIcon(hMicHotkeyDlg)
     Gui, MicHotkeyDlg:Color, FFFFFF
     Gui, MicHotkeyDlg:Font, s9 Norm c555555, Segoe UI
-    Gui, MicHotkeyDlg:Add, Text, x16 y12 w328, % L("Mic_HotkeyPrompt")
+    promptTxt := (targetMode = "ptt") ? L("Mic_PttPrompt") : L("Mic_HotkeyPrompt")
+    Gui, MicHotkeyDlg:Add, Text, x16 y12 w328, %promptTxt%
     Gui, MicHotkeyDlg:Font, s10.5 Bold c005FB8, Segoe UI
-    disp := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicMuteHotkey) : MicMuteHotkey
+    disp := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
     Gui, MicHotkeyDlg:Add, Edit, x16 y36 w328 h28 ReadOnly Center vMicHotkeyPreview, %disp%
     Gui, MicHotkeyDlg:Font, s9.5 Norm c222222, Segoe UI
     Gui, MicHotkeyDlg:Add, Button, x16 y74 w78 h26 Default gOnSaveMicHotkey, OK
-    Gui, MicHotkeyDlg:Add, Button, x100 y74 w126 h26 gOnResetMicHotkey, Ctrl + Shift + A
+    resetLbl := (targetMode = "ptt") ? "Right Ctrl" : "Win + Alt + M"
+    Gui, MicHotkeyDlg:Add, Button, x100 y74 w126 h26 gOnResetMicHotkey, %resetLbl%
     Gui, MicHotkeyDlg:Add, Button, x266 y74 w78 h26 gMicHotkeyDlgGuiClose, % L("Set_Close")
     Gui, MicHotkeyDlg:Show, w360 h112 Center
 
     OnMessage(0x100, "OnMicHotkeyDlgKeyDown")    ; WM_KEYDOWN
     OnMessage(0x104, "OnMicHotkeyDlgKeyDown")    ; WM_SYSKEYDOWN
+    OnMessage(0x101, "OnMicHotkeyDlgKeyUp")      ; WM_KEYUP
+    OnMessage(0x105, "OnMicHotkeyDlgKeyUp")      ; WM_SYSKEYUP
     OnMessage(0x207, "OnMicHotkeyDlgMouseBtn")   ; WM_MBUTTONDOWN
     OnMessage(0x20B, "OnMicHotkeyDlgMouseBtn")   ; WM_XBUTTONDOWN
 }
 
+GetSideModifierName(wParam, lParam) {
+    isExt := (lParam >> 24) & 1
+    if (wParam = 17) ; VK_CONTROL
+        return isExt ? "RCtrl" : "LCtrl"
+    if (wParam = 18) ; VK_MENU (Alt)
+        return isExt ? "RAlt" : "LAlt"
+    if (wParam = 16) { ; VK_SHIFT
+        sc := (lParam >> 16) & 0xFF
+        vkEx := DllCall("MapVirtualKey", "UInt", sc, "UInt", 3, "UInt") ; MAPVK_VSC_TO_VK_EX
+        return (vkEx = 0xA1) ? "RShift" : "LShift"
+    }
+    if (wParam = 91)
+        return "LWin"
+    if (wParam = 92)
+        return "RWin"
+    if (wParam = 160)
+        return "LShift"
+    if (wParam = 161)
+        return "RShift"
+    if (wParam = 162)
+        return "LCtrl"
+    if (wParam = 163)
+        return "RCtrl"
+    if (wParam = 164)
+        return "LAlt"
+    if (wParam = 165)
+        return "RAlt"
+    return ""
+}
+
 OnMicHotkeyDlgKeyDown(wParam, lParam, msg, hwnd) {
-    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing
+    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyTargetMode, MicHotkeyPendingMod
     if (!MicHotkeyCapturing || !hMicHotkeyDlg)
         return
     if (hwnd != hMicHotkeyDlg && !DllCall("IsChild", "Ptr", hMicHotkeyDlg, "Ptr", hwnd))
         return
 
-    ; Bỏ qua khi nhấn riêng phím modifier (Ctrl, Shift, Alt, Win)
-    if (wParam = 16 || wParam = 17 || wParam = 18 || wParam = 91 || wParam = 92
-        || wParam = 160 || wParam = 161 || wParam = 162 || wParam = 163 || wParam = 164 || wParam = 165)
+    modName := GetSideModifierName(wParam, lParam)
+    if (modName != "") {
+        if (MicHotkeyTargetMode = "ptt")
+            MicHotkeyPendingMod := modName
         return 0
+    }
 
+    MicHotkeyPendingMod := ""
     if (wParam = 27) ; Esc để đóng
         return
 
@@ -1795,13 +1845,30 @@ OnMicHotkeyDlgKeyDown(wParam, lParam, msg, hwnd) {
     return 0
 }
 
+OnMicHotkeyDlgKeyUp(wParam, lParam, msg, hwnd) {
+    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyTargetMode, MicHotkeyPendingMod
+    if (!MicHotkeyCapturing || !hMicHotkeyDlg || MicHotkeyTargetMode != "ptt")
+        return
+    if (hwnd != hMicHotkeyDlg && !DllCall("IsChild", "Ptr", hMicHotkeyDlg, "Ptr", hwnd))
+        return
+
+    modName := GetSideModifierName(wParam, lParam)
+    if (modName != "" && MicHotkeyPendingMod != "" && modName = MicHotkeyPendingMod) {
+        MicHotkeyPendingMod := ""
+        MicHotkeyCaptured := modName
+        GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
+        return 0
+    }
+}
+
 OnMicHotkeyDlgMouseBtn(wParam, lParam, msg, hwnd) {
-    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing
+    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyPendingMod
     if (!MicHotkeyCapturing || !hMicHotkeyDlg)
         return
     if (hwnd != hMicHotkeyDlg && !DllCall("IsChild", "Ptr", hMicHotkeyDlg, "Ptr", hwnd))
         return
 
+    MicHotkeyPendingMod := ""
     btnName := ""
     if (msg = 0x207) {
         btnName := "MButton"
@@ -1828,28 +1895,40 @@ OnMicHotkeyDlgMouseBtn(wParam, lParam, msg, hwnd) {
 }
 
 OnResetMicHotkey:
-    MicHotkeyCaptured := "^+a"
-    GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : "Ctrl + Shift + A"
+    if (MicHotkeyTargetMode = "ptt")
+        MicHotkeyCaptured := "RCtrl"
+    else
+        MicHotkeyCaptured := "#!m"
+    GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
 return
 
 OnSaveMicHotkey:
     if (MicHotkeyCaptured = "")
         return
-    MicMuteHotkey := MicHotkeyCaptured
+    if (MicHotkeyTargetMode = "ptt") {
+        MicPttHotkey := MicHotkeyCaptured
+        if (IsFunc("FormatMicHotkeyText"))
+            GuiControl, ShortcutsScroll:, MicPttHotkeyBtn, % FormatMicHotkeyText(MicPttHotkey)
+    } else {
+        MicMuteHotkey := MicHotkeyCaptured
+        if (IsFunc("FormatMicHotkeyText"))
+            GuiControl, ShortcutsScroll:, MicHotkeyBtn, % FormatMicHotkeyText(MicMuteHotkey)
+        if (IsFunc("RebuildTrayMenu"))
+            RebuildTrayMenu()
+    }
     if (IsFunc("SaveMicMuteSettings"))
         SaveMicMuteSettings()
-    if (IsFunc("FormatMicHotkeyText"))
-        GuiControl, ShortcutsScroll:, MicHotkeyBtn, % FormatMicHotkeyText(MicMuteHotkey)
-    if (IsFunc("RebuildTrayMenu"))
-        RebuildTrayMenu()
     Gosub, MicHotkeyDlgGuiClose
 return
 
 MicHotkeyDlgGuiClose:
 MicHotkeyDlgGuiEscape:
     MicHotkeyCapturing := false
+    MicHotkeyPendingMod := ""
     OnMessage(0x100, "OnMicHotkeyDlgKeyDown", 0)
     OnMessage(0x104, "OnMicHotkeyDlgKeyDown", 0)
+    OnMessage(0x101, "OnMicHotkeyDlgKeyUp", 0)
+    OnMessage(0x105, "OnMicHotkeyDlgKeyUp", 0)
     OnMessage(0x207, "OnMicHotkeyDlgMouseBtn", 0)
     OnMessage(0x20B, "OnMicHotkeyDlgMouseBtn", 0)
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {

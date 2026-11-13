@@ -5,27 +5,32 @@
 ; KHỞI TẠO MODULE MIC MUTE
 ; ========================================================
 InitMicMute() {
-    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices, MicTargetDeviceId
-    global MicMuteReleaseDelay, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
-    global MicMuteRegisteredHk, MicMuteRegisteredUpHk, MicMuteKeyHeld
-    global MicMutePtmPrevMuted, MicMutePendingRelease
+    global MicMuteEnabled, MicMuteHotkey, MicPttHotkey, MicPttInvert
+    global MicMuteAllDevices, MicTargetDeviceId, MicMuteReleaseDelay
+    global MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBadgeEnabled, MicMuteBeepEnabled
+    global MicMuteRegToggleHk, MicMuteRegPttDownHk, MicMuteRegPttUpHk
+    global MicPttKeyHeld, MicPttActionMode, MicMutePendingRelease
     global hMicOsdGui, MicOsdVisible, MicOsdAlpha, MicOsdBitmap, MicOsdW, MicOsdH, MicOsdX, MicOsdY
+    global hMicBadgeGui, MicBadgeVisible, MicBadgeLastMuted
     global MicGdipModule, MicGdipToken
 
     MicMuteEnabled       := 1
-    MicMuteMode          := 0          ; 0: Toggle, 1: Push-to-Talk, 2: Push-to-Mute
-    MicMuteHotkey        := "^+a"      ; Mặc định: Ctrl + Shift + A (giống PowerToys)
+    MicMuteHotkey        := "#!m"      ; Phím tắt Toggle mặc định: Win + Alt + M
+    MicPttHotkey         := "LCtrl"    ; Phím tắt Push-to-Talk mặc định: Right Ctrl
+    MicPttInvert         := 1          ; 1: Đảo chiều thông minh (nếu mic đang bật -> giữ để tắt tạm thời)
     MicMuteAllDevices    := 1          ; 1: Áp dụng tất cả thiết bị thu đang hoạt động, 0: Thiết bị chỉ định hoặc mặc định
     MicTargetDeviceId    := ""         ; Rỗng = thiết bị mặc định (khi MicMuteAllDevices = 0)
-    MicMuteReleaseDelay  := 200        ; Độ trễ (ms) trước khi tắt mic lại khi nhả phím ở chế độ Push-to-Talk
+    MicMuteReleaseDelay  := 200        ; Độ trễ (ms) trước khi tắt mic lại khi nhả phím Push-to-Talk
     MicMuteOsdEnabled    := 1          ; 1: Hiển thị OSD GDI+ tự ẩn khi chuyển trạng thái
     MicMuteOsdDuration   := 1500       ; Thời gian hiển thị OSD (ms) trước khi mờ dần
+    MicMuteBadgeEnabled  := 1          ; 1: Ghim badge mờ ở góc trên-phải khi Mic đang tắt
     MicMuteBeepEnabled   := 0          ; 1: Phát tiếng bíp nhẹ phản hồi khi đổi trạng thái
 
-    MicMuteRegisteredHk   := ""
-    MicMuteRegisteredUpHk := ""
-    MicMuteKeyHeld        := false
-    MicMutePtmPrevMuted   := false
+    MicMuteRegToggleHk    := ""
+    MicMuteRegPttDownHk   := ""
+    MicMuteRegPttUpHk     := ""
+    MicPttKeyHeld         := false
+    MicPttActionMode      := ""        ; "talk" hoặc "mute"
     MicMutePendingRelease := false
 
     hMicOsdGui   := 0
@@ -33,22 +38,26 @@ InitMicMute() {
     MicOsdAlpha  := 255
     MicOsdBitmap := 0
     MicOsdW := 0, MicOsdH := 0, MicOsdX := 0, MicOsdY := 0
+
+    hMicBadgeGui      := 0
+    MicBadgeVisible   := false
+    MicBadgeLastMuted := -1
+
     MicGdipModule := 0
     MicGdipToken  := 0
 
     LoadMicMuteSettings()
     ApplyMicMuteHotkey()
-
-    ; Nếu đang ở chế độ Push-to-Talk khi khởi động, đảm bảo mic mặc định ở trạng thái tắt
-    if (MicMuteEnabled && MicMuteMode = 1)
-        SetMicMuteState(true, false)
+    UpdateMicBadge()
+    SyncMicBadgeTimer()
 
     OnExit("CleanupMicMute")
 }
 
 LoadMicMuteSettings() {
-    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices, MicTargetDeviceId
-    global MicMuteReleaseDelay, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
+    global MicMuteEnabled, MicMuteHotkey, MicPttHotkey, MicPttInvert
+    global MicMuteAllDevices, MicTargetDeviceId, MicMuteReleaseDelay
+    global MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBadgeEnabled, MicMuteBeepEnabled
 
     regKey := "HKEY_CURRENT_USER\Software\TRIAN\GestureMouse"
 
@@ -56,16 +65,17 @@ LoadMicMuteSettings() {
     if (!ErrorLevel && val != "")
         MicMuteEnabled := val ? 1 : 0
 
-    RegRead, val, %regKey%, MicMuteMode
-    if (!ErrorLevel && val != "") {
-        val += 0
-        if (val >= 0 && val <= 2)
-            MicMuteMode := val
-    }
-
     RegRead, val, %regKey%, MicMuteHotkey
     if (!ErrorLevel && val != "")
         MicMuteHotkey := val
+
+    RegRead, val, %regKey%, MicPttHotkey
+    if (!ErrorLevel && val != "")
+        MicPttHotkey := val
+
+    RegRead, val, %regKey%, MicPttInvert
+    if (!ErrorLevel && val != "")
+        MicPttInvert := val ? 1 : 0
 
     RegRead, val, %regKey%, MicMuteAllDevices
     if (!ErrorLevel && val != "")
@@ -93,163 +103,157 @@ LoadMicMuteSettings() {
             MicMuteOsdDuration := val
     }
 
+    RegRead, val, %regKey%, MicMuteBadgeEnabled
+    if (!ErrorLevel && val != "")
+        MicMuteBadgeEnabled := val ? 1 : 0
+
     RegRead, val, %regKey%, MicMuteBeepEnabled
     if (!ErrorLevel && val != "")
         MicMuteBeepEnabled := val ? 1 : 0
 }
 
 SaveMicMuteSettings() {
-    global MicMuteEnabled, MicMuteMode, MicMuteHotkey, MicMuteAllDevices, MicTargetDeviceId
-    global MicMuteReleaseDelay, MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBeepEnabled
+    global MicMuteEnabled, MicMuteHotkey, MicPttHotkey, MicPttInvert
+    global MicMuteAllDevices, MicTargetDeviceId, MicMuteReleaseDelay
+    global MicMuteOsdEnabled, MicMuteOsdDuration, MicMuteBadgeEnabled, MicMuteBeepEnabled
 
     regKey := "HKEY_CURRENT_USER\Software\TRIAN\GestureMouse"
     RegWrite, REG_DWORD, %regKey%, MicMuteEnabled, %MicMuteEnabled%
-    RegWrite, REG_DWORD, %regKey%, MicMuteMode, %MicMuteMode%
     RegWrite, REG_SZ,    %regKey%, MicMuteHotkey, %MicMuteHotkey%
+    RegWrite, REG_SZ,    %regKey%, MicPttHotkey, %MicPttHotkey%
+    RegWrite, REG_DWORD, %regKey%, MicPttInvert, %MicPttInvert%
     RegWrite, REG_DWORD, %regKey%, MicMuteAllDevices, %MicMuteAllDevices%
     RegWrite, REG_SZ,    %regKey%, MicTargetDeviceId, %MicTargetDeviceId%
     RegWrite, REG_DWORD, %regKey%, MicMuteReleaseDelay, %MicMuteReleaseDelay%
     RegWrite, REG_DWORD, %regKey%, MicMuteOsdEnabled, %MicMuteOsdEnabled%
     RegWrite, REG_DWORD, %regKey%, MicMuteOsdDuration, %MicMuteOsdDuration%
+    RegWrite, REG_DWORD, %regKey%, MicMuteBadgeEnabled, %MicMuteBadgeEnabled%
     RegWrite, REG_DWORD, %regKey%, MicMuteBeepEnabled, %MicMuteBeepEnabled%
 }
 
 ; ========================================================
-; ĐĂNG KÝ & XỬ LÝ PHÍM TẮT (TOGGLE / PTT / PTM)
+; ĐĂNG KÝ & XỬ LÝ PHÍM TẮT (TOGGLE & PUSH-TO-TALK)
 ; ========================================================
 ApplyMicMuteHotkey() {
-    global MicMuteEnabled, MicMuteHotkey, MicMuteMode
-    global MicMuteRegisteredHk, MicMuteRegisteredUpHk
+    global MicMuteEnabled, MicMuteHotkey, MicPttHotkey
+    global MicMuteRegToggleHk, MicMuteRegPttDownHk, MicMuteRegPttUpHk
 
-    ; Gỡ phím tắt cũ nếu có
-    if (MicMuteRegisteredHk != "") {
-        try Hotkey, %MicMuteRegisteredHk%, MicMuteKeyDownHandler, Off
-        MicMuteRegisteredHk := ""
+    ; Gỡ các phím tắt cũ nếu có
+    if (MicMuteRegToggleHk != "") {
+        try Hotkey, %MicMuteRegToggleHk%, MicToggleKeyHandler, Off
+        MicMuteRegToggleHk := ""
     }
-    if (MicMuteRegisteredUpHk != "") {
-        try Hotkey, %MicMuteRegisteredUpHk%, MicMuteKeyUpHandler, Off
-        MicMuteRegisteredUpHk := ""
+    if (MicMuteRegPttDownHk != "") {
+        try Hotkey, %MicMuteRegPttDownHk%, MicPttKeyDownHandler, Off
+        MicMuteRegPttDownHk := ""
     }
-
-    if (!MicMuteEnabled || MicMuteHotkey = "")
-        return
-
-    hkDown := MicMuteHotkey
-    try {
-        Hotkey, %hkDown%, MicMuteKeyDownHandler, On
-        MicMuteRegisteredHk := hkDown
-    } catch {
-        MicMuteRegisteredHk := ""
-        return
+    if (MicMuteRegPttUpHk != "") {
+        try Hotkey, %MicMuteRegPttUpHk%, MicPttKeyUpHandler, Off
+        MicMuteRegPttUpHk := ""
     }
 
-    ; Nếu là Push-to-Talk hoặc Push-to-Mute, đăng ký thêm sự kiện nhả phím
-    if (MicMuteMode = 1 || MicMuteMode = 2) {
-        hkUp := MicMuteHotkey . " Up"
-        try {
-            Hotkey, %hkUp%, MicMuteKeyUpHandler, On
-            MicMuteRegisteredUpHk := hkUp
-        } catch {
-            MicMuteRegisteredUpHk := ""
-        }
-    }
-}
-
-; Cập nhật chế độ hoạt động từ bên ngoài (Toggle / PTT / PTM)
-SetMicMuteMode(newMode) {
-    global MicMuteMode, MicMuteEnabled, MicMuteKeyHeld, MicMutePendingRelease
-    if (newMode < 0 || newMode > 2)
-        return
-    SetTimer, MicMuteWatchKeyUpTimer, Off
-    SetTimer, MicMutePttReleaseTimer, Off
-    MicMuteKeyHeld := false
-    MicMutePendingRelease := false
-    MicMuteMode := newMode
-    SaveMicMuteSettings()
-    ApplyMicMuteHotkey()
-    if (MicMuteEnabled && MicMuteMode = 1)
-        SetMicMuteState(true, true)
-}
-
-MicMuteKeyDownHandler:
-    HandleMicMuteKeyDown()
-return
-
-MicMuteKeyUpHandler:
-    HandleMicMuteKeyUp()
-return
-
-HandleMicMuteKeyDown() {
-    global MicMuteEnabled, MicMuteMode, MicMuteKeyHeld, MicMutePtmPrevMuted, MicMutePendingRelease
     if (!MicMuteEnabled)
         return
 
-    if (MicMuteMode = 0) {
-        ; Chế độ Toggle: Đảo trạng thái hiện tại
-        ToggleMicMute(true)
-        return
-    }
-
-    ; Chế độ PTT (1) hoặc PTM (2): Bỏ qua sự kiện lặp phím (auto-repeat) khi đang giữ
-    if (MicMuteKeyHeld)
-        return
-    MicMuteKeyHeld := true
-
-    if (MicMuteMode = 1) {
-        ; Push-to-Talk: Hủy timer trễ (nếu đang chờ tắt) và mở mic ngay
-        if (MicMutePendingRelease) {
-            SetTimer, MicMutePttReleaseTimer, Off
-            MicMutePendingRelease := false
+    ; 1. Đăng ký phím tắt Toggle (Bật/Tắt)
+    if (MicMuteHotkey != "") {
+        try {
+            Hotkey, %MicMuteHotkey%, MicToggleKeyHandler, On
+            MicMuteRegToggleHk := MicMuteHotkey
+        } catch {
+            MicMuteRegToggleHk := ""
         }
-        if (GetMicMuteState() != 0)
-            SetMicMuteState(false, true)
-        else
-            ShowMicMuteOsd(false)
-    } else if (MicMuteMode = 2) {
-        ; Push-to-Mute: Lưu trạng thái trước khi nhấn và tắt mic tạm thời
-        curMuted := GetMicMuteState()
-        MicMutePtmPrevMuted := (curMuted = 1)
-        if (!MicMutePtmPrevMuted)
-            SetMicMuteState(true, true)
-        else
-            ShowMicMuteOsd(true)
     }
 
-    ; Timer dự phòng đề phòng người dùng nhả phím bổ trợ (Ctrl/Shift/Alt/Win) trước phím chính
+    ; 2. Đăng ký phím tắt Push-to-Talk (hỗ trợ cả phím đơn như RCtrl/LCtrl)
+    if (MicPttHotkey != "") {
+        hkPtt := (SubStr(MicPttHotkey, 1, 1) = "*") ? MicPttHotkey : ("*" . MicPttHotkey)
+        try {
+            Hotkey, %hkPtt%, MicPttKeyDownHandler, On
+            MicMuteRegPttDownHk := hkPtt
+        } catch {
+            MicMuteRegPttDownHk := ""
+            return
+        }
+        hkPttUp := hkPtt . " Up"
+        try {
+            Hotkey, %hkPttUp%, MicPttKeyUpHandler, On
+            MicMuteRegPttUpHk := hkPttUp
+        } catch {
+            MicMuteRegPttUpHk := ""
+        }
+    }
+}
+
+MicToggleKeyHandler:
+    if (MicMuteEnabled)
+        ToggleMicMute(true)
+return
+
+MicPttKeyDownHandler:
+    HandleMicPttKeyDown()
+return
+
+MicPttKeyUpHandler:
+    HandleMicPttKeyUp()
+return
+
+HandleMicPttKeyDown() {
+    global MicMuteEnabled, MicPttInvert, MicPttKeyHeld, MicPttActionMode, MicMutePendingRelease
+    if (!MicMuteEnabled || MicPttKeyHeld)
+        return
+    MicPttKeyHeld := true
+
+    if (MicMutePendingRelease) {
+        SetTimer, MicMutePttReleaseTimer, Off
+        MicMutePendingRelease := false
+    }
+
+    curMuted := GetMicMuteState()
+    if (curMuted = 1) {
+        ; Mic đang tắt -> Nhấn giữ để nói (Push-to-Talk)
+        MicPttActionMode := "talk"
+        SetMicMuteState(false, true)
+    } else if (curMuted = 0 && MicPttInvert) {
+        ; Mic đang bật & cho phép đảo -> Nhấn giữ để tắt tạm thời (Push-to-Mute)
+        MicPttActionMode := "mute"
+        SetMicMuteState(true, true)
+    } else {
+        MicPttActionMode := ""
+    }
+
     SetTimer, MicMuteWatchKeyUpTimer, 30
 }
 
-HandleMicMuteKeyUp() {
-    global MicMuteMode, MicMuteKeyHeld, MicMuteReleaseDelay, MicMutePtmPrevMuted, MicMutePendingRelease
-    if (!MicMuteKeyHeld)
+HandleMicPttKeyUp() {
+    global MicPttKeyHeld, MicPttActionMode, MicMuteReleaseDelay, MicMutePendingRelease
+    if (!MicPttKeyHeld)
         return
-    MicMuteKeyHeld := false
+    MicPttKeyHeld := false
     SetTimer, MicMuteWatchKeyUpTimer, Off
 
-    if (MicMuteMode = 1) {
-        ; Push-to-Talk: Tắt mic lại (có hỗ trợ trễ nhả phím để không mất âm cuối câu)
+    if (MicPttActionMode = "talk") {
         if (MicMuteReleaseDelay > 0) {
             MicMutePendingRelease := true
             SetTimer, MicMutePttReleaseTimer, % -MicMuteReleaseDelay
         } else {
             SetMicMuteState(true, true)
         }
-    } else if (MicMuteMode = 2) {
-        ; Push-to-Mute: Chỉ mở lại mic nếu trước đó mic không bị tắt sẵn
-        if (!MicMutePtmPrevMuted)
-            SetMicMuteState(false, true)
+    } else if (MicPttActionMode = "mute") {
+        SetMicMuteState(false, true)
     }
+    MicPttActionMode := ""
 }
 
 MicMutePttReleaseTimer:
     MicMutePendingRelease := false
-    if (!MicMuteKeyHeld && MicMuteMode = 1)
+    if (!MicPttKeyHeld)
         SetMicMuteState(true, true)
 return
 
 MicMuteWatchKeyUpTimer:
-    if (!IsMicHotkeyPhysicallyDown(MicMuteHotkey))
-        HandleMicMuteKeyUp()
+    if (!IsMicHotkeyPhysicallyDown(MicPttHotkey))
+        HandleMicPttKeyUp()
 return
 
 ; Kiểm tra phím chính của hotkey có còn đang được giữ vật lý hay không
@@ -385,11 +389,14 @@ SetMicMuteState(mute, showFeedback := true) {
     if (enumerator)
         ObjRelease(enumerator)
 
-    if (changedAny && showFeedback) {
-        if (MicMuteOsdEnabled)
-            ShowMicMuteOsd(bMute)
-        if (MicMuteBeepEnabled)
-            PlayMicMuteBeep(bMute)
+    if (changedAny) {
+        UpdateMicBadge(bMute)
+        if (showFeedback) {
+            if (MicMuteOsdEnabled)
+                ShowMicMuteOsd(bMute)
+            if (MicMuteBeepEnabled)
+                PlayMicMuteBeep(bMute)
+        }
     }
     return changedAny
 }
@@ -571,10 +578,10 @@ GetMicOsdTitle(isMuted) {
 }
 
 GetMicOsdSubtitle() {
-    global MicMuteMode
-    if (MicMuteMode = 1)
+    global MicPttKeyHeld, MicPttActionMode
+    if (MicPttKeyHeld && MicPttActionMode = "talk")
         return "Push-to-Talk"
-    if (MicMuteMode = 2)
+    if (MicPttKeyHeld && MicPttActionMode = "mute")
         return "Push-to-Mute"
     return "Microphone"
 }
@@ -804,16 +811,141 @@ HideMicMuteOsd() {
 }
 
 ; ========================================================
+; BADGE GHIM CỐ ĐỊNH Ở GÓC TRÊN-PHẢI KHI MIC TẮT (KIỂU POWERTOYS)
+; ========================================================
+SyncMicBadgeTimer() {
+    global MicMuteEnabled, MicMuteBadgeEnabled
+    if (MicMuteEnabled && MicMuteBadgeEnabled)
+        SetTimer, MicBadgeSyncTimer, 600
+    else
+        SetTimer, MicBadgeSyncTimer, Off
+}
+
+MicBadgeSyncTimer:
+    UpdateMicBadge()
+return
+
+UpdateMicBadge(forceState := -1) {
+    global MicMuteEnabled, MicMuteBadgeEnabled, MicBadgeLastMuted, MicBadgeVisible
+    if (!MicMuteEnabled || !MicMuteBadgeEnabled) {
+        MicBadgeLastMuted := -1
+        HideMicBadge()
+        return
+    }
+    isMuted := (forceState != -1) ? (forceState ? 1 : 0) : GetMicMuteState()
+    if (isMuted = 1) {
+        if (!MicBadgeVisible || MicBadgeLastMuted != 1)
+            ShowMicBadge()
+        MicBadgeLastMuted := 1
+    } else {
+        if (MicBadgeVisible)
+            HideMicBadge()
+        MicBadgeLastMuted := (isMuted = 0) ? 0 : -1
+    }
+}
+
+ShowMicBadge() {
+    global hMicBadgeGui, MicBadgeVisible
+    if (!EnsureMicGdip())
+        return
+
+    if (!hMicBadgeGui)
+        Gui, MicBadge:New, +AlwaysOnTop -Caption +ToolWindow +E0x80000 +E0x20 +E0x08000000 +HwndhMicBadgeGui
+
+    scale := A_ScreenDPI / 96.0
+    size := Round(38 * scale)
+
+    SysGet, wa, MonitorWorkArea
+    bx := Round(waRight - size - 16 * scale)
+    by := Round(waTop + 16 * scale)
+
+    pBitmap := 0, pGraphics := 0
+    DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", size, "Int", size, "Int", 0, "Int", 0xE200B, "Ptr", 0, "Ptr*", pBitmap)
+    if (!pBitmap)
+        return
+    DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmap, "Ptr*", pGraphics)
+    if (!pGraphics) {
+        DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
+        return
+    }
+
+    DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", pGraphics, "Int", 4)
+    DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", pGraphics, "Int", 2)
+    DllCall("gdiplus\GdipGraphicsClear", "Ptr", pGraphics, "UInt", 0x00000000)
+
+    ; Vòng tròn tối mờ nhẹ + viền đỏ dịu
+    pBgBrush := 0
+    DllCall("gdiplus\GdipCreateSolidFill", "UInt", 0xCC1C1E22, "Ptr*", pBgBrush)
+    if (pBgBrush) {
+        DllCall("gdiplus\GdipFillEllipse", "Ptr", pGraphics, "Ptr", pBgBrush, "Float", 1.5, "Float", 1.5, "Float", size - 3.0, "Float", size - 3.0)
+        DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBgBrush)
+    }
+    pPen := 0
+    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xAAFF4D4F, "Float", 1.3 * scale, "Int", 2, "Ptr*", pPen)
+    if (pPen) {
+        DllCall("gdiplus\GdipDrawEllipse", "Ptr", pGraphics, "Ptr", pPen, "Float", 1.5, "Float", 1.5, "Float", size - 3.0, "Float", size - 3.0)
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pPen)
+    }
+
+    DrawMicVectorIcon(pGraphics, size / 2.0, size / 2.0, scale * 0.85, 0xFFFF5A5F, true)
+
+    hBitmap := 0
+    DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBitmap, "UInt", 0x00000000)
+    DllCall("gdiplus\GdipDeleteGraphics", "Ptr", pGraphics)
+    DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
+    if (!hBitmap)
+        return
+
+    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
+    hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
+    oldBmp := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hBitmap, "Ptr")
+
+    VarSetCapacity(ptDst, 8, 0), NumPut(bx, ptDst, 0, "Int"), NumPut(by, ptDst, 4, "Int")
+    VarSetCapacity(sz, 8, 0), NumPut(size, sz, 0, "Int"), NumPut(size, sz, 4, "Int")
+    VarSetCapacity(ptSrc, 8, 0)
+    VarSetCapacity(blend, 4, 0)
+    NumPut(0, blend, 0, "UChar")
+    NumPut(0, blend, 1, "UChar")
+    NumPut(185, blend, 2, "UChar") ; Mờ nhẹ (~72% opacity)
+    NumPut(1, blend, 3, "UChar")
+
+    DllCall("UpdateLayeredWindow", "Ptr", hMicBadgeGui, "Ptr", hdcScreen, "Ptr", &ptDst, "Ptr", &sz, "Ptr", hdcMem, "Ptr", &ptSrc, "UInt", 0, "Ptr", &blend, "UInt", 2)
+
+    DllCall("SelectObject", "Ptr", hdcMem, "Ptr", oldBmp)
+    DllCall("DeleteObject", "Ptr", hBitmap)
+    DllCall("DeleteDC", "Ptr", hdcMem)
+    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
+
+    DllCall("ShowWindow", "Ptr", hMicBadgeGui, "Int", 8) ; SW_SHOWNA
+    DllCall("SetWindowPos", "Ptr", hMicBadgeGui, "Ptr", -1, "Int", bx, "Int", by, "Int", size, "Int", size, "UInt", 0x0053)
+    MicBadgeVisible := true
+}
+
+HideMicBadge() {
+    global hMicBadgeGui, MicBadgeVisible
+    if (hMicBadgeGui && MicBadgeVisible) {
+        DllCall("ShowWindow", "Ptr", hMicBadgeGui, "Int", 0) ; SW_HIDE
+        MicBadgeVisible := false
+    }
+}
+
+; ========================================================
 ; DỌN DẸP TÀI NGUYÊN KHI THOÁT
 ; ========================================================
 CleanupMicMute() {
-    global hMicOsdGui, MicOsdBitmap, MicGdipToken, MicGdipModule
+    global hMicOsdGui, hMicBadgeGui, MicOsdBitmap, MicGdipToken, MicGdipModule
     SetTimer, MicMuteWatchKeyUpTimer, Off
     SetTimer, MicMutePttReleaseTimer, Off
+    SetTimer, MicBadgeSyncTimer, Off
     HideMicMuteOsd()
+    HideMicBadge()
     if (hMicOsdGui) {
         try Gui, MicOsd:Destroy
         hMicOsdGui := 0
+    }
+    if (hMicBadgeGui) {
+        try Gui, MicBadge:Destroy
+        hMicBadgeGui := 0
     }
     if (MicOsdBitmap) {
         DllCall("DeleteObject", "Ptr", MicOsdBitmap)
@@ -829,10 +961,18 @@ CleanupMicMute() {
     }
 }
 
-; Chuyển đổi chuỗi phím tắt AHK (vd: ^+a, XButton1) sang dạng dễ đọc
+; Chuyển đổi chuỗi phím tắt AHK (vd: #!m, RCtrl, XButton1) sang dạng dễ đọc
 FormatMicHotkeyText(hk) {
+    static sideNames := {RCtrl: "Right Ctrl", LCtrl: "Left Ctrl"
+        , RShift: "Right Shift", LShift: "Left Shift"
+        , RAlt: "Right Alt", LAlt: "Left Alt"
+        , LWin: "Left Win", RWin: "Right Win"}
+
     if (hk = "")
         return IsFunc("L") ? L("AOT_NoHotkey") : "Chưa gán"
+    if (sideNames.HasKey(hk))
+        return sideNames[hk]
+
     res := ""
     if (InStr(hk, "#"))
         res .= "Win + "
@@ -843,7 +983,9 @@ FormatMicHotkeyText(hk) {
     if (InStr(hk, "+"))
         res .= "Shift + "
     keyPart := RegExReplace(hk, "^[*~$#!^+<>]+", "")
-    if (StrLen(keyPart) = 1)
+    if (sideNames.HasKey(keyPart))
+        keyPart := sideNames[keyPart]
+    else if (StrLen(keyPart) = 1)
         StringUpper, keyPart, keyPart
     return res . keyPart
 }

@@ -5,13 +5,14 @@ global DonateURL := "https://paypal.me/nguyentrian87"
 
 ShowAbout:
     currentSettingsTab := 5
-    Gosub, Settings
-    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+    if (hSettingsGui && DllCall("IsWindowVisible", "Ptr", hSettingsGui)) {
         if (IsFunc("SwitchSettingsTab"))
             SwitchSettingsTab(5)
         else
             GuiControl, Settings:Choose, SettingsTabNav, 5
         WinActivate, ahk_id %hSettingsGui%
+    } else {
+        Gosub, Settings
     }
 return
 
