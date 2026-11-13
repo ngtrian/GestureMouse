@@ -28,9 +28,6 @@ global SysGroupItems        := []
 global MicGroupItems        := []
 global AotGroupItems        := []
 global TrayGroupItems       := []
-global hMicHotkeyDlg        := 0
-global MicHotkeyCaptured    := ""
-global MicHotkeyCapturing   := false
 
 ; Dựng sẵn GUI Cài đặt ở trạng thái ẩn sau khi khởi động app để lần mở đầu tiên tức thì
 PreloadSettingsGui:
@@ -937,64 +934,24 @@ OnUnpinAllAOT:
 return
 
 OnChangeAOTHotkey:
-    ShowAOTHotkeyDialog()
+    global AOTHotkey
+    ShowHotkeyPickerDialog({id: "aot"
+        , title: L("AOT_ChangeHotkeyBtn")
+        , prompt: L("AOT_HotkeyPrompt")
+        , current: AOTHotkey
+        , default: "^!t"
+        , allowSingleModifier: false
+        , allowMouse: true
+        , allowClear: true
+        , onSave: Func("SavePickedAOTHotkey")})
 return
 
-ShowAOTHotkeyDialog() {
-    global AOTHotkey, hSettingsGui, hAOTHotkeyGui
-    global AOTNewKeyCtrl
-
-    if (hAOTHotkeyGui && WinExist("ahk_id " . hAOTHotkeyGui)) {
-        WinActivate, ahk_id %hAOTHotkeyGui%
-        return
-    }
-
-    ; Tạm tắt phím tắt hiện tại để có thể bấm chính tổ hợp đó vào ô nhập
-    if (AOTHotkey != "")
-        try Hotkey, %AOTHotkey%, ToggleAlwaysOnTopLabel, Off
-
-    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
-        Gui, Settings:+Disabled
-
-    ownerOpt := (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) ? "+Owner" . hSettingsGui : ""
-    Gui, AOTHotkeyDlg:New, -MaximizeBox -MinimizeBox %ownerOpt% +HwndhAOTHotkeyGui, % L("AOT_ChangeHotkeyBtn")
-    if (IsFunc("SetGuiYellowIcon"))
-        SetGuiYellowIcon(hAOTHotkeyGui)
-    Gui, AOTHotkeyDlg:Color, FFFFFF
-    Gui, AOTHotkeyDlg:Font, s9.5 Norm c222222, Segoe UI
-    Gui, AOTHotkeyDlg:Add, Hotkey, x16 y16 w280 h26 vAOTNewKeyCtrl, %AOTHotkey%
-    Gui, AOTHotkeyDlg:Add, Button, x16 y52 w68 h26 Default gOnSaveAOTHotkey, OK
-    Gui, AOTHotkeyDlg:Add, Button, x90 y52 w104 h26 gOnResetAOTHotkey, Ctrl + Alt + T
-    Gui, AOTHotkeyDlg:Add, Button, x228 y52 w68 h26 gAOTHotkeyDlgGuiClose, % L("Set_Close")
-    Gui, AOTHotkeyDlg:Show, w312 h90 Center
-}
-
-OnResetAOTHotkey:
-    GuiControl, AOTHotkeyDlg:, AOTNewKeyCtrl, ^!t
-return
-
-OnSaveAOTHotkey:
-    Gui, AOTHotkeyDlg:Submit, NoHide
-    if (AOTNewKeyCtrl = "")
-        return
-    AOTHotkey := AOTNewKeyCtrl
+SavePickedAOTHotkey(newHk) {
+    global AOTHotkey
+    AOTHotkey := newHk
     RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AOTHotkey, %AOTHotkey%
-    if (IsFunc("FormatAOTHotkeyText"))
-        GuiControl, ShortcutsScroll:, AOTHotkeyBtn, % FormatAOTHotkeyText(AOTHotkey)
-    Gosub, AOTHotkeyDlgGuiClose
-return
-
-AOTHotkeyDlgGuiClose:
-AOTHotkeyDlgGuiEscape:
-    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
-        Gui, Settings:-Disabled
-        WinActivate, ahk_id %hSettingsGui%
-    }
-    Gui, AOTHotkeyDlg:Destroy
-    hAOTHotkeyGui := 0
-    if (IsFunc("ApplyAOTHotkey"))
-        ApplyAOTHotkey()
-return
+    GuiControl, ShortcutsScroll:, AOTHotkeyBtn, % FormatHotkeyText(AOTHotkey)
+}
 
 OpenGitHubLink:
     Run, https://github.com/ngtrian/GestureMouse/releases
@@ -1726,214 +1683,45 @@ SyncMicControlsFromState() {
 }
 
 OnChangeMicToggleHotkey:
-    ShowMicHotkeyDialog("toggle")
+    global MicMuteHotkey
+    ShowHotkeyPickerDialog({id: "mic_toggle"
+        , title: L("Mic_HotkeyDlgTitle")
+        , prompt: L("Mic_HotkeyPrompt")
+        , current: MicMuteHotkey
+        , default: "#!m"
+        , allowSingleModifier: false
+        , allowMouse: true
+        , allowClear: true
+        , onSave: Func("SavePickedMicToggleHotkey")})
 return
 
 OnChangeMicPttHotkey:
-    ShowMicHotkeyDialog("ptt")
+    global MicPttHotkey
+    ShowHotkeyPickerDialog({id: "mic_ptt"
+        , title: L("Mic_HotkeyDlgTitle")
+        , prompt: L("Mic_PttPrompt")
+        , current: MicPttHotkey
+        , default: "RCtrl"
+        , allowSingleModifier: true
+        , allowMouse: true
+        , allowClear: true
+        , onSave: Func("SavePickedMicPttHotkey")})
 return
 
-ShowMicHotkeyDialog(targetMode := "toggle") {
-    global MicMuteHotkey, MicPttHotkey, MicMuteRegToggleHk, MicMuteRegPttDownHk, MicMuteRegPttUpHk
-    global hSettingsGui, hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyPreview
-    global MicHotkeyTargetMode, MicHotkeyPendingMod, MicCaptureIH
-
-    if (hMicHotkeyDlg && WinExist("ahk_id " . hMicHotkeyDlg)) {
-        WinActivate, ahk_id %hMicHotkeyDlg%
-        return
-    }
-
-    if (MicMuteRegToggleHk != "")
-        try Hotkey, %MicMuteRegToggleHk%, MicToggleKeyHandler, Off
-    if (MicMuteRegPttDownHk != "")
-        try Hotkey, %MicMuteRegPttDownHk%, MicPttKeyDownHandler, Off
-    if (MicMuteRegPttUpHk != "")
-        try Hotkey, %MicMuteRegPttUpHk%, MicPttKeyUpHandler, Off
-
-    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui))
-        Gui, Settings:+Disabled
-
-    MicHotkeyTargetMode := targetMode
-    MicHotkeyCaptured := (targetMode = "ptt") ? MicPttHotkey : MicMuteHotkey
-    MicHotkeyPendingMod := ""
-    MicHotkeyCapturing := true
-
-    ownerOpt := (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) ? "+Owner" . hSettingsGui : ""
-    Gui, MicHotkeyDlg:New, -MaximizeBox -MinimizeBox %ownerOpt% +HwndhMicHotkeyDlg, % L("Mic_HotkeyDlgTitle")
-    if (IsFunc("SetGuiYellowIcon"))
-        SetGuiYellowIcon(hMicHotkeyDlg)
-    Gui, MicHotkeyDlg:Color, FFFFFF
-    Gui, MicHotkeyDlg:Font, s9 Norm c555555, Segoe UI
-    promptTxt := (targetMode = "ptt") ? L("Mic_PttPrompt") : L("Mic_HotkeyPrompt")
-    Gui, MicHotkeyDlg:Add, Text, x16 y12 w368 h32, %promptTxt%
-    Gui, MicHotkeyDlg:Font, s10.5 Bold c005FB8, Segoe UI
-    disp := IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
-    Gui, MicHotkeyDlg:Add, Edit, x16 y48 w368 h28 ReadOnly Center vMicHotkeyPreview, %disp%
-    Gui, MicHotkeyDlg:Font, s9.5 Norm c222222, Segoe UI
-    Gui, MicHotkeyDlg:Add, Button, x16 y86 w82 h26 Default gOnSaveMicHotkey, OK
-    Gui, MicHotkeyDlg:Add, Button, x104 y86 w132 h26 gOnResetMicHotkey, % L("Mic_ResetBtn")
-    Gui, MicHotkeyDlg:Add, Button, x302 y86 w82 h26 gMicHotkeyDlgGuiClose, % L("Set_Close")
-    Gui, MicHotkeyDlg:Show, w400 h124 Center
-
-    ; Dùng InputHook (low-level keyboard hook) để bắt được cả tổ hợp bị Windows/IME chặn như Alt+`
-    MicCaptureIH := InputHook("L0")
-    MicCaptureIH.KeyOpt("{All}", "N S")
-    MicCaptureIH.OnKeyDown := Func("OnMicHotkeyDlgKeyDown")
-    MicCaptureIH.OnKeyUp := Func("OnMicHotkeyDlgKeyUp")
-    MicCaptureIH.Start()
-
-    OnMessage(0x0006, "OnMicHotkeyDlgActivate")  ; WM_ACTIVATE
-    OnMessage(0x207, "OnMicHotkeyDlgMouseBtn")   ; WM_MBUTTONDOWN
-    OnMessage(0x20B, "OnMicHotkeyDlgMouseBtn")   ; WM_XBUTTONDOWN
-}
-
-OnMicHotkeyDlgActivate(wParam, lParam, msg, hwnd) {
-    global hMicHotkeyDlg, MicHotkeyCapturing, MicCaptureIH
-    if (!MicHotkeyCapturing || !hMicHotkeyDlg || hwnd != hMicHotkeyDlg || !IsObject(MicCaptureIH))
-        return
-    if ((wParam & 0xFFFF) = 0)
-        MicCaptureIH.Stop()
-    else
-        MicCaptureIH.Start()
-}
-
-GetSideModifierNameFromVK(vk) {
-    static vkMap := {91: "LWin", 92: "RWin"
-        , 160: "LShift", 161: "RShift"
-        , 162: "LCtrl",  163: "RCtrl"
-        , 164: "LAlt",   165: "RAlt"}
-    return vkMap.HasKey(vk) ? vkMap[vk] : ""
-}
-
-OnMicHotkeyDlgKeyDown(ih, vk, sc) {
-    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyTargetMode, MicHotkeyPendingMod
-    if (!MicHotkeyCapturing || !hMicHotkeyDlg || !WinActive("ahk_id " . hMicHotkeyDlg))
-        return
-
-    modName := GetSideModifierNameFromVK(vk)
-    if (modName != "") {
-        if (MicHotkeyTargetMode = "ptt")
-            MicHotkeyPendingMod := modName
-        return
-    }
-
-    MicHotkeyPendingMod := ""
-    if (vk = 27) { ; Esc để đóng
-        SetTimer, MicHotkeyDlgGuiClose, -1
-        return
-    }
-
-    keyName := GetKeyName(Format("vk{:02X}", vk))
-    if (keyName = "")
-        keyName := GetKeyName(Format("sc{:03X}", sc))
-    if (keyName = "")
-        return
-
-    mods := ""
-    if (GetKeyState("Ctrl", "P"))
-        mods .= "^"
-    if (GetKeyState("Alt", "P"))
-        mods .= "!"
-    if (GetKeyState("Shift", "P"))
-        mods .= "+"
-    if (GetKeyState("LWin", "P") || GetKeyState("RWin", "P"))
-        mods .= "#"
-
-    MicHotkeyCaptured := mods . keyName
-    GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
-}
-
-OnMicHotkeyDlgKeyUp(ih, vk, sc) {
-    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyTargetMode, MicHotkeyPendingMod
-    if (!MicHotkeyCapturing || !hMicHotkeyDlg || MicHotkeyTargetMode != "ptt")
-        return
-
-    modName := GetSideModifierNameFromVK(vk)
-    if (modName != "" && MicHotkeyPendingMod != "" && modName = MicHotkeyPendingMod) {
-        MicHotkeyPendingMod := ""
-        MicHotkeyCaptured := modName
-        GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
-    }
-}
-
-OnMicHotkeyDlgMouseBtn(wParam, lParam, msg, hwnd) {
-    global hMicHotkeyDlg, MicHotkeyCaptured, MicHotkeyCapturing, MicHotkeyPendingMod
-    if (!MicHotkeyCapturing || !hMicHotkeyDlg)
-        return
-    if (hwnd != hMicHotkeyDlg && !DllCall("IsChild", "Ptr", hMicHotkeyDlg, "Ptr", hwnd))
-        return
-
-    MicHotkeyPendingMod := ""
-    btnName := ""
-    if (msg = 0x207) {
-        btnName := "MButton"
-    } else if (msg = 0x20B) {
-        xBtn := (wParam >> 16) & 0xFFFF
-        btnName := (xBtn = 1) ? "XButton1" : (xBtn = 2 ? "XButton2" : "")
-    }
-    if (btnName = "")
-        return
-
-    mods := ""
-    if (GetKeyState("Ctrl", "P"))
-        mods .= "^"
-    if (GetKeyState("Alt", "P"))
-        mods .= "!"
-    if (GetKeyState("Shift", "P"))
-        mods .= "+"
-    if (GetKeyState("LWin", "P") || GetKeyState("RWin", "P"))
-        mods .= "#"
-
-    MicHotkeyCaptured := mods . btnName
-    GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
-    return 0
-}
-
-OnResetMicHotkey:
-    if (MicHotkeyTargetMode = "ptt")
-        MicHotkeyCaptured := "RCtrl"
-    else
-        MicHotkeyCaptured := "#!m"
-    GuiControl, MicHotkeyDlg:, MicHotkeyPreview, % IsFunc("FormatMicHotkeyText") ? FormatMicHotkeyText(MicHotkeyCaptured) : MicHotkeyCaptured
-return
-
-OnSaveMicHotkey:
-    if (MicHotkeyCaptured = "")
-        return
-    if (MicHotkeyTargetMode = "ptt") {
-        MicPttHotkey := MicHotkeyCaptured
-        if (IsFunc("FormatMicHotkeyText"))
-            GuiControl, ShortcutsScroll:, MicPttHotkeyBtn, % FormatMicHotkeyText(MicPttHotkey)
-    } else {
-        MicMuteHotkey := MicHotkeyCaptured
-        if (IsFunc("FormatMicHotkeyText"))
-            GuiControl, ShortcutsScroll:, MicHotkeyBtn, % FormatMicHotkeyText(MicMuteHotkey)
-        if (IsFunc("RebuildTrayMenu"))
-            RebuildTrayMenu()
-    }
+SavePickedMicToggleHotkey(newHk) {
+    global MicMuteHotkey
+    MicMuteHotkey := newHk
+    GuiControl, ShortcutsScroll:, MicHotkeyBtn, % FormatHotkeyText(MicMuteHotkey)
+    if (IsFunc("RebuildTrayMenu"))
+        RebuildTrayMenu()
     if (IsFunc("SaveMicMuteSettings"))
         SaveMicMuteSettings()
-    Gosub, MicHotkeyDlgGuiClose
-return
+}
 
-MicHotkeyDlgGuiClose:
-MicHotkeyDlgGuiEscape:
-    global MicCaptureIH
-    MicHotkeyCapturing := false
-    MicHotkeyPendingMod := ""
-    if (IsObject(MicCaptureIH)) {
-        MicCaptureIH.Stop()
-        MicCaptureIH := ""
-    }
-    OnMessage(0x0006, "OnMicHotkeyDlgActivate", 0)
-    OnMessage(0x207, "OnMicHotkeyDlgMouseBtn", 0)
-    OnMessage(0x20B, "OnMicHotkeyDlgMouseBtn", 0)
-    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
-        Gui, Settings:-Disabled
-        WinActivate, ahk_id %hSettingsGui%
-    }
-    Gui, MicHotkeyDlg:Destroy
-    hMicHotkeyDlg := 0
-    if (IsFunc("ApplyMicMuteHotkey"))
-        ApplyMicMuteHotkey()
-return
+SavePickedMicPttHotkey(newHk) {
+    global MicPttHotkey
+    MicPttHotkey := newHk
+    GuiControl, ShortcutsScroll:, MicPttHotkeyBtn, % FormatHotkeyText(MicPttHotkey)
+    if (IsFunc("SaveMicMuteSettings"))
+        SaveMicMuteSettings()
+}

@@ -987,29 +987,7 @@ CleanupMicMute() {
 
 ; Chuyển đổi chuỗi phím tắt AHK (vd: #!m, RCtrl, XButton1) sang dạng dễ đọc
 FormatMicHotkeyText(hk) {
-    static sideNames := {RCtrl: "Right Ctrl", LCtrl: "Left Ctrl"
-        , RShift: "Right Shift", LShift: "Left Shift"
-        , RAlt: "Right Alt", LAlt: "Left Alt"
-        , LWin: "Left Win", RWin: "Right Win"}
-
-    if (hk = "")
-        return IsFunc("L") ? L("AOT_NoHotkey") : "Chưa gán"
-    if (sideNames.HasKey(hk))
-        return sideNames[hk]
-
-    res := ""
-    if (InStr(hk, "#"))
-        res .= "Win + "
-    if (InStr(hk, "^"))
-        res .= "Ctrl + "
-    if (InStr(hk, "!"))
-        res .= "Alt + "
-    if (InStr(hk, "+"))
-        res .= "Shift + "
-    keyPart := RegExReplace(hk, "^[*~$#!^+<>]+", "")
-    if (sideNames.HasKey(keyPart))
-        keyPart := sideNames[keyPart]
-    else if (StrLen(keyPart) = 1)
-        StringUpper, keyPart, keyPart
-    return res . keyPart
+    if (IsFunc("FormatHotkeyText"))
+        return FormatHotkeyText(hk)
+    return hk
 }

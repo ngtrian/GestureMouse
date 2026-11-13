@@ -771,20 +771,9 @@ RefreshAllAOTBorders() {
 
 ; Chuyển đổi chuỗi phím tắt AHK (vd: ^!t) sang dạng dễ đọc (Ctrl + Alt + T)
 FormatAOTHotkeyText(hk) {
-    if (hk = "")
-        return L("AOT_NoHotkey")
-    res := ""
-    if (InStr(hk, "#"))
-        res .= "Win + "
-    if (InStr(hk, "^"))
-        res .= "Ctrl + "
-    if (InStr(hk, "!"))
-        res .= "Alt + "
-    if (InStr(hk, "+"))
-        res .= "Shift + "
-    keyPart := RegExReplace(hk, "[#^!+]", "")
-    StringUpper, keyPart, keyPart
-    return res . keyPart
+    if (IsFunc("FormatHotkeyText"))
+        return FormatHotkeyText(hk)
+    return hk
 }
 
 ; Hiển thị thông báo nhanh khi có lỗi quyền Admin

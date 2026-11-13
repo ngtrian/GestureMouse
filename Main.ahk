@@ -115,6 +115,7 @@ SetTimer, PreloadSettingsGui, -1500 ; Dựng sẵn Settings GUI ẩn ở nền �
 #Include %A_ScriptDir%\Lib\Language.ahk ; Quản lý đa ngôn ngữ (chỉ gồm các hàm)
 #Include %A_ScriptDir%\Lib\Menu.ahk ; Menu, UpdateTrayTip, ExitMenu
 #Include %A_ScriptDir%\Lib\SettingsIcons.ahk ; Khởi tạo icon vector GDI+ cho giao diện Cài đặt
+#Include %A_ScriptDir%\Lib\HotkeyPicker.ahk ; Hộp thoại chọn phím tắt dùng chung & định dạng phím tắt
 #Include %A_ScriptDir%\Lib\Settings.ahk ; Giao diện Cài đặt (Settings GUI)
 #Include %A_ScriptDir%\Lib\About.ahk ; Giới thiệu và hướng dẫn sử dụng
 #Include %A_ScriptDir%\Lib\ToggleGesture.ahk ; Quản lý bật/tắt cử chỉ và cuộn chuột
