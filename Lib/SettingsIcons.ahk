@@ -78,7 +78,7 @@ CreateSidebarNavBitmaps(iconSize := 20, manageSession := true) {
     pix := Round(iconSize * scale)
 
     argbInactiveBg := 0xFFF3F3F3
-    argbActiveBg := 0xFFE5F1FB
+    argbActiveBg := 0xFFEAEAEA
     argbActiveFg := 0xFF005FB8
     argbNormFg := 0xFF4A5568
 

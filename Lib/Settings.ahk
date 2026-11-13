@@ -55,7 +55,7 @@ Settings:
             UpdateSettingsGuiControls()
             targetTab := currentSettingsTab ? currentSettingsTab : 1
             SwitchSettingsTab(targetTab, !isVisible)
-            Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+            Gui, Settings:Show, w780 h520 Center, % "GestureMouse - " . L("Set_Title")
             if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
                 SyncTabScrollPanelSize(currentSettingsTab)
                 UpdateTabScrollInfo(currentSettingsTab)
@@ -130,12 +130,12 @@ Settings:
     AddSidebarNav(5, 176, "ℹ️", L("Nav_About"))
 
     ; Vách phân cách dọc duy nhất giữa Sidebar và Vùng nội dung
-    Gui, Add, Text, x212 y12 w1 h428 0x11 +HwndhSettingsSep
+    Gui, Add, Text, x212 y12 w1 h493 0x11 +HwndhSettingsSep
 
     ; ========================================================
     ; VÙNG NỘI DUNG BÊN PHẢI (TAB 1-4 DÙNG CHILD GUI CARD CUỘN DỌC, TAB 5 DÙNG TAB2)
     ; ========================================================
-    Gui, Add, Tab2, x216 y-35 w564 h439 +Buttons -Theme -Wrap +0x04000000 vSettingsTabNav +HwndhSettingsTabNav, TabGeneral|TabScrollGesture|TabLock|TabShortcuts|TabAbout
+    Gui, Add, Tab2, x216 y-35 w564 h504 +Buttons -Theme -Wrap +0x04000000 vSettingsTabNav +HwndhSettingsTabNav, TabGeneral|TabScrollGesture|TabLock|TabShortcuts|TabAbout
 
     ; --------------------------------------------------------
     ; TAB 5: THÔNG TIN && BẢN QUYỀN (HERO BANNER HIỆN ĐẠI)
@@ -206,9 +206,9 @@ Settings:
     ; ========================================================
     Gui, Tab
     Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y418 w415 +BackgroundTrans vSettingsAutoSaveHint, % L("Set_AutoSaveHint")
+    Gui, Add, Text, x228 y483 w415 +BackgroundTrans vSettingsAutoSaveHint, % L("Set_AutoSaveHint")
     Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Button, x658 y411 w106 h30 vSettingsCloseBtn gSettingsCloseBtn Default, % L("Set_Close")
+    Gui, Add, Button, x658 y476 w106 h30 vSettingsCloseBtn gSettingsCloseBtn Default, % L("Set_Close")
 
     ; Đăng ký tô màu Card trước khi dựng các tab
     OnMessage(0x138, "WM_CTLCOLORSTATIC_SETTINGS")
@@ -246,12 +246,12 @@ Settings:
     DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
     SetBatchLines, %prevBatchLines%
 
-    ; Khi preload nền: Show với Hide để AHK tính sẵn kích thước w780 h455 & vị trí Center
+    ; Khi preload nền: Show với Hide để AHK tính sẵn kích thước w780 h520 & vị trí Center
     ; Khi mở trực tiếp: hiển thị ngay lập tức
     if (isPreload)
-        Gui, Settings:Show, Hide w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+        Gui, Settings:Show, Hide w780 h520 Center, % "GestureMouse - " . L("Set_Title")
     else
-        Gui, Settings:Show, w780 h455 Center, % "GestureMouse - " . L("Set_Title")
+        Gui, Settings:Show, w780 h520 Center, % "GestureMouse - " . L("Set_Title")
     if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
         SyncTabScrollPanelSize(currentSettingsTab)
         UpdateTabScrollInfo(currentSettingsTab)
@@ -271,7 +271,7 @@ AddSidebarNav(idx, yPos, iconChar, labelText) {
     global SidebarNavBitmaps, SidebarIconHwnds
     indY := yPos + 7
     Gui, Settings:Font, s9.5 Norm c444444, Segoe UI
-    Gui, Settings:Add, Progress, x10 y%yPos% w192 h34 BackgroundE5F1FB cE5F1FB vNavBg%idx% -Theme Disabled, 100
+    Gui, Settings:Add, Progress, x10 y%yPos% w192 h34 BackgroundEAEAEA cEAEAEA vNavBg%idx% -Theme Disabled, 100
     Gui, Settings:Add, Progress, x10 y%indY% w3 h20 Background0067C0 c0067C0 vNavInd%idx% -Theme Disabled, 100
     if (SidebarNavBitmaps.HasKey(idx)) {
         hBmpInit := SidebarNavBitmaps[idx].inactive
@@ -986,12 +986,12 @@ SyncTabScrollPanelSize(tabNum) {
     scale := A_ScreenDPI / 96.0
     if (clientW <= 0 || clientH <= 0) {
         clientW := Round(780 * scale)
-        clientH := Round(455 * scale)
+        clientH := Round(520 * scale)
     }
     leftPx := Round(216 * scale)
     bottomMarginPx := Round(48 * scale)
     panelW := (clientW > leftPx) ? (clientW - leftPx) : Round(564 * scale)
-    panelH := (clientH > bottomMarginPx) ? (clientH - bottomMarginPx) : Round(407 * scale)
+    panelH := (clientH > bottomMarginPx) ? (clientH - bottomMarginPx) : Round(472 * scale)
     DllCall("SetWindowPos", "Ptr", hPanel, "Ptr", 0, "Int", leftPx, "Int", 0, "Int", panelW, "Int", panelH, "UInt", 0x0010) ; HWND_TOP|SWP_NOACTIVATE
 }
 
@@ -1071,7 +1071,7 @@ BuildTab1ScrollPanel(initAutoStart, hasPriv) {
     c3.curY += 72
     EndCard(c3, 8)
 
-    Gui, Tab1Scroll:Show, Hide x216 y0 w564 h407
+    Gui, Tab1Scroll:Show, Hide x216 y0 w564 h472
     LayoutCardTab(1, true)
 }
 
@@ -1123,7 +1123,7 @@ BuildTab2ScrollPanel(chkS1, chkS2) {
     AddBrowserGestureRow(c2, GestureBadgeBitmaps["RU"], "Set_CloseTab", "Set_TipGestureRU", GestureBadgeBitmaps["RD"], "Set_Refresh", "Set_TipGestureRD")
     EndCard(c2, 8)
 
-    Gui, Tab2Scroll:Show, Hide x216 y0 w564 h407
+    Gui, Tab2Scroll:Show, Hide x216 y0 w564 h472
     LayoutCardTab(2, true)
 }
 
@@ -1135,7 +1135,7 @@ BuildTab3ScrollPanel(idleMinutesList, selIdleIdx, initPreventScreenOff, initPrev
 
     BeginCardTab(3, "Tab3Scroll", L("Set_HeaderLock"), L("Set_SubLock"), 346)
     Gui, Tab3Scroll:Font, s8.5 Bold c004499, Segoe UI
-    Gui, Tab3Scroll:Add, Button, x368 y9 w168 h39 +0x2000 gActionOpenLockCenter +HwndhBtnLockCenterHeader, % L("Lock_CenterBtnTwoLine")
+    Gui, Tab3Scroll:Add, Button, x368 y6 w168 h34 +0x2000 gActionOpenLockCenter +HwndhBtnLockCenterHeader, % L("Lock_CenterBtnTwoLine")
     SettingsTooltips[hBtnLockCenterHeader] := L("Lock_CenterBtnTip")
 
     ; Card 1: Thiết lập khóa thiết bị
@@ -1239,7 +1239,7 @@ BuildTab3ScrollPanel(idleMinutesList, selIdleIdx, initPreventScreenOff, initPrev
     c3.curY += 26
     EndCard(c3, 8)
 
-    Gui, Tab3Scroll:Show, Hide x216 y0 w564 h407
+    Gui, Tab3Scroll:Show, Hide x216 y0 w564 h472
     LayoutCardTab(3, true)
 }
 
@@ -1388,7 +1388,7 @@ BuildShortcutsScrollPanel(aboutIcon) {
     CardAddDescText(trayCard, "• " . L("Set_TrayDblClickTip"), 28, 18, 2)
     EndCard(trayCard, 8)
 
-    Gui, ShortcutsScroll:Show, Hide x216 y0 w564 h407
+    Gui, ShortcutsScroll:Show, Hide x216 y0 w564 h472
     RefreshMicDeviceDropdown()
     UpdateAllCardSummaries()
     LayoutCardTab(4, true)
@@ -1397,11 +1397,11 @@ BuildShortcutsScrollPanel(aboutIcon) {
 ; ========================================================
 ; UNIFIED CARD BUILDER & SCROLL ENGINE (TAB 1 - 4)
 ; ========================================================
-BeginCardTab(tabNum, guiName, headerTitle, headerSub, headerTitleW := 524) {
+BeginCardTab(tabNum, guiName, headerTitle, headerSub := "", headerTitleW := 524) {
     global hSettingsGui, TabScrollHwnds, TabScrollHwndToNum, TabCards, TabScrollPos, TabContentH, TabStaticColors
     TabCards[tabNum] := []
     TabScrollPos[tabNum] := 0
-    TabContentH[tabNum] := 407
+    TabContentH[tabNum] := 472
     TabStaticColors[tabNum] := {}
 
     Gui, %guiName%:New, -Caption +0x40000000 +0x04000000 +0x200000 +Parent%hSettingsGui% +HwndhPanel
@@ -1410,13 +1410,10 @@ BeginCardTab(tabNum, guiName, headerTitle, headerSub, headerTitleW := 524) {
 
     Gui, %guiName%:Font, s13 Bold c004499, Segoe UI
     Gui, %guiName%:Add, Text, x12 y12 w%headerTitleW% +BackgroundTrans +HwndhTabTitle, %headerTitle%
-    Gui, %guiName%:Font, s8.5 Norm c666666, Segoe UI
-    Gui, %guiName%:Add, Text, x12 y35 w%headerTitleW% +BackgroundTrans +HwndhTabSub, %headerSub%
 
     TabScrollHwnds[tabNum] := hPanel
     TabScrollHwndToNum[hPanel] := tabNum
     TabStaticColors[tabNum][hTabTitle] := "body"
-    TabStaticColors[tabNum][hTabSub]   := "body"
     return hPanel
 }
 
@@ -1621,7 +1618,7 @@ UpdateAllCardSummaries() {
             } else if (card.id = "t3_target") {
                 tParts := ""
                 if (lockKeyboardEnabled && mouseLockEnabled)
-                    tParts := isEn ? "Keyboard & Mouse" : "Bàn phím && Chuột"
+                    tParts := isEn ? "Keyboard && Mouse" : "Bàn phím && Chuột"
                 else if (lockKeyboardEnabled)
                     tParts := isEn ? "Keyboard only" : "Chỉ bàn phím"
                 else if (mouseLockEnabled)
@@ -1631,7 +1628,7 @@ UpdateAllCardSummaries() {
                 idleTxt := autoLockIdleEnabled ? (isEn ? (" • Idle: " . autoLockIdleMinutes . "m") : (" • Tự khóa: " . autoLockIdleMinutes . " phút")) : ""
                 summary := tParts . idleTxt
             } else if (card.id = "t3_behavior") {
-                summary := isEn ? "Power policy & lock notifications" : "Nguồn điện && Thông báo khi khóa"
+                summary := isEn ? "Power policy && lock notifications" : "Nguồn điện && Thông báo khi khóa"
             } else if (card.id = "t3_auth") {
                 summary := windowsLogonOnly ? (isEn ? "Windows Logon only" : "Chỉ mở khóa Windows") : (isEn ? "Custom unlock code" : "Mã mở khóa tùy chỉnh")
             } else if (card.id = "sys") {
@@ -1682,7 +1679,7 @@ LayoutCardTab(tabNum, resetScroll := false) {
     DllCall("SendMessage", "Ptr", hPanel, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
 
     off := TabScrollPos[tabNum]
-    curY := 58
+    curY := 44
 
     for _, card in cards {
         cardH := card.expanded ? card.expandedH : card.collapsedH
