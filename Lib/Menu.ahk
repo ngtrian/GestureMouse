@@ -540,7 +540,10 @@ MenuActionOpenShortcuts:
 return
 
 ReloadApp:
-    Reload
+    if (IsFunc("SafeReloadApp"))
+        SafeReloadApp()
+    else
+        Reload
 return
 
 ; Đặt icon màu vàng mặc định cho mọi cửa sổ GUI (Taskbar, Titlebar, Alt+Tab luôn là màu vàng)

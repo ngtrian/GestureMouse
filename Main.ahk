@@ -894,8 +894,28 @@ RecoverFromSleep:
     ; Nếu bàn phím đang bị khóa bởi tính năng LockKeyboard, không tự reload để tránh mở khóa ngoài ý muốn
     if (isLocked)
         return
-    Reload
+    SafeReloadApp()
 return
+
+; Khởi động lại ứng dụng an toàn (khi chạy dưới UIAccess, ủy quyền qua explorer.exe để tránh lỗi ERROR_NOT_ENOUGH_MEMORY)
+SafeReloadApp() {
+    if (HasUIAccessOrAdmin() && !A_IsAdmin) {
+        args := A_IsCompiled ? "/restart" : ("/restart /script """ . A_ScriptFullPath . """")
+        try {
+            sw := ComObjCreate("Shell.Application").Windows
+            VarSetCapacity(_hwnd, 4, 0)
+            desktop := sw.FindWindowSW(0, 0, 8, ComObj(0x4003, &_hwnd), 1) ; SWC_DESKTOP = 8, SWFO_NEEDDISPATCH = 1
+            if (desktop) {
+                desktop.Document.Application.ShellExecute(A_AhkPath, args, A_ScriptDir, "open", 1)
+                ExitApp
+                return
+            }
+        } catch {
+            ; Fallback về Reload mặc định nếu explorer.exe không khả dụng
+        }
+    }
+    Reload
+}
 
 
 ShowInstallSuccessNotify:

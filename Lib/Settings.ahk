@@ -16,14 +16,13 @@ global hBtnToggleReveal     := 0
 global hAboutHeroBmp        := 0
 global SettingsPreloadOnly  := false
 global hSettingsSep         := 0
-global hSettingsTabNav      := 0
 global hShortcutsScroll     := 0
-global TabScrollNames       := ["Tab1Scroll", "Tab2Scroll", "Tab3Scroll", "ShortcutsScroll"]
-global TabScrollHwnds       := [0, 0, 0, 0]
+global TabScrollNames       := ["Tab1Scroll", "Tab2Scroll", "Tab3Scroll", "ShortcutsScroll", "Tab5Panel"]
+global TabScrollHwnds       := [0, 0, 0, 0, 0]
 global TabScrollHwndToNum   := {}
 global TabCards             := [[], [], [], []]
-global TabScrollPos         := [0, 0, 0, 0]
-global TabContentH          := [0, 0, 0, 0]
+global TabScrollPos         := [0, 0, 0, 0, 0]
+global TabContentH          := [0, 0, 0, 0, 0]
 global TabStaticColors      := [{}, {}, {}, {}]
 
 ; Dựng sẵn GUI Cài đặt ở trạng thái ẩn sau khi khởi động app để lần mở đầu tiên tức thì
@@ -62,9 +61,10 @@ Settings:
                 }
             }
             Gui, Settings:Show, w780 h520 Center, % "GestureMouse - " . L("Set_Title")
-            if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
+            if (currentSettingsTab >= 1 && currentSettingsTab <= 5 && TabScrollHwnds[currentSettingsTab]) {
                 SyncTabScrollPanelSize(currentSettingsTab)
-                UpdateTabScrollInfo(currentSettingsTab)
+                if (currentSettingsTab <= 4)
+                    UpdateTabScrollInfo(currentSettingsTab)
                 DllCall("RedrawWindow", "Ptr", TabScrollHwnds[currentSettingsTab], "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
             }
             WinActivate, ahk_id %hSettingsGui%
@@ -142,78 +142,9 @@ Settings:
     AddSidebarNav(5, 176, "ℹ️", L("Nav_About"))
 
     ; ========================================================
-    ; VÙNG NỘI DUNG BÊN PHẢI (TAB 1-4 DÙNG CHILD GUI CARD CUỘN DỌC, TAB 5 DÙNG TAB2)
-    ; ========================================================
-    Gui, Add, Tab2, x216 y-35 w564 h504 +Buttons -Theme -Wrap +0x04000000 vSettingsTabNav +HwndhSettingsTabNav, TabGeneral|TabScrollGesture|TabLock|TabShortcuts|TabAbout
-
-    ; --------------------------------------------------------
-    ; TAB 5: THÔNG TIN && BẢN QUYỀN (HERO BANNER HIỆN ĐẠI)
-    ; --------------------------------------------------------
-    Gui, Tab, TabAbout
-
-    ; Hero Card nền xanh nhạt (#EEF5FC) với viền nhẹ & thanh nhấn xanh
-    Gui, Add, Progress, x228 y14 w536 h116 BackgroundD0E3F7 cD0E3F7 -Theme Disabled, 100
-    Gui, Add, Progress, x229 y15 w534 h114 BackgroundEEF5FC cEEF5FC -Theme Disabled, 100
-    Gui, Add, Progress, x229 y15 w4 h114 Background0067C0 c0067C0 -Theme Disabled, 100
-
-    if (!hAboutHeroBmp)
-        hAboutHeroBmp := CreateAboutHeroIconBitmap(56, 0xEEF5FC)
-    if (hAboutHeroBmp)
-        Gui, Add, Picture, x248 y43, HBITMAP:*%hAboutHeroBmp%
-    else
-        AddSettingsIcon(248, 43, 56, 56, "image\unnamed.ico", 1)
-
-    Gui, Font, s15 Bold c004499, Segoe UI
-    Gui, Add, Text, x318 y24 w285 +BackgroundTrans, GestureMouse
-    Gui, Font, s9.5 Norm c2C3E50, Segoe UI
-    Gui, Add, Text, x318 y52 w288 h34 +BackgroundTrans, % L("About_Headline")
-    Gui, Font, s8.5 Norm c5A6B7C, Segoe UI
-    Gui, Add, Text, x318 y93 w288 +BackgroundTrans, % L("About_HeroMeta")
-
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Button, x616 y55 w130 h32 gOpenDonateLink, % "❤ " . L("About_Donate")
-
-    ; Dải 3 nút hành động nhanh
-    Gui, Font, s9 Norm c222222, Segoe UI
-    Gui, Add, Button, x228 y142 w172 h30 gCheckForUpdates, % L("Tray_CheckUpdate")
-    Gui, Add, Button, x410 y142 w172 h30 gOpenGitHubLink, GitHub Releases
-    Gui, Add, Button, x592 y142 w172 h30 gOpenEmailLink, % L("About_ContactBtn")
-
-    Gui, Add, Text, x228 y184 w536 h1 0x10
-
-    ; Đoạn giới thiệu ngắn gọn (bôi đen copy được, không thanh cuộn)
-    Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Edit, x228 y196 w536 h44 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_ShortDesc")
-    DllCall("SendMessage", "Ptr", hAboutDetailEdit, "UInt", 0x00D3, "Ptr", 1, "Ptr", 0)
-
-    Gui, Add, Text, x228 y248 w536 h1 0x10
-
-    ; Bảng thông tin 2 cột (Tác giả, Giấy phép, Email, Mã nguồn)
-    Gui, Font, s9 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y264 w108, % L("About_LblAuthor")
-    Gui, Font, s9.5 Bold c222222, Segoe UI
-    Gui, Add, Edit, x340 y263 w424 h20 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutAuthorEdit, % L("About_ValAuthor")
-    DllCall("SendMessage", "Ptr", hAboutAuthorEdit, "UInt", 0x00D3, "Ptr", 1, "Ptr", 0)
-
-    Gui, Font, s9 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y292 w108, % L("About_LblLicense")
-    Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Text, x340 y292 w424 h20, % L("About_ValLicense")
-
-    Gui, Font, s9 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y320 w108, % L("About_LblEmail")
-    Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Link, x340 y320 w424 h20 gOnAboutLinkClick, <a href="mailto:nguyentrian87@gmail.com">nguyentrian87@gmail.com</a>
-
-    Gui, Font, s9 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y348 w108, % L("About_LblRepo")
-    Gui, Font, s9.5 Norm c333333, Segoe UI
-    Gui, Add, Link, x340 y348 w424 h20 gOnAboutLinkClick, <a href="https://github.com/ngtrian/GestureMouse">https://github.com/ngtrian/GestureMouse</a>
-
-    ; ========================================================
     ; CHÂN TRANG GỌN GÀNG (AUTO-SAVE + NÚT ĐÓNG)
+    ; (Toàn bộ 5 Tab nội dung bên phải đều dùng Child GUI độc lập)
     ; ========================================================
-    Gui, Tab
     Gui, Font, s8.5 Norm c666666, Segoe UI
     Gui, Add, Text, x228 y483 w415 +BackgroundTrans vSettingsAutoSaveHint, % L("Set_AutoSaveHint")
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -222,13 +153,13 @@ Settings:
     ; Đăng ký tô màu Card trước khi dựng các tab
     OnMessage(0x138, "WM_CTLCOLORSTATIC_SETTINGS")
 
-    ; Dựng các Tab 1-4 theo kiến trúc Card cuộn dọc thống nhất
-    TabScrollNames := ["Tab1Scroll", "Tab2Scroll", "Tab3Scroll", "ShortcutsScroll"]
-    TabScrollHwnds := [0, 0, 0, 0]
+    ; Dựng các Tab 1-4 theo kiến trúc Card cuộn dọc thống nhất, Tab 5 dùng Child GUI tĩnh
+    TabScrollNames := ["Tab1Scroll", "Tab2Scroll", "Tab3Scroll", "ShortcutsScroll", "Tab5Panel"]
+    TabScrollHwnds := [0, 0, 0, 0, 0]
     TabScrollHwndToNum := {}
     TabCards := [[], [], [], []]
-    TabScrollPos := [0, 0, 0, 0]
-    TabContentH := [0, 0, 0, 0]
+    TabScrollPos := [0, 0, 0, 0, 0]
+    TabContentH := [0, 0, 0, 0, 0]
     TabStaticColors := [{}, {}, {}, {}]
 
     isSettingsBuilding := 1
@@ -236,6 +167,7 @@ Settings:
     BuildTab2ScrollPanel(chkS1, chkS2)
     BuildTab3ScrollPanel(idleMinutesList, selIdleIdx, preventScreenOff, preventSleep)
     BuildShortcutsScrollPanel(aboutIcon)
+    BuildTab5Panel()
     isSettingsBuilding := 0
 
     ; Khởi tạo trạng thái Enable/Disable của control
@@ -268,9 +200,10 @@ Settings:
         Gui, Settings:Show, Hide w780 h520 Center, % "GestureMouse - " . L("Set_Title")
     else
         Gui, Settings:Show, w780 h520 Center, % "GestureMouse - " . L("Set_Title")
-    if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
+    if (currentSettingsTab >= 1 && currentSettingsTab <= 5 && TabScrollHwnds[currentSettingsTab]) {
         SyncTabScrollPanelSize(currentSettingsTab)
-        UpdateTabScrollInfo(currentSettingsTab)
+        if (currentSettingsTab <= 4)
+            UpdateTabScrollInfo(currentSettingsTab)
         if (!isPreload)
             DllCall("RedrawWindow", "Ptr", TabScrollHwnds[currentSettingsTab], "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
     }
@@ -499,7 +432,7 @@ OnNav5:
 return
 
 SwitchSettingsTab(tabNum, skipRedraw := false) {
-    global currentSettingsTab, hSettingsGui, hSettingsTabNav, TabScrollHwnds, SidebarNavBitmaps, SidebarIconHwnds
+    global currentSettingsTab, hSettingsGui, TabScrollHwnds, SidebarNavBitmaps, SidebarIconHwnds
     ClearSettingsTooltip()
     if (tabNum < 1 || tabNum > 5)
         tabNum := 1
@@ -509,25 +442,19 @@ SwitchSettingsTab(tabNum, skipRedraw := false) {
         return
     Gui, Settings:Default
 
-    Loop, 4 {
+    Loop, 5 {
         hPanel := TabScrollHwnds[A_Index]
         if (!hPanel)
             continue
         if (A_Index == tabNum) {
             SyncTabScrollPanelSize(A_Index)
             DllCall("SetWindowPos", "Ptr", hPanel, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x0053) ; HWND_TOP|SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW
-            UpdateTabScrollInfo(A_Index)
+            if (A_Index <= 4)
+                UpdateTabScrollInfo(A_Index)
             DllCall("RedrawWindow", "Ptr", hPanel, "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
         } else {
             DllCall("ShowWindow", "Ptr", hPanel, "Int", 0) ; SW_HIDE
         }
-    }
-
-    if (tabNum = 5) {
-        GuiControl, Settings:Show, SettingsTabNav
-        GuiControl, Settings:Choose, SettingsTabNav, 5
-    } else {
-        GuiControl, Settings:Hide, SettingsTabNav
     }
 
     ; Khóa vẽ tạm thời vùng sidebar để gom toàn bộ thay đổi vào 1 lần repaint duy nhất, tránh chớp
@@ -556,9 +483,10 @@ SwitchSettingsTab(tabNum, skipRedraw := false) {
 
     if (!skipRedraw) {
         DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
+        scale := A_ScreenDPI / 96.0
         VarSetCapacity(rcSidebar, 16, 0)
-        NumPut(215, rcSidebar, 8, "Int")
-        NumPut(472, rcSidebar, 12, "Int")
+        NumPut(Round(215 * scale), rcSidebar, 8, "Int")
+        NumPut(Round(472 * scale), rcSidebar, 12, "Int")
         DllCall("RedrawWindow", "Ptr", hSettingsGui, "Ptr", &rcSidebar, "Ptr", 0, "UInt", 0x0185)
     }
 }
@@ -1211,18 +1139,13 @@ SettingsGuiSize:
 return
 
 HandleSettingsGuiResize(guiW, guiH) {
-    global hSettingsGui, hSettingsSep, hSettingsTabNav, hShortcutsScroll, currentSettingsTab
+    global hSettingsGui, hSettingsSep, hShortcutsScroll, currentSettingsTab, TabScrollHwnds
     if (!hSettingsGui)
         return
 
     sepH := (guiH > 28) ? (guiH - 28) : 10
     if (hSettingsSep)
         GuiControl, Settings:MoveDraw, %hSettingsSep%, % "h" . sepH
-
-    tabW := (guiW > 216) ? (guiW - 216) : 100
-    tabH := (guiH > 16) ? (guiH - 16) : 100
-    if (hSettingsTabNav)
-        GuiControl, Settings:Move, %hSettingsTabNav%, % "w" . tabW . " h" . tabH
 
     hintY := guiH - 37
     btnY := guiH - 44
@@ -1231,9 +1154,10 @@ HandleSettingsGuiResize(guiW, guiH) {
     GuiControl, Settings:MoveDraw, SettingsAutoSaveHint, % "y" . hintY . " w" . hintW
     GuiControl, Settings:MoveDraw, SettingsCloseBtn, % "x" . btnX . " y" . btnY
 
-    if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
+    if (currentSettingsTab >= 1 && currentSettingsTab <= 5 && TabScrollHwnds[currentSettingsTab]) {
         SyncTabScrollPanelSize(currentSettingsTab)
-        UpdateTabScrollInfo(currentSettingsTab)
+        if (currentSettingsTab <= 4)
+            UpdateTabScrollInfo(currentSettingsTab)
     }
 }
 
@@ -1256,6 +1180,80 @@ SyncTabScrollPanelSize(tabNum) {
     panelW := (clientW > leftPx) ? (clientW - leftPx) : Round(564 * scale)
     panelH := (clientH > bottomMarginPx) ? (clientH - bottomMarginPx) : Round(472 * scale)
     DllCall("SetWindowPos", "Ptr", hPanel, "Ptr", 0, "Int", leftPx, "Int", 0, "Int", panelW, "Int", panelH, "UInt", 0x0010) ; HWND_TOP|SWP_NOACTIVATE
+}
+
+; ========================================================
+; TAB 5: THÔNG TIN && BẢN QUYỀN (CHILD GUI ĐỘC LẬP)
+; ========================================================
+BuildTab5Panel() {
+    global hSettingsGui, hAboutHeroBmp, TabScrollHwnds
+
+    Gui, Tab5Panel:New, -Caption +0x40000000 +0x04000000 +Parent%hSettingsGui% +HwndhPanel
+    Gui, Tab5Panel:Color, F3F3F3
+    Gui, Tab5Panel:Font, s9.5 Norm c222222, Segoe UI
+
+    ; Hero Card nền xanh nhạt (#EEF5FC) với viền nhẹ & thanh nhấn xanh
+    Gui, Tab5Panel:Add, Progress, x12 y14 w536 h116 BackgroundD0E3F7 cD0E3F7 -Theme Disabled, 100
+    Gui, Tab5Panel:Add, Progress, x13 y15 w534 h114 BackgroundEEF5FC cEEF5FC -Theme Disabled, 100
+    Gui, Tab5Panel:Add, Progress, x13 y15 w4 h114 Background0067C0 c0067C0 -Theme Disabled, 100
+
+    if (!hAboutHeroBmp)
+        hAboutHeroBmp := CreateAboutHeroIconBitmap(56, 0xEEF5FC)
+    if (hAboutHeroBmp)
+        Gui, Tab5Panel:Add, Picture, x32 y43, HBITMAP:*%hAboutHeroBmp%
+    else
+        AddSettingsIcon(32, 43, 56, 56, "image\unnamed.ico", 1, "Tab5Panel")
+
+    Gui, Tab5Panel:Font, s15 Bold c004499, Segoe UI
+    Gui, Tab5Panel:Add, Text, x102 y24 w285 +BackgroundTrans, GestureMouse
+    Gui, Tab5Panel:Font, s9.5 Norm c2C3E50, Segoe UI
+    Gui, Tab5Panel:Add, Text, x102 y52 w288 h34 +BackgroundTrans, % L("About_Headline")
+    Gui, Tab5Panel:Font, s8.5 Norm c5A6B7C, Segoe UI
+    Gui, Tab5Panel:Add, Text, x102 y93 w288 +BackgroundTrans, % L("About_HeroMeta")
+
+    Gui, Tab5Panel:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab5Panel:Add, Button, x400 y55 w130 h32 gOpenDonateLink, % Chr(0x2764) . " " . L("About_Donate")
+
+    ; Dải 3 nút hành động nhanh
+    Gui, Tab5Panel:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab5Panel:Add, Button, x12 y142 w172 h30 gCheckForUpdates, % L("Tray_CheckUpdate")
+    Gui, Tab5Panel:Add, Button, x194 y142 w172 h30 gOpenGitHubLink, GitHub Releases
+    Gui, Tab5Panel:Add, Button, x376 y142 w172 h30 gOpenEmailLink, % L("About_ContactBtn")
+
+    Gui, Tab5Panel:Add, Text, x12 y184 w536 h1 0x10
+
+    ; Đoạn giới thiệu ngắn gọn (bôi đen copy được, không thanh cuộn)
+    Gui, Tab5Panel:Font, s9.5 Norm c333333, Segoe UI
+    Gui, Tab5Panel:Add, Edit, x12 y196 w536 h44 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutDetailEdit, % L("About_ShortDesc")
+    DllCall("SendMessage", "Ptr", hAboutDetailEdit, "UInt", 0x00D3, "Ptr", 1, "Ptr", 0)
+
+    Gui, Tab5Panel:Add, Text, x12 y248 w536 h1 0x10
+
+    ; Bảng thông tin 2 cột (Tác giả, Giấy phép, Email, Mã nguồn)
+    Gui, Tab5Panel:Font, s9 Norm c666666, Segoe UI
+    Gui, Tab5Panel:Add, Text, x12 y264 w108, % L("About_LblAuthor")
+    Gui, Tab5Panel:Font, s9.5 Bold c222222, Segoe UI
+    Gui, Tab5Panel:Add, Edit, x124 y263 w424 h20 ReadOnly -E0x200 -VScroll -Tabstop HwndhAboutAuthorEdit, % L("About_ValAuthor")
+    DllCall("SendMessage", "Ptr", hAboutAuthorEdit, "UInt", 0x00D3, "Ptr", 1, "Ptr", 0)
+
+    Gui, Tab5Panel:Font, s9 Norm c666666, Segoe UI
+    Gui, Tab5Panel:Add, Text, x12 y292 w108, % L("About_LblLicense")
+    Gui, Tab5Panel:Font, s9.5 Norm c333333, Segoe UI
+    Gui, Tab5Panel:Add, Text, x124 y292 w424 h20, % L("About_ValLicense")
+
+    Gui, Tab5Panel:Font, s9 Norm c666666, Segoe UI
+    Gui, Tab5Panel:Add, Text, x12 y320 w108, % L("About_LblEmail")
+    Gui, Tab5Panel:Font, s9.5 Norm c333333, Segoe UI
+    Gui, Tab5Panel:Add, Link, x124 y320 w424 h20 gOnAboutLinkClick, <a href="mailto:nguyentrian87@gmail.com">nguyentrian87@gmail.com</a>
+
+    Gui, Tab5Panel:Font, s9 Norm c666666, Segoe UI
+    Gui, Tab5Panel:Add, Text, x12 y348 w108, % L("About_LblRepo")
+    Gui, Tab5Panel:Font, s9.5 Norm c333333, Segoe UI
+    Gui, Tab5Panel:Add, Link, x124 y348 w424 h20 gOnAboutLinkClick, <a href="https://github.com/ngtrian/GestureMouse">https://github.com/ngtrian/GestureMouse</a>
+
+    TabScrollHwnds[5] := hPanel
+    Gui, Tab5Panel:Show, Hide x216 y0 w564 h472
+    Gui, Settings:Default
 }
 
 ; ========================================================
