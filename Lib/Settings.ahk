@@ -246,6 +246,9 @@ Settings:
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTBorderEnabled
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTUnpinAllBtn
     GuiControl, ShortcutsScroll:Enable%ScreenOffEnabled%, ScreenOffHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperBackHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperShowPreview
     UpdateMicControlsState()
 
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
@@ -458,6 +461,19 @@ UpdateSettingsGuiControls() {
     if (IsFunc("FormatScreenOffHotkeyText"))
         GuiControl, ShortcutsScroll:, ScreenOffHotkeyBtn, % FormatScreenOffHotkeyText(ScreenOffHotkey)
     GuiControl, ShortcutsScroll:Enable%ScreenOffEnabled%, ScreenOffHotkeyBtn
+
+    GuiControl, ShortcutsScroll:, WinHopperEnabled, %WinHopperEnabled%
+    GuiControl, ShortcutsScroll:, WinHopperShowPreview, %WinHopperShowPreview%
+    if (IsFunc("FormatWinHopperHotkeyText")) {
+        GuiControl, ShortcutsScroll:, WinHopperHotkeyBtn, % FormatWinHopperHotkeyText(WinHopperHotkey)
+        GuiControl, ShortcutsScroll:, WinHopperBackHotkeyBtn, % FormatWinHopperHotkeyText(WinHopperBackHotkey)
+    }
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperBackHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperShowPreview
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperBackHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperShowPreview
 
     SyncMicControlsFromState()
     UpdateAllCardSummaries()
@@ -889,6 +905,9 @@ OnToggleScreenOffEnabled:
     Gui, ShortcutsScroll:Submit, NoHide
     ScreenOffEnabled := ScreenOffEnabled ? 1 : 0
     GuiControl, ShortcutsScroll:Enable%ScreenOffEnabled%, ScreenOffHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperBackHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperShowPreview
     if (IsFunc("SaveScreenOffSettings"))
         SaveScreenOffSettings()
     if (IsFunc("ApplyScreenOffHotkey"))
@@ -987,6 +1006,73 @@ OnTestScreenOff:
     if (IsFunc("TurnOffMonitor"))
         TurnOffMonitor(false)
 return
+
+; ========================================================
+; WINDOW HOPPER (CHUYỂN CỬA SỔ CÙNG ỨNG DỤNG)
+; ========================================================
+OnToggleWinHopperEnabled:
+    Gui, ShortcutsScroll:Submit, NoHide
+    WinHopperEnabled := WinHopperEnabled ? 1 : 0
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WinHopperEnabled, %WinHopperEnabled%
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperBackHotkeyBtn
+    GuiControl, ShortcutsScroll:Enable%WinHopperEnabled%, WinHopperShowPreview
+    if (IsFunc("ApplyWindowHopperHotkeys"))
+        ApplyWindowHopperHotkeys()
+    UpdateShortcutsCardSummaries()
+return
+
+OnToggleWinHopperPreview:
+    Gui, ShortcutsScroll:Submit, NoHide
+    WinHopperShowPreview := WinHopperShowPreview ? 1 : 0
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WinHopperShowPreview, %WinHopperShowPreview%
+return
+
+OnChangeWinHopperFwdHotkey:
+    global WinHopperHotkey
+    ShowHotkeyPickerDialog({id: "winhopper_fwd"
+        , title: L("WH_ChangeFwdBtn")
+        , prompt: L("WH_HotkeyPrompt")
+        , current: WinHopperHotkey
+        , default: "!vkC0"
+        , allowSingleModifier: false
+        , allowMouse: false
+        , allowClear: true
+        , onSave: Func("SavePickedWinHopperFwdHotkey")})
+return
+
+SavePickedWinHopperFwdHotkey(newHk) {
+    global WinHopperHotkey
+    WinHopperHotkey := newHk
+    RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WinHopperHotkey, %WinHopperHotkey%
+    GuiControl, ShortcutsScroll:, WinHopperHotkeyBtn, % FormatHotkeyText(WinHopperHotkey)
+    if (IsFunc("ApplyWindowHopperHotkeys"))
+        ApplyWindowHopperHotkeys()
+    UpdateShortcutsCardSummaries()
+}
+
+OnChangeWinHopperBackHotkey:
+    global WinHopperBackHotkey
+    ShowHotkeyPickerDialog({id: "winhopper_back"
+        , title: L("WH_ChangeBackBtn")
+        , prompt: L("WH_HotkeyPrompt")
+        , current: WinHopperBackHotkey
+        , default: "!+vkC0"
+        , allowSingleModifier: false
+        , allowMouse: false
+        , allowClear: true
+        , onSave: Func("SavePickedWinHopperBackHotkey")})
+return
+
+SavePickedWinHopperBackHotkey(newHk) {
+    global WinHopperBackHotkey
+    WinHopperBackHotkey := newHk
+    RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WinHopperBackHotkey, %WinHopperBackHotkey%
+    GuiControl, ShortcutsScroll:, WinHopperBackHotkeyBtn, % FormatHotkeyText(WinHopperBackHotkey)
+    if (IsFunc("ApplyWindowHopperHotkeys"))
+        ApplyWindowHopperHotkeys()
+    UpdateShortcutsCardSummaries()
+}
 
 OpenGitHubLink:
     Run, https://github.com/ngtrian/GestureMouse/releases
@@ -1566,6 +1652,33 @@ BuildShortcutsScrollPanel(aboutIcon) {
     aotCard.curY += 24
     EndCard(aotCard, 8)
 
+    ; CARD: WINDOW HOPPER (CHUYỂN CỬA SỔ CÙNG ỨNG DỤNG, CHECKBOX TRÊN HEADER)
+    whCard := BeginCard(4, "ShortcutsScroll", "winhopper", L("Set_GroupWinHopper"), 1, "OnToggleWinHopperExpand", "WinHopperEnabled", "OnToggleWinHopperEnabled", WinHopperEnabled)
+    y := whCard.curY
+    Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w44 h18 vWinHopperFwdLbl +HwndhWhFwdLbl", % L("WH_FwdHotkeyLbl")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    whFwdDisplay := IsFunc("FormatWinHopperHotkeyText") ? FormatWinHopperHotkeyText(WinHopperHotkey) : "Alt + ``"
+    Gui, ShortcutsScroll:Add, Button, x74 y%y% w160 h25 vWinHopperHotkeyBtn +HwndhWhFwdBtn gOnChangeWinHopperFwdHotkey, %whFwdDisplay%
+    Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, % "x248 y" . (y + 4) . " w44 h18 vWinHopperBackLbl +HwndhWhBackLbl", % L("WH_BackHotkeyLbl")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    whBackDisplay := IsFunc("FormatWinHopperHotkeyText") ? FormatWinHopperHotkeyText(WinHopperBackHotkey) : "Alt + Shift + ``"
+    Gui, ShortcutsScroll:Add, Button, x294 y%y% w168 h25 vWinHopperBackHotkeyBtn +HwndhWhBackBtn gOnChangeWinHopperBackHotkey, %whBackDisplay%
+    CardAddItem(whCard, hWhFwdLbl,  y + 4)
+    CardAddItem(whCard, hWhFwdBtn,  y)
+    CardAddItem(whCard, hWhBackLbl, y + 4)
+    CardAddItem(whCard, hWhBackBtn, y)
+    whCard.curY += 30
+
+    y := whCard.curY
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Checkbox, x28 y%y% w492 h22 vWinHopperShowPreview +HwndhWhPreviewChk gOnToggleWinHopperPreview Checked%WinHopperShowPreview%, % L("WH_PreviewChk")
+    CardAddItem(whCard, hWhPreviewChk, y)
+    whCard.curY += 26
+    CardAddDescText(whCard, L("WH_Desc"), 28, 18, 2)
+    EndCard(whCard, 8)
+
     ; CARD 4: TẮT MÀN HÌNH NHANH (MẶC ĐỊNH MỞ, CHECKBOX TRÊN HEADER)
     screenCard := BeginCard(4, "ShortcutsScroll", "screenoff", L("Set_GroupScreenOff"), 1, "OnToggleScreenOffExpand", "ScreenOffEnabled", "OnToggleScreenOffEnabled", ScreenOffEnabled)
     y := screenCard.curY
@@ -1877,6 +1990,9 @@ UpdateAllCardSummaries() {
             } else if (card.id = "aot") {
                 hk := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
                 summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
+            } else if (card.id = "winhopper") {
+                hk := IsFunc("FormatWinHopperHotkeyText") ? FormatWinHopperHotkeyText(WinHopperHotkey) : "Alt + ``"
+                summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
             } else if (card.id = "screenoff") {
                 hk := IsFunc("FormatScreenOffHotkeyText") ? FormatScreenOffHotkeyText(ScreenOffHotkey) : "Win + Alt + S"
                 summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
@@ -2007,6 +2123,9 @@ OnToggleAotExpand:
 return
 OnToggleScreenOffExpand:
     ToggleCard(4, "screenoff")
+return
+OnToggleWinHopperExpand:
+    ToggleCard(4, "winhopper")
 return
 OnToggleTrayExpand:
     ToggleCard(4, "tray")

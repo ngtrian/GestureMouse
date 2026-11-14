@@ -185,6 +185,18 @@ InitLanguage() {
     v["ScreenOff_ChangeHotkeyBtn"] := "Đổi phím tắt Tắt màn hình"
     v["ScreenOff_HotkeyPrompt"] := "Nhấn tổ hợp phím (hoặc nút chuột) muốn dùng để tắt màn hình:"
     v["ScreenOff_Desc"]         := "Tắt tín hiệu màn hình ngay lập tức mà không làm máy vào chế độ Sleep. Di chuyển chuột hoặc nhấn phím bất kỳ để bật lại."
+
+    ; Window Hopper (Chuyển cửa sổ cùng ứng dụng)
+    v["Set_GroupWinHopper"]     := "Chuyển cửa sổ cùng ứng dụng (Window Hopper)"
+    v["WH_FwdHotkeyLbl"]        := "Tiến:"
+    v["WH_BackHotkeyLbl"]       := "Lùi:"
+    v["WH_ChangeFwdBtn"]        := "Đổi phím tắt chuyển tiếp"
+    v["WH_ChangeBackBtn"]       := "Đổi phím tắt lùi lại"
+    v["WH_HotkeyPrompt"]        := "Nhấn tổ hợp phím mong muốn (ví dụ Alt + `` hoặc Alt + Shift + ``):"
+    v["WH_PreviewChk"]          := "Hiển thị ảnh thu nhỏ trực tiếp (Live Preview)"
+    v["WH_Desc"]                := "Nhấn giữ Alt + `` để mở bảng chuyển đổi nhanh giữa các cửa sổ của ứng dụng đang dùng; nhả phím để chọn hoặc Esc để hủy."
+    v["WH_WindowCount"]         := "{1} cửa sổ"
+    v["WH_EscHint"]             := "Esc: Hủy"
     v["TT_ExApps"]              := "Quản lý danh sách ứng dụng không áp dụng cử chỉ chuột và cuộn chuột"
 
     ; Chặn Popup - Popup Blocker
@@ -642,6 +654,18 @@ InitLanguage() {
     e["ScreenOff_ChangeHotkeyBtn"] := "Change Screen Off Hotkey"
     e["ScreenOff_HotkeyPrompt"] := "Press the key combination (or mouse button) to turn off screen:"
     e["ScreenOff_Desc"]         := "Turns off display signal immediately without putting PC to Sleep. Move mouse or press any key to wake."
+
+    ; Window Hopper
+    e["Set_GroupWinHopper"]     := "Window Hopper (Same-App Window Switcher)"
+    e["WH_FwdHotkeyLbl"]        := "Next:"
+    e["WH_BackHotkeyLbl"]       := "Prev:"
+    e["WH_ChangeFwdBtn"]        := "Change Next Hotkey"
+    e["WH_ChangeBackBtn"]       := "Change Previous Hotkey"
+    e["WH_HotkeyPrompt"]        := "Press desired shortcut (e.g. Alt + `` or Alt + Shift + ``):"
+    e["WH_PreviewChk"]          := "Show live window previews"
+    e["WH_Desc"]                := "Hold Alt + `` to cycle through windows of the active app; release to switch or press Esc to cancel."
+    e["WH_WindowCount"]         := "{1} windows"
+    e["WH_EscHint"]             := "Esc: Cancel"
     e["TT_ExApps"]              := "Manage applications excluded from mouse gestures and right-click scroll"
 
     ; Popup Blocker

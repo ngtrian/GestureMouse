@@ -11,6 +11,8 @@ Menu:
         InitLockManager()
     if (IsFunc("InitAlwaysOnTop"))
         InitAlwaysOnTop()
+    if (IsFunc("InitWindowHopper"))
+        InitWindowHopper()
     if (IsFunc("InitMicMute"))
         InitMicMute()
     if (IsFunc("InitScreenOff"))
