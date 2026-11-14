@@ -55,6 +55,12 @@ Settings:
             UpdateSettingsGuiControls()
             targetTab := currentSettingsTab ? currentSettingsTab : 1
             SwitchSettingsTab(targetTab, !isVisible)
+            if (!isVisible) {
+                Loop, 4 {
+                    if (TabScrollHwnds[A_Index] && TabScrollPos[A_Index] != 0)
+                        ScrollTabTo(A_Index, 0)
+                }
+            }
             Gui, Settings:Show, w780 h520 Center, % "GestureMouse - " . L("Set_Title")
             if (currentSettingsTab >= 1 && currentSettingsTab <= 4 && TabScrollHwnds[currentSettingsTab]) {
                 SyncTabScrollPanelSize(currentSettingsTab)
@@ -128,9 +134,6 @@ Settings:
     AddSidebarNav(3, 96,  "🔒", L("Nav_Lock"))
     AddSidebarNav(4, 136, "⌨️", L("Nav_Shortcuts"))
     AddSidebarNav(5, 176, "ℹ️", L("Nav_About"))
-
-    ; Vách phân cách dọc duy nhất giữa Sidebar và Vùng nội dung
-    Gui, Add, Text, x212 y12 w1 h493 0x11 +HwndhSettingsSep
 
     ; ========================================================
     ; VÙNG NỘI DUNG BÊN PHẢI (TAB 1-4 DÙNG CHILD GUI CARD CUỘN DỌC, TAB 5 DÙNG TAB2)
@@ -471,6 +474,7 @@ SwitchSettingsTab(tabNum, skipRedraw := false) {
     ClearSettingsTooltip()
     if (tabNum < 1 || tabNum > 5)
         tabNum := 1
+    prevTab := currentSettingsTab
     currentSettingsTab := tabNum
     if (!hSettingsGui)
         return
@@ -496,8 +500,15 @@ SwitchSettingsTab(tabNum, skipRedraw := false) {
     } else {
         GuiControl, Settings:Hide, SettingsTabNav
     }
+
+    ; Khóa vẽ tạm thời vùng sidebar để gom toàn bộ thay đổi vào 1 lần repaint duy nhất, tránh chớp
+    if (!skipRedraw)
+        DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
+
     Loop 5 {
         isActive := (A_Index == tabNum)
+        if (!skipRedraw && A_Index != tabNum && A_Index != prevTab)
+            continue
         if (isActive) {
             GuiControl, Settings:Show, NavBg%A_Index%
             GuiControl, Settings:Show, NavInd%A_Index%
@@ -508,15 +519,18 @@ SwitchSettingsTab(tabNum, skipRedraw := false) {
             Gui, Settings:Font, s9.5 Norm c444444, Segoe UI
         }
         GuiControl, Settings:Font, NavTxt%A_Index%
-        GuiControl, Settings:+BackgroundTrans, NavTxt%A_Index%
-        if (!skipRedraw)
-            GuiControl, Settings:MoveDraw, NavTxt%A_Index%
         if (SidebarIconHwnds.HasKey(A_Index) && SidebarNavBitmaps.HasKey(A_Index)) {
             hBmp := isActive ? SidebarNavBitmaps[A_Index].active : SidebarNavBitmaps[A_Index].inactive
             DllCall("SendMessage", "Ptr", SidebarIconHwnds[A_Index], "UInt", 0x0172, "Ptr", 0, "Ptr", hBmp)
-            if (!skipRedraw)
-                GuiControl, Settings:MoveDraw, NavIco%A_Index%
         }
+    }
+
+    if (!skipRedraw) {
+        DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 1, "Ptr", 0) ; WM_SETREDRAW = TRUE
+        VarSetCapacity(rcSidebar, 16, 0)
+        NumPut(215, rcSidebar, 8, "Int")
+        NumPut(472, rcSidebar, 12, "Int")
+        DllCall("RedrawWindow", "Ptr", hSettingsGui, "Ptr", &rcSidebar, "Ptr", 0, "UInt", 0x0185)
     }
 }
 
