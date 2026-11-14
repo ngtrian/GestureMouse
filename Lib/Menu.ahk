@@ -15,6 +15,8 @@ Menu:
         InitMicMute()
     if (IsFunc("InitScreenOff"))
         InitScreenOff()
+    if (IsFunc("InitPopupBlocker"))
+        InitPopupBlocker()
 
     ; Xây dựng menu khay hệ thống ban đầu
     RebuildTrayMenu()
@@ -75,6 +77,13 @@ RebuildTrayMenu() {
     Menu, PhimTat, Add, % L("Sub_MicMute") . micHkTxt, MenuActionToggleMicMute
     screenHkTxt := (ScreenOffEnabled && IsFunc("FormatScreenOffHotkeyText") && ScreenOffHotkey != "") ? ("`t" . FormatScreenOffHotkeyText(ScreenOffHotkey)) : ""
     Menu, PhimTat, Add, % L("Sub_ScreenOff") . screenHkTxt, MenuActionTurnOffScreen
+    Menu, PhimTat, Add
+    Menu, PhimTat, Add, % L("Sub_PopupBlocker"), MenuActionTogglePopupBlocker
+    if (PopupBlockerEnabled)
+        Menu, PhimTat, Check, % L("Sub_PopupBlocker")
+    else
+        Menu, PhimTat, Uncheck, % L("Sub_PopupBlocker")
+    Menu, PhimTat, Add, % L("Sub_PopupBlockerRules"), MenuActionOpenPopupBlocker
     Menu, PhimTat, Add
     Menu, PhimTat, Add, % L("Sub_ShortcutSettings"), MenuActionOpenShortcuts
 
@@ -502,6 +511,18 @@ return
 MenuActionTurnOffScreen:
     if (IsFunc("TurnOffMonitor"))
         TurnOffMonitor(false)
+return
+
+MenuActionTogglePopupBlocker:
+    if (IsFunc("TogglePopupBlocker"))
+        TogglePopupBlocker()
+    if (IsFunc("SyncPopupBlockerSettingsUI"))
+        SyncPopupBlockerSettingsUI()
+return
+
+MenuActionOpenPopupBlocker:
+    if (IsFunc("OpenPopupBlockerGui"))
+        OpenPopupBlockerGui()
 return
 
 MenuActionOpenShortcuts:

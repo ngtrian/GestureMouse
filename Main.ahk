@@ -128,6 +128,7 @@ SetTimer, PreloadSettingsGui, -1500 ; Dựng sẵn Settings GUI ẩn ở nền �
 #Include %A_ScriptDir%\Lib\AlwaysOnTop.ahk ; Ghim cửa sổ luôn nổi (Always On Top)
 #Include %A_ScriptDir%\Lib\MicMute.ahk ; Tắt/bật Microphone (WASAPI + PTT/PTM/Toggle + GDI+ OSD)
 #Include %A_ScriptDir%\Lib\ScreenOff.ahk ; Tắt màn hình nhanh (SC_MONITORPOWER)
+#Include %A_ScriptDir%\Lib\PopupBlocker.ahk ; Tự động phát hiện và chặn popup desktop
 
 
 

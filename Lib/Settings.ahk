@@ -833,6 +833,41 @@ OnToggleScreenOffEnabled:
     UpdateShortcutsCardSummaries()
 return
 
+; ========================================================
+; CHẶN POPUP TỰ ĐỘNG (POPUP BLOCKER)
+; ========================================================
+OnTogglePopupBlockerEnabled:
+    Gui, ShortcutsScroll:Submit, NoHide
+    PopupBlockerEnabled := PopupBlockerEnabled ? 1 : 0
+    if (IsFunc("SavePopupBlockerSettings"))
+        SavePopupBlockerSettings()
+    if (IsFunc("ApplyPopupBlockerState"))
+        ApplyPopupBlockerState()
+    if (IsFunc("RebuildTrayMenu"))
+        RebuildTrayMenu()
+    if (IsFunc("UpdateTrayTip"))
+        UpdateTrayTip()
+    UpdateShortcutsCardSummaries()
+return
+
+OnOpenPopupBlockerMgr:
+    if (IsFunc("OpenPopupBlockerGui"))
+        OpenPopupBlockerGui()
+return
+
+OnQuickPickPopupTarget:
+    if (IsFunc("StartPopupWindowPicker"))
+        StartPopupWindowPicker("quick")
+return
+
+SyncPopupBlockerSettingsUI() {
+    global PopupBlockerEnabled, hSettingsGui
+    if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
+        GuiControl, ShortcutsScroll:, PopupBlockerEnabled, % (PopupBlockerEnabled ? 1 : 0)
+        UpdateShortcutsCardSummaries()
+    }
+}
+
 OnChangeScreenOffHotkey:
     global ScreenOffHotkey
     ShowHotkeyPickerDialog({id: "screenoff"
@@ -1455,6 +1490,22 @@ BuildShortcutsScrollPanel(aboutIcon) {
     CardAddDescText(trayCard, "• " . L("Set_TrayDblClickTip"), 28, 18, 2)
     EndCard(trayCard, 8)
 
+    ; CARD 6: CHẶN POPUP TỰ ĐỘNG (CHECKBOX TRÊN HEADER)
+    popupCard := BeginCard(4, "ShortcutsScroll", "popup", L("Set_GroupPopupBlocker"), 1, "OnTogglePopupBlockerExpand", "PopupBlockerEnabled", "OnTogglePopupBlockerEnabled", PopupBlockerEnabled)
+    y := popupCard.curY
+    Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w236 vPopupManageLbl +HwndhPopupLbl", % L("Popup_CardLabel")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    Gui, ShortcutsScroll:Add, Button, x270 y%y% w96 h26 Center gOnQuickPickPopupTarget vPopupQuickPickBtn +HwndhPopupPickBtn, % L("Popup_QuickPickShortBtn")
+    Gui, ShortcutsScroll:Add, Button, x372 y%y% w148 h26 Center gOnOpenPopupBlockerMgr vPopupManageBtn +HwndhPopupBtn, % L("Popup_ManageBtn")
+    SettingsTooltips[hPopupPickBtn] := L("Popup_QuickPickTip")
+    CardAddItem(popupCard, hPopupLbl, y + 4)
+    CardAddItem(popupCard, hPopupPickBtn, y)
+    CardAddItem(popupCard, hPopupBtn, y)
+    popupCard.curY += 30
+    CardAddDescText(popupCard, L("Popup_Desc"), 28, 18, 2)
+    EndCard(popupCard, 8)
+
     Gui, ShortcutsScroll:Show, Hide x216 y0 w564 h472
     RefreshMicDeviceDropdown()
     UpdateAllCardSummaries()
@@ -1839,6 +1890,9 @@ OnToggleScreenOffExpand:
 return
 OnToggleTrayExpand:
     ToggleCard(4, "tray")
+return
+OnTogglePopupBlockerExpand:
+    ToggleCard(4, "popup")
 return
 
 UpdateTabScrollInfo(tabNum) {
