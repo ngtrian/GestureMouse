@@ -1420,6 +1420,13 @@ ClearLockPowerPolicy() {
     DllCall("SetThreadExecutionState", "UInt", 0x80000000) ; ES_CONTINUOUS
 }
 
+; Đánh thức màn hình khi người dùng mở khóa trực tiếp bằng mã
+WakeDisplayOnUnlock() {
+    DllCall("SetThreadExecutionState", "UInt", 0x00000002) ; ES_DISPLAY_REQUIRED (one-shot)
+    DllCall("mouse_event", "UInt", 0x0001, "Int", 0, "Int", 0, "UInt", 0, "UPtr", 0) ; MOUSEEVENTF_MOVE (0, 0)
+    PostMessage, 0x112, 0xF170, -1,, Program Manager ; WM_SYSCOMMAND, SC_MONITORPOWER, Monitor On
+}
+
 ActivateLock(mode := 0, targetHwnd := 0) {
     global isLocked, hKeyboardHook, hMouseHook, lockMode, hFocusWnd, focusWndTitle
     global lockKeyboardEnabled, mouseLockEnabled, Buffer
@@ -1516,6 +1523,9 @@ UnlockKeyboard(fromWindowsSession := false) {
     SendLevel, 1
     SendInput, {Ctrl Up}{Alt Up}
     SendLevel, 0
+
+    if (!fromWindowsSession)
+        WakeDisplayOnUnlock()
 
     ShowNotification()
 
