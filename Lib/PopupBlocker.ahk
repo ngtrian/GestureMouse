@@ -8,6 +8,7 @@ global PopupRulesByProc := {}
 global PopupActiveRuleCount := 0
 global PopupPendingHwnds := {}
 global PopupHandledCache := {}
+global PopupPidCache := {}
 global PopupBlockerLogs := []
 global PopupWinEventHooks := []
 global PopupWinEventCallback := 0
@@ -47,13 +48,15 @@ global PopupIsPicking := 0
 
 InitPopupBlocker() {
     global PopupBlockerEnabled, PopupRulesFilePath
-    global PopupBlockerLogs, PopupPendingHwnds, PopupHandledCache, PopupWinEventHooks, PopupBlockerBlockedCount
+    global PopupBlockerLogs, PopupPendingHwnds, PopupHandledCache, PopupPidCache, PopupWinEventHooks, PopupBlockerBlockedCount
     if (!IsObject(PopupBlockerLogs))
         PopupBlockerLogs := []
     if (!IsObject(PopupPendingHwnds))
         PopupPendingHwnds := {}
     if (!IsObject(PopupHandledCache))
         PopupHandledCache := {}
+    if (!IsObject(PopupPidCache))
+        PopupPidCache := {}
     if (!IsObject(PopupWinEventHooks))
         PopupWinEventHooks := []
     if (PopupBlockerBlockedCount = "")
@@ -99,11 +102,11 @@ ApplyPopupBlockerState() {
     global PopupBlockerEnabled, PopupActiveRuleCount
     if (PopupBlockerEnabled && PopupActiveRuleCount > 0) {
         StartPopupWinEventHooks()
-        SetTimer, PopupBlocker_FallbackScan, 2000
-        SetTimer, PopupBlocker_FallbackScan, -100
+        ; Chỉ quét 1 lần lúc vừa bật/thêm rule, sau đó thuần 100% event-driven (0% polling)
+        SetTimer, PopupBlocker_InitialScan, -100
     } else {
         StopPopupWinEventHooks()
-        SetTimer, PopupBlocker_FallbackScan, Off
+        SetTimer, PopupBlocker_InitialScan, Off
         SetTimer, PopupBlocker_ProcessQueue, Off
     }
 }
@@ -172,7 +175,7 @@ ProcessPopupPendingQueue() {
     }
 }
 
-PopupBlocker_FallbackScan:
+PopupBlocker_InitialScan:
     ScanVisiblePopupWindows()
 return
 
@@ -189,9 +192,76 @@ ScanVisiblePopupWindows() {
     }
 }
 
+PopupBlocker_GetWindowStyle(hwnd) {
+    return DllCall(A_PtrSize = 8 ? "GetWindowLongPtrW" : "GetWindowLongW", "Ptr", hwnd, "Int", -16, "Ptr")
+}
+
+PopupBlocker_GetWindowClass(hwnd) {
+    VarSetCapacity(buf, 512, 0)
+    DllCall("GetClassNameW", "Ptr", hwnd, "Str", buf, "Int", 256)
+    return buf
+}
+
+PopupBlocker_GetWindowTitle(hwnd) {
+    len := DllCall("GetWindowTextLengthW", "Ptr", hwnd)
+    if (len <= 0)
+        return ""
+    VarSetCapacity(buf, (len + 1) * 2, 0)
+    DllCall("GetWindowTextW", "Ptr", hwnd, "Str", buf, "Int", len + 1)
+    return buf
+}
+
+PopupBlocker_GetProcessInfo(hwnd, ByRef procName, ByRef procLower) {
+    global PopupPidCache
+    if (!IsObject(PopupPidCache))
+        PopupPidCache := {}
+
+    pid := 0
+    DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "UInt*", pid)
+    if (!pid)
+        return false
+
+    now := A_TickCount
+    if (PopupPidCache.HasKey(pid)) {
+        entry := PopupPidCache[pid]
+        if (now - entry.ts < 60000) {
+            procName := entry.name
+            procLower := entry.lower
+            return (procLower != "")
+        }
+    }
+
+    procName := ""
+    ; PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    hProc := DllCall("OpenProcess", "UInt", 0x1000, "Int", 0, "UInt", pid, "Ptr")
+    if (hProc) {
+        size := 520
+        VarSetCapacity(fullPath, size * 2, 0)
+        ok := DllCall("Kernel32\QueryFullProcessImageNameW", "Ptr", hProc, "UInt", 0, "Str", fullPath, "UInt*", size)
+        DllCall("CloseHandle", "Ptr", hProc)
+        if (ok && fullPath != "") {
+            SplitPath, fullPath, procName
+        }
+    }
+    if (procName = "")
+        WinGet, procName, ProcessName, ahk_id %hwnd%
+    if (procName = "")
+        return false
+
+    StringLower, procLower, procName
+    if (PopupPidCache.Count() > 250)
+        PopupPidCache := {}
+    PopupPidCache[pid] := {name: procName, lower: procLower, ts: now}
+    return true
+}
+
 PopupBlocker_EvaluateWindow(hwnd) {
     global PopupBlockerEnabled, PopupActiveRuleCount, PopupRulesByProc, PopupHandledCache
     if (!PopupBlockerEnabled || PopupActiveRuleCount <= 0 || !hwnd || !DllCall("IsWindowVisible", "Ptr", hwnd))
+        return false
+
+    ; Bỏ qua nhanh cửa sổ con (WS_CHILD = 0x40000000) qua Win32 API
+    if (PopupBlocker_GetWindowStyle(hwnd) & 0x40000000)
         return false
 
     ; Cooldown tránh xử lý lặp lại cùng một HWND trong thời gian ngắn
@@ -199,19 +269,17 @@ PopupBlocker_EvaluateWindow(hwnd) {
     if (PopupHandledCache.HasKey(hwnd) && (now - PopupHandledCache[hwnd] < 1500))
         return false
 
-    ; Lọc O(1) theo tên tiến trình trước khi gọi các API nặng hơn
-    WinGet, procName, ProcessName, ahk_id %hwnd%
-    if (procName = "")
+    ; Lọc O(1) theo PID Cache + ProcessName trước khi đọc Class/Title/Text
+    if (!PopupBlocker_GetProcessInfo(hwnd, procName, procLower))
         return false
-    StringLower, procLower, procName
     if (!PopupRulesByProc.HasKey(procLower))
         return false
 
-    if (PopupBlocker_IsSafeToSkip(hwnd, procLower))
+    winClass := PopupBlocker_GetWindowClass(hwnd)
+    if (PopupBlocker_IsSafeToSkip(hwnd, procLower, winClass))
         return false
 
-    WinGetClass, winClass, ahk_id %hwnd%
-    WinGetTitle, winTitle, ahk_id %hwnd%
+    winTitle := PopupBlocker_GetWindowTitle(hwnd)
     winText := ""
     hasLoadedText := false
 
@@ -253,24 +321,17 @@ CleanupPopupHandledCache(now) {
         PopupHandledCache.Delete(k)
 }
 
-PopupBlocker_IsSafeToSkip(hwnd, procLower) {
+PopupBlocker_IsSafeToSkip(hwnd, procLower, winClass) {
     ; Bỏ qua cửa sổ hệ thống cốt lõi
     if (procLower = "explorer.exe") {
-        WinGetClass, cls, ahk_id %hwnd%
-        if (cls = "Shell_TrayWnd" || cls = "Shell_SecondaryTrayWnd" || cls = "Progman" || cls = "WorkerW" || cls = "NotifyIconOverflowWindow")
+        if (winClass = "Shell_TrayWnd" || winClass = "Shell_SecondaryTrayWnd" || winClass = "Progman" || winClass = "WorkerW" || winClass = "NotifyIconOverflowWindow")
             return true
     }
     if (procLower = "shellexperiencehost.exe" || procLower = "searchhost.exe" || procLower = "startmenuexperiencehost.exe")
         return true
 
-    ; Bỏ qua cửa sổ con (WS_CHILD = 0x40000000)
-    WinGet, style, Style, ahk_id %hwnd%
-    if (style & 0x40000000)
-        return true
-
     ; Bỏ qua hộp thoại Open / Save As chuẩn của Windows (#32770 có ComboBoxEx321 + Edit1)
-    WinGetClass, wClass, ahk_id %hwnd%
-    if (wClass = "#32770") {
+    if (winClass = "#32770") {
         ControlGet, hCombo, Hwnd,, ComboBoxEx321, ahk_id %hwnd%
         ControlGet, hEdit, Hwnd,, Edit1, ahk_id %hwnd%
         if (hCombo && hEdit)
