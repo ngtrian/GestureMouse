@@ -56,7 +56,7 @@ NormalizeHotkeyForCompare(hk) {
 ; Kiểm tra phím tắt có trùng với tính năng khác đang bật hay không
 CheckHotkeyConflict(hk, excludeId := "") {
     global AOTEnabled, AOTHotkey, MicMuteEnabled, MicMuteHotkey, MicPttHotkey, ScreenOffEnabled, ScreenOffHotkey
-    global WinHopperEnabled, WinHopperHotkey, WinHopperBackHotkey
+    global AppWinSwitchEnabled, AppWinSwitchHotkey, AppWinSwitchBackHotkey
 
     norm := NormalizeHotkeyForCompare(hk)
     if (norm = "")
@@ -82,13 +82,13 @@ CheckHotkeyConflict(hk, excludeId := "") {
             return RTrim(lbl, ": ")
         }
     }
-    if (excludeId != "winhopper_fwd" && WinHopperEnabled && WinHopperHotkey != "") {
-        if (NormalizeHotkeyForCompare(WinHopperHotkey) = norm)
-            return IsFunc("L") ? L("Set_GroupWinHopper") : "Window Hopper"
+    if (excludeId != "appwinswitch_fwd" && AppWinSwitchEnabled && AppWinSwitchHotkey != "") {
+        if (NormalizeHotkeyForCompare(AppWinSwitchHotkey) = norm)
+            return IsFunc("L") ? L("Set_GroupAppWinSwitch") : "App Window Switcher"
     }
-    if (excludeId != "winhopper_back" && WinHopperEnabled && WinHopperBackHotkey != "") {
-        if (NormalizeHotkeyForCompare(WinHopperBackHotkey) = norm)
-            return IsFunc("L") ? L("Set_GroupWinHopper") : "Window Hopper"
+    if (excludeId != "appwinswitch_back" && AppWinSwitchEnabled && AppWinSwitchBackHotkey != "") {
+        if (NormalizeHotkeyForCompare(AppWinSwitchBackHotkey) = norm)
+            return IsFunc("L") ? L("Set_GroupAppWinSwitch") : "App Window Switcher"
     }
     return ""
 }
@@ -177,7 +177,7 @@ UpdateHpPreviewAndConflict() {
 
 SuspendAppHotkeysForPicker() {
     global AOTHotkey, MicMuteRegToggleHk, MicMuteRegPttDownHk, MicMuteRegPttUpHk, ScreenOffRegHk
-    global WinHopperRegFwdHk, WinHopperRegBackHk
+    global AppWinSwitchRegFwdHk, AppWinSwitchRegBackHk
     if (AOTHotkey != "")
         try Hotkey, %AOTHotkey%, ToggleAlwaysOnTopLabel, Off
     if (MicMuteRegToggleHk != "")
@@ -188,10 +188,10 @@ SuspendAppHotkeysForPicker() {
         try Hotkey, %MicMuteRegPttUpHk%, MicPttKeyUpHandler, Off
     if (ScreenOffRegHk != "")
         try Hotkey, %ScreenOffRegHk%, ScreenOffHotkeyHandler, Off
-    if (WinHopperRegFwdHk != "")
-        try Hotkey, %WinHopperRegFwdHk%, WinHopperForwardHandler, Off
-    if (WinHopperRegBackHk != "")
-        try Hotkey, %WinHopperRegBackHk%, WinHopperBackwardHandler, Off
+    if (AppWinSwitchRegFwdHk != "")
+        try Hotkey, %AppWinSwitchRegFwdHk%, AppWinSwitchForwardHandler, Off
+    if (AppWinSwitchRegBackHk != "")
+        try Hotkey, %AppWinSwitchRegBackHk%, AppWinSwitchBackwardHandler, Off
 }
 
 RestoreAppHotkeysAfterPicker() {
@@ -201,8 +201,8 @@ RestoreAppHotkeysAfterPicker() {
         ApplyMicMuteHotkey()
     if (IsFunc("ApplyScreenOffHotkey"))
         ApplyScreenOffHotkey()
-    if (IsFunc("ApplyWindowHopperHotkeys"))
-        ApplyWindowHopperHotkeys()
+    if (IsFunc("ApplyAppWindowSwitcherHotkeys"))
+        ApplyAppWindowSwitcherHotkeys()
 }
 
 OnHpActivate(wParam, lParam, msg, hwnd) {

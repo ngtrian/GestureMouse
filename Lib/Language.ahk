@@ -186,17 +186,17 @@ InitLanguage() {
     v["ScreenOff_HotkeyPrompt"] := "Nhấn tổ hợp phím (hoặc nút chuột) muốn dùng để tắt màn hình:"
     v["ScreenOff_Desc"]         := "Tắt tín hiệu màn hình ngay lập tức mà không làm máy vào chế độ Sleep. Di chuyển chuột hoặc nhấn phím bất kỳ để bật lại."
 
-    ; Window Hopper (Chuyển cửa sổ cùng ứng dụng)
-    v["Set_GroupWinHopper"]     := "Chuyển cửa sổ cùng ứng dụng (Window Hopper)"
-    v["WH_FwdHotkeyLbl"]        := "Tiến:"
-    v["WH_BackHotkeyLbl"]       := "Lùi:"
-    v["WH_ChangeFwdBtn"]        := "Đổi phím tắt chuyển tiếp"
-    v["WH_ChangeBackBtn"]       := "Đổi phím tắt lùi lại"
-    v["WH_HotkeyPrompt"]        := "Nhấn tổ hợp phím mong muốn (ví dụ Alt + `` hoặc Alt + Shift + ``):"
-    v["WH_PreviewChk"]          := "Hiển thị ảnh thu nhỏ trực tiếp (Live Preview)"
-    v["WH_Desc"]                := "Nhấn giữ Alt + `` để mở bảng chuyển đổi nhanh giữa các cửa sổ của ứng dụng đang dùng; nhả phím để chọn hoặc Esc để hủy."
-    v["WH_WindowCount"]         := "{1} cửa sổ"
-    v["WH_EscHint"]             := "Esc: Hủy"
+    ; App Window Switcher
+    v["Set_GroupAppWinSwitch"]  := "App Window Switcher"
+    v["AWS_FwdHotkeyLbl"]       := "Tiến:"
+    v["AWS_BackHotkeyLbl"]      := "Lùi:"
+    v["AWS_ChangeFwdBtn"]       := "Đổi phím tắt chuyển tiếp"
+    v["AWS_ChangeBackBtn"]      := "Đổi phím tắt lùi lại"
+    v["AWS_HotkeyPrompt"]       := "Nhấn tổ hợp phím mong muốn (ví dụ Alt + `` hoặc Alt + Shift + ``):"
+    v["AWS_PreviewChk"]         := "Hiển thị ảnh thu nhỏ trực tiếp (Live Preview)"
+    v["AWS_Desc"]               := "Chuyển đổi nhanh giữa các cửa sổ của cùng một ứng dụng. Nhấn giữ Alt + `` để mở bảng chọn, nhả phím để chuyển hoặc Esc để hủy."
+    v["AWS_WindowCount"]        := "{1} cửa sổ"
+    v["AWS_EscHint"]            := "Esc: Hủy"
     v["TT_ExApps"]              := "Quản lý danh sách ứng dụng không áp dụng cử chỉ chuột và cuộn chuột"
 
     ; Chặn Popup - Popup Blocker
@@ -655,17 +655,17 @@ InitLanguage() {
     e["ScreenOff_HotkeyPrompt"] := "Press the key combination (or mouse button) to turn off screen:"
     e["ScreenOff_Desc"]         := "Turns off display signal immediately without putting PC to Sleep. Move mouse or press any key to wake."
 
-    ; Window Hopper
-    e["Set_GroupWinHopper"]     := "Window Hopper (Same-App Window Switcher)"
-    e["WH_FwdHotkeyLbl"]        := "Next:"
-    e["WH_BackHotkeyLbl"]       := "Prev:"
-    e["WH_ChangeFwdBtn"]        := "Change Next Hotkey"
-    e["WH_ChangeBackBtn"]       := "Change Previous Hotkey"
-    e["WH_HotkeyPrompt"]        := "Press desired shortcut (e.g. Alt + `` or Alt + Shift + ``):"
-    e["WH_PreviewChk"]          := "Show live window previews"
-    e["WH_Desc"]                := "Hold Alt + `` to cycle through windows of the active app; release to switch or press Esc to cancel."
-    e["WH_WindowCount"]         := "{1} windows"
-    e["WH_EscHint"]             := "Esc: Cancel"
+    ; App Window Switcher
+    e["Set_GroupAppWinSwitch"]  := "App Window Switcher"
+    e["AWS_FwdHotkeyLbl"]       := "Next:"
+    e["AWS_BackHotkeyLbl"]      := "Prev:"
+    e["AWS_ChangeFwdBtn"]       := "Change Next Hotkey"
+    e["AWS_ChangeBackBtn"]      := "Change Previous Hotkey"
+    e["AWS_HotkeyPrompt"]       := "Press desired shortcut (e.g. Alt + `` or Alt + Shift + ``):"
+    e["AWS_PreviewChk"]         := "Show live window previews"
+    e["AWS_Desc"]               := "Quickly switch between windows of the same application. Hold Alt + `` to open the switcher, release to switch, or press Esc to cancel."
+    e["AWS_WindowCount"]        := "{1} windows"
+    e["AWS_EscHint"]            := "Esc: Cancel"
     e["TT_ExApps"]              := "Manage applications excluded from mouse gestures and right-click scroll"
 
     ; Popup Blocker

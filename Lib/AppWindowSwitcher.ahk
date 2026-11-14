@@ -1,107 +1,107 @@
-﻿; WindowHopper.ahk - Chuyển đổi nhanh giữa các cửa sổ cùng ứng dụng (tương tự PowerToys Window Hopper)
+; AppWindowSwitcher.ahk - Chuyển đổi nhanh giữa các cửa sổ cùng ứng dụng (App Window Switcher)
 #NoEnv
 
-InitWindowHopper() {
-    global WinHopperEnabled, WinHopperHotkey, WinHopperBackHotkey, WinHopperShowPreview
-    global WinHopperRegFwdHk, WinHopperRegBackHk
-    global WinHopperActive, WinHopperWindows, WinHopperSelectedIdx, WinHopperHoldMod
-    global WinHopperThumbIds, hWinHopperGui, WinHopperTileRects, WinHopperTileCtrls
+InitAppWindowSwitcher() {
+    global AppWinSwitchEnabled, AppWinSwitchHotkey, AppWinSwitchBackHotkey, AppWinSwitchShowPreview
+    global AppWinSwitchRegFwdHk, AppWinSwitchRegBackHk
+    global AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchSelectedIdx, AppWinSwitchHoldMod
+    global AppWinSwitchThumbIds, hAppWinSwitchGui, AppWinSwitchTileRects, AppWinSwitchTileCtrls
 
-    WinHopperEnabled := 1
-    WinHopperHotkey := "!vkC0"      ; Mặc định: Alt + `
-    WinHopperBackHotkey := "!+vkC0" ; Mặc định: Alt + Shift + `
-    WinHopperShowPreview := 1
-    WinHopperRegFwdHk := ""
-    WinHopperRegBackHk := ""
+    AppWinSwitchEnabled := 1
+    AppWinSwitchHotkey := "!vkC0"      ; Mặc định: Alt + `
+    AppWinSwitchBackHotkey := "!+vkC0" ; Mặc định: Alt + Shift + `
+    AppWinSwitchShowPreview := 1
+    AppWinSwitchRegFwdHk := ""
+    AppWinSwitchRegBackHk := ""
 
-    WinHopperActive := false
-    WinHopperWindows := []
-    WinHopperSelectedIdx := 1
-    WinHopperHoldMod := ""
-    WinHopperThumbIds := []
-    WinHopperTileRects := []
-    WinHopperTileCtrls := []
-    hWinHopperGui := 0
+    AppWinSwitchActive := false
+    AppWinSwitchWindows := []
+    AppWinSwitchSelectedIdx := 1
+    AppWinSwitchHoldMod := ""
+    AppWinSwitchThumbIds := []
+    AppWinSwitchTileRects := []
+    AppWinSwitchTileCtrls := []
+    hAppWinSwitchGui := 0
 
-    RegRead, valEn, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WinHopperEnabled
+    RegRead, valEn, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AppWinSwitchEnabled
     if (!ErrorLevel && valEn != "")
-        WinHopperEnabled := valEn ? 1 : 0
+        AppWinSwitchEnabled := valEn ? 1 : 0
 
-    RegRead, valFwd, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WinHopperHotkey
+    RegRead, valFwd, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AppWinSwitchHotkey
     if (!ErrorLevel && valFwd != "")
-        WinHopperHotkey := valFwd
+        AppWinSwitchHotkey := valFwd
 
-    RegRead, valBack, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WinHopperBackHotkey
+    RegRead, valBack, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AppWinSwitchBackHotkey
     if (!ErrorLevel && valBack != "")
-        WinHopperBackHotkey := valBack
+        AppWinSwitchBackHotkey := valBack
 
-    RegRead, valPrev, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, WinHopperShowPreview
+    RegRead, valPrev, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AppWinSwitchShowPreview
     if (!ErrorLevel && valPrev != "")
-        WinHopperShowPreview := valPrev ? 1 : 0
+        AppWinSwitchShowPreview := valPrev ? 1 : 0
 
-    ApplyWindowHopperHotkeys()
-    OnExit("CleanupWindowHopper")
+    ApplyAppWindowSwitcherHotkeys()
+    OnExit("CleanupAppWindowSwitcher")
 }
 
-ApplyWindowHopperHotkeys() {
-    global WinHopperEnabled, WinHopperHotkey, WinHopperBackHotkey
-    global WinHopperRegFwdHk, WinHopperRegBackHk
+ApplyAppWindowSwitcherHotkeys() {
+    global AppWinSwitchEnabled, AppWinSwitchHotkey, AppWinSwitchBackHotkey
+    global AppWinSwitchRegFwdHk, AppWinSwitchRegBackHk
 
-    if (WinHopperRegFwdHk != "") {
-        try Hotkey, %WinHopperRegFwdHk%, WinHopperForwardHandler, Off
-        WinHopperRegFwdHk := ""
+    if (AppWinSwitchRegFwdHk != "") {
+        try Hotkey, %AppWinSwitchRegFwdHk%, AppWinSwitchForwardHandler, Off
+        AppWinSwitchRegFwdHk := ""
     }
-    if (WinHopperRegBackHk != "") {
-        try Hotkey, %WinHopperRegBackHk%, WinHopperBackwardHandler, Off
-        WinHopperRegBackHk := ""
+    if (AppWinSwitchRegBackHk != "") {
+        try Hotkey, %AppWinSwitchRegBackHk%, AppWinSwitchBackwardHandler, Off
+        AppWinSwitchRegBackHk := ""
     }
 
-    if (!WinHopperEnabled)
+    if (!AppWinSwitchEnabled)
         return
 
-    if (WinHopperHotkey != "") {
+    if (AppWinSwitchHotkey != "") {
         try {
-            Hotkey, %WinHopperHotkey%, WinHopperForwardHandler, On
-            WinHopperRegFwdHk := WinHopperHotkey
+            Hotkey, %AppWinSwitchHotkey%, AppWinSwitchForwardHandler, On
+            AppWinSwitchRegFwdHk := AppWinSwitchHotkey
         }
     }
-    if (WinHopperBackHotkey != "") {
+    if (AppWinSwitchBackHotkey != "") {
         try {
-            Hotkey, %WinHopperBackHotkey%, WinHopperBackwardHandler, On
-            WinHopperRegBackHk := WinHopperBackHotkey
+            Hotkey, %AppWinSwitchBackHotkey%, AppWinSwitchBackwardHandler, On
+            AppWinSwitchRegBackHk := AppWinSwitchBackHotkey
         }
     }
 }
 
-FormatWinHopperHotkeyText(hk) {
+FormatAppWinSwitchHotkeyText(hk) {
     return FormatHotkeyText(hk)
 }
 
-WinHopperForwardHandler:
-    TriggerWindowHopper(1, WinHopperHotkey)
+AppWinSwitchForwardHandler:
+    TriggerAppWindowSwitcher(1, AppWinSwitchHotkey)
 return
 
-WinHopperBackwardHandler:
-    TriggerWindowHopper(-1, WinHopperBackHotkey)
+AppWinSwitchBackwardHandler:
+    TriggerAppWindowSwitcher(-1, AppWinSwitchBackHotkey)
 return
 
-#If (WinHopperActive)
-*Esc::CancelWindowHopper()
-*Left::MoveWinHopperSelection(-1)
-*Right::MoveWinHopperSelection(1)
-*Up::MoveWinHopperRow(-1)
-*Down::MoveWinHopperRow(1)
-*Enter::CommitWindowHopper()
+#If (AppWinSwitchActive)
+*Esc::CancelAppWindowSwitcher()
+*Left::MoveAppWinSwitchSelection(-1)
+*Right::MoveAppWinSwitchSelection(1)
+*Up::MoveAppWinSwitchRow(-1)
+*Down::MoveAppWinSwitchRow(1)
+*Enter::CommitAppWindowSwitcher()
 #If
 
-TriggerWindowHopper(dir := 1, triggeredHk := "") {
-    global WinHopperEnabled, WinHopperActive, WinHopperWindows, WinHopperSelectedIdx, WinHopperHoldMod
+TriggerAppWindowSwitcher(dir := 1, triggeredHk := "") {
+    global AppWinSwitchEnabled, AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchSelectedIdx, AppWinSwitchHoldMod
 
-    if (!WinHopperEnabled)
+    if (!AppWinSwitchEnabled)
         return
 
-    if (WinHopperActive) {
-        MoveWinHopperSelection(dir)
+    if (AppWinSwitchActive) {
+        MoveAppWinSwitchSelection(dir)
         return
     }
 
@@ -113,7 +113,7 @@ TriggerWindowHopper(dir := 1, triggeredHk := "") {
     if (windows.Length() < 2)
         return
 
-    WinHopperWindows := windows
+    AppWinSwitchWindows := windows
     activeIdx := 1
     for i, item in windows {
         if (item.hwnd = activeHwnd) {
@@ -127,24 +127,24 @@ TriggerWindowHopper(dir := 1, triggeredHk := "") {
         nextIdx := 1
     else if (nextIdx < 1)
         nextIdx := windows.Length()
-    WinHopperSelectedIdx := nextIdx
+    AppWinSwitchSelectedIdx := nextIdx
 
-    WinHopperHoldMod := DetectWinHopperHoldMod(triggeredHk)
+    AppWinSwitchHoldMod := DetectAppWinSwitchHoldMod(triggeredHk)
 
     ; Nếu phím tắt không có modifier giữ hoặc người dùng đã nhả modifier ngay lập tức -> chuyển nhanh
-    if (WinHopperHoldMod = "" || !IsWinHopperHoldModDown(WinHopperHoldMod)) {
-        targetHwnd := WinHopperWindows[WinHopperSelectedIdx].hwnd
-        WinHopperWindows := []
-        SwitchToHopperWindow(targetHwnd)
+    if (AppWinSwitchHoldMod = "" || !IsAppWinSwitchHoldModDown(AppWinSwitchHoldMod)) {
+        targetHwnd := AppWinSwitchWindows[AppWinSwitchSelectedIdx].hwnd
+        AppWinSwitchWindows := []
+        SwitchToAppWindow(targetHwnd)
         return
     }
 
-    WinHopperActive := true
-    ShowWindowHopperOverlay()
-    SetTimer, WatchWinHopperModifier, 20
+    AppWinSwitchActive := true
+    ShowAppWindowSwitcherOverlay()
+    SetTimer, WatchAppWinSwitchModifier, 20
 }
 
-DetectWinHopperHoldMod(hk) {
+DetectAppWinSwitchHoldMod(hk) {
     if (InStr(hk, "!"))
         return "Alt"
     if (InStr(hk, "^"))
@@ -156,7 +156,7 @@ DetectWinHopperHoldMod(hk) {
     return ""
 }
 
-IsWinHopperHoldModDown(modName) {
+IsAppWinSwitchHoldModDown(modName) {
     if (modName = "Alt")
         return GetKeyState("Alt", "P")
     if (modName = "Ctrl")
@@ -168,68 +168,68 @@ IsWinHopperHoldModDown(modName) {
     return false
 }
 
-WatchWinHopperModifier:
-    if (!WinHopperActive) {
-        SetTimer, WatchWinHopperModifier, Off
+WatchAppWinSwitchModifier:
+    if (!AppWinSwitchActive) {
+        SetTimer, WatchAppWinSwitchModifier, Off
         return
     }
-    if (WinHopperHoldMod != "" && !IsWinHopperHoldModDown(WinHopperHoldMod)) {
-        SetTimer, WatchWinHopperModifier, Off
-        CommitWindowHopper()
+    if (AppWinSwitchHoldMod != "" && !IsAppWinSwitchHoldModDown(AppWinSwitchHoldMod)) {
+        SetTimer, WatchAppWinSwitchModifier, Off
+        CommitAppWindowSwitcher()
     }
 return
 
-MoveWinHopperSelection(delta) {
-    global WinHopperActive, WinHopperWindows, WinHopperSelectedIdx
-    if (!WinHopperActive || !WinHopperWindows.Length())
+MoveAppWinSwitchSelection(delta) {
+    global AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchSelectedIdx
+    if (!AppWinSwitchActive || !AppWinSwitchWindows.Length())
         return
 
-    cnt := WinHopperWindows.Length()
-    WinHopperSelectedIdx += delta
-    if (WinHopperSelectedIdx > cnt)
-        WinHopperSelectedIdx := 1
-    else if (WinHopperSelectedIdx < 1)
-        WinHopperSelectedIdx := cnt
+    cnt := AppWinSwitchWindows.Length()
+    AppWinSwitchSelectedIdx += delta
+    if (AppWinSwitchSelectedIdx > cnt)
+        AppWinSwitchSelectedIdx := 1
+    else if (AppWinSwitchSelectedIdx < 1)
+        AppWinSwitchSelectedIdx := cnt
 
-    UpdateWinHopperSelectionVisual()
+    UpdateAppWinSwitchSelectionVisual()
 }
 
-MoveWinHopperRow(rowDelta) {
-    global WinHopperActive, WinHopperWindows, WinHopperSelectedIdx, WinHopperCols
-    if (!WinHopperActive || !WinHopperWindows.Length())
+MoveAppWinSwitchRow(rowDelta) {
+    global AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchSelectedIdx, AppWinSwitchCols
+    if (!AppWinSwitchActive || !AppWinSwitchWindows.Length())
         return
 
-    cols := WinHopperCols ? WinHopperCols : 1
-    cnt := WinHopperWindows.Length()
-    newIdx := WinHopperSelectedIdx + (rowDelta * cols)
+    cols := AppWinSwitchCols ? AppWinSwitchCols : 1
+    cnt := AppWinSwitchWindows.Length()
+    newIdx := AppWinSwitchSelectedIdx + (rowDelta * cols)
     if (newIdx >= 1 && newIdx <= cnt) {
-        WinHopperSelectedIdx := newIdx
-        UpdateWinHopperSelectionVisual()
+        AppWinSwitchSelectedIdx := newIdx
+        UpdateAppWinSwitchSelectionVisual()
     }
 }
 
-CommitWindowHopper() {
-    global WinHopperActive, WinHopperWindows, WinHopperSelectedIdx
-    if (!WinHopperActive)
+CommitAppWindowSwitcher() {
+    global AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchSelectedIdx
+    if (!AppWinSwitchActive)
         return
 
     targetHwnd := 0
-    if (WinHopperSelectedIdx >= 1 && WinHopperSelectedIdx <= WinHopperWindows.Length())
-        targetHwnd := WinHopperWindows[WinHopperSelectedIdx].hwnd
+    if (AppWinSwitchSelectedIdx >= 1 && AppWinSwitchSelectedIdx <= AppWinSwitchWindows.Length())
+        targetHwnd := AppWinSwitchWindows[AppWinSwitchSelectedIdx].hwnd
 
-    CloseWindowHopperOverlay()
+    CloseAppWindowSwitcherOverlay()
     if (targetHwnd)
-        SwitchToHopperWindow(targetHwnd)
+        SwitchToAppWindow(targetHwnd)
 }
 
-CancelWindowHopper() {
-    global WinHopperActive
-    if (!WinHopperActive)
+CancelAppWindowSwitcher() {
+    global AppWinSwitchActive
+    if (!AppWinSwitchActive)
         return
-    CloseWindowHopperOverlay()
+    CloseAppWindowSwitcherOverlay()
 }
 
-SwitchToHopperWindow(hwnd) {
+SwitchToAppWindow(hwnd) {
     if (!hwnd || !DllCall("IsWindow", "Ptr", hwnd))
         return
 
@@ -258,16 +258,16 @@ SwitchToHopperWindow(hwnd) {
 ; ==============================================================================
 GetSameAppWindows(activeHwnd) {
     result := []
-    activeKey := GetWindowHopperAppKey(activeHwnd)
+    activeKey := GetAppWindowSwitcherAppKey(activeHwnd)
     if (activeKey = "")
         return result
 
     WinGet, idList, List
     Loop, %idList% {
         hwnd := idList%A_Index% + 0
-        if (!IsEligibleHopperWindow(hwnd))
+        if (!IsEligibleSwitcherWindow(hwnd))
             continue
-        if (GetWindowHopperAppKey(hwnd) != activeKey)
+        if (GetAppWindowSwitcherAppKey(hwnd) != activeKey)
             continue
 
         WinGetTitle, wTitle, ahk_id %hwnd%
@@ -281,9 +281,9 @@ GetSameAppWindows(activeHwnd) {
     return result
 }
 
-IsEligibleHopperWindow(hwnd) {
-    global hWinHopperGui
-    if (!hwnd || hwnd = hWinHopperGui)
+IsEligibleSwitcherWindow(hwnd) {
+    global hAppWinSwitchGui
+    if (!hwnd || hwnd = hAppWinSwitchGui)
         return false
     if (!DllCall("IsWindowVisible", "Ptr", hwnd))
         return false
@@ -317,7 +317,7 @@ IsEligibleHopperWindow(hwnd) {
     return true
 }
 
-GetWindowHopperAppKey(hwnd) {
+GetAppWindowSwitcherAppKey(hwnd) {
     WinGet, procName, ProcessName, ahk_id %hwnd%
     WinGet, procPath, ProcessPath, ahk_id %hwnd%
     StringLower, procNameLower, procName
@@ -353,7 +353,7 @@ FindUwpRealProcessPath(parentHwnd) {
     return ""
 }
 
-GetWindowHopperAppDisplayName(hwnd) {
+GetAppWindowSwitcherDisplayName(hwnd) {
     WinGet, procName, ProcessName, ahk_id %hwnd%
     WinGet, procPath, ProcessPath, ahk_id %hwnd%
     StringLower, procNameLower, procName
@@ -375,14 +375,14 @@ GetWindowHopperAppDisplayName(hwnd) {
 ; ==============================================================================
 ; Giao diện Overlay Fluent + DWM Live Thumbnails
 ; ==============================================================================
-ShowWindowHopperOverlay() {
-    global WinHopperWindows, WinHopperSelectedIdx, WinHopperShowPreview
-    global hWinHopperGui, WinHopperThumbIds, WinHopperTileRects, WinHopperTileCtrls
-    global WinHopperCols, WinHopperOverlayW, WinHopperOverlayH, WinHopperHeaderH
+ShowAppWindowSwitcherOverlay() {
+    global AppWinSwitchWindows, AppWinSwitchSelectedIdx, AppWinSwitchShowPreview
+    global hAppWinSwitchGui, AppWinSwitchThumbIds, AppWinSwitchTileRects, AppWinSwitchTileCtrls
+    global AppWinSwitchCols, AppWinSwitchOverlayW, AppWinSwitchOverlayH, AppWinSwitchHeaderH
 
-    CloseWindowHopperOverlay(false)
+    CloseAppWindowSwitcherOverlay(false)
 
-    cnt := WinHopperWindows.Length()
+    cnt := AppWinSwitchWindows.Length()
     if (cnt < 2)
         return
 
@@ -394,10 +394,10 @@ ShowWindowHopperOverlay() {
     headerH := 38
     gapX := 12
     gapY := 12
-    WinHopperHeaderH := headerH
+    AppWinSwitchHeaderH := headerH
 
-    if (WinHopperShowPreview) {
-        cols := (maxShow <= 4) ? maxShow : (maxShow <= 8 ? 4 : 4)
+    if (AppWinSwitchShowPreview) {
+        cols := (maxShow <= 4) ? maxShow : 4
         rows := Ceil(maxShow / cols)
         tileW := 220
         tileH := 162
@@ -409,93 +409,92 @@ ShowWindowHopperOverlay() {
         gapY := 6
     }
 
-    WinHopperCols := cols
+    AppWinSwitchCols := cols
     overlayW := padX * 2 + cols * tileW + (cols - 1) * gapX
     overlayH := padY + headerH + rows * tileH + (rows - 1) * gapY + padY
-    WinHopperOverlayW := overlayW
-    WinHopperOverlayH := overlayH
+    AppWinSwitchOverlayW := overlayW
+    AppWinSwitchOverlayH := overlayH
 
     ; Tính vị trí căn giữa màn hình chứa cửa sổ đang active
-    mon := GetMonitorWorkAreaForHwnd(WinHopperWindows[1].hwnd)
+    mon := GetMonitorWorkAreaForHwnd(AppWinSwitchWindows[1].hwnd)
     monW := Round((mon.right - mon.left) / scale)
     monH := Round((mon.bottom - mon.top) / scale)
     posX := Round(mon.left / scale) + Round((monW - overlayW) / 2)
     posY := Round(mon.top / scale) + Round((monH - overlayH) / 2)
 
-    Gui, WinHopperGui:New, -Caption +ToolWindow +AlwaysOnTop +E0x08000000 +HwndhWinHopperGui
-    Gui, WinHopperGui:Color, 202020
-    Gui, WinHopperGui:Margin, 0, 0
+    Gui, AppWinSwitchGui:New, -Caption +ToolWindow +AlwaysOnTop +E0x08000000 +HwndhAppWinSwitchGui
+    Gui, AppWinSwitchGui:Color, 202020
+    Gui, AppWinSwitchGui:Margin, 0, 0
 
     ; Bo góc & Dark Mode trên Windows 11
-    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hWinHopperGui, "UInt", 20, "Int*", 1, "UInt", 4) ; DWMWA_USE_IMMERSIVE_DARK_MODE
-    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hWinHopperGui, "UInt", 33, "Int*", 2, "UInt", 4) ; DWMWCP_ROUND
+    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hAppWinSwitchGui, "UInt", 20, "Int*", 1, "UInt", 4) ; DWMWA_USE_IMMERSIVE_DARK_MODE
+    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hAppWinSwitchGui, "UInt", 33, "Int*", 2, "UInt", 4) ; DWMWCP_ROUND
 
     ; Header: Tên ứng dụng & số lượng cửa sổ
-    appName := GetWindowHopperAppDisplayName(WinHopperWindows[1].hwnd)
-    countLabel := IsFunc("L") ? StrReplace(L("WH_WindowCount"), "{1}", cnt) : (cnt . " cửa sổ")
-    escHint := IsFunc("L") ? L("WH_EscHint") : "Esc: Hủy"
+    appName := GetAppWindowSwitcherDisplayName(AppWinSwitchWindows[1].hwnd)
+    countLabel := IsFunc("L") ? StrReplace(L("AWS_WindowCount"), "{1}", cnt) : (cnt . " cửa sổ")
+    escHint := IsFunc("L") ? L("AWS_EscHint") : "Esc: Hủy"
 
-    Gui, WinHopperGui:Font, s10.5 Bold cFFFFFF, Segoe UI
-    Gui, WinHopperGui:Add, Text, % "x" . padX . " y14 w" . (overlayW - padX * 2 - 110) . " h22 +0x200 BackgroundTrans", % appName . "  (" . countLabel . ")"
-    Gui, WinHopperGui:Font, s8.5 Norm c9A9A9A, Segoe UI
-    Gui, WinHopperGui:Add, Text, % "x" . (overlayW - padX - 105) . " y16 w105 h20 Right +0x200 BackgroundTrans", % escHint
+    Gui, AppWinSwitchGui:Font, s10.5 Bold cFFFFFF, Segoe UI
+    Gui, AppWinSwitchGui:Add, Text, % "x" . padX . " y14 w" . (overlayW - padX * 2 - 110) . " h22 +0x200 BackgroundTrans", % appName . "  (" . countLabel . ")"
+    Gui, AppWinSwitchGui:Font, s8.5 Norm c9A9A9A, Segoe UI
+    Gui, AppWinSwitchGui:Add, Text, % "x" . (overlayW - padX - 105) . " y16 w105 h20 Right +0x200 BackgroundTrans", % escHint
 
-    WinHopperTileRects := []
-    WinHopperTileCtrls := []
-    WinHopperThumbIds := []
+    AppWinSwitchTileRects := []
+    AppWinSwitchTileCtrls := []
+    AppWinSwitchThumbIds := []
 
     Loop, %maxShow% {
         idx := A_Index
-        item := WinHopperWindows[idx]
+        item := AppWinSwitchWindows[idx]
         colIdx := Mod(idx - 1, cols)
         rowIdx := Floor((idx - 1) / cols)
 
         tx := padX + colIdx * (tileW + gapX)
         ty := padY + headerH + rowIdx * (tileH + gapY)
 
-        WinHopperTileRects.Push({ x: tx, y: ty, w: tileW, h: tileH })
+        AppWinSwitchTileRects.Push({ x: tx, y: ty, w: tileW, h: tileH })
 
-        ; Tạo khung card bằng Progress/Text để đổi màu viền/nền mượt mà không cần vẽ lại toàn bộ
-        Gui, WinHopperGui:Add, Text, x%tx% y%ty% w%tileW% h%tileH% +HwndhBorderCtrl Background2D2D2D
+        Gui, AppWinSwitchGui:Add, Text, x%tx% y%ty% w%tileW% h%tileH% +HwndhBorderCtrl Background2D2D2D
         inX := tx + 2, inY := ty + 2, inW := tileW - 4, inH := tileH - 4
-        Gui, WinHopperGui:Add, Text, x%inX% y%inY% w%inW% h%inH% +HwndhBgCtrl Background2B2B2B
+        Gui, AppWinSwitchGui:Add, Text, x%inX% y%inY% w%inW% h%inH% +HwndhBgCtrl Background2B2B2B
 
         shortTitle := item.title
-        if (StrLen(shortTitle) > (WinHopperShowPreview ? 26 : 44))
-            shortTitle := SubStr(shortTitle, 1, WinHopperShowPreview ? 25 : 43) . "…"
+        if (StrLen(shortTitle) > (AppWinSwitchShowPreview ? 26 : 44))
+            shortTitle := SubStr(shortTitle, 1, AppWinSwitchShowPreview ? 25 : 43) . "…"
 
-        if (WinHopperShowPreview) {
-            Gui, WinHopperGui:Font, s8.5 Norm cEAEAEA, Segoe UI
-            Gui, WinHopperGui:Add, Text, % "x" . (tx + 10) . " y" . (ty + 7) . " w" . (tileW - 20) . " h18 +0x200 +0x80 BackgroundTrans +HwndhTitleCtrl", % shortTitle
+        if (AppWinSwitchShowPreview) {
+            Gui, AppWinSwitchGui:Font, s8.5 Norm cEAEAEA, Segoe UI
+            Gui, AppWinSwitchGui:Add, Text, % "x" . (tx + 10) . " y" . (ty + 7) . " w" . (tileW - 20) . " h18 +0x200 +0x80 BackgroundTrans +HwndhTitleCtrl", % shortTitle
         } else {
-            Gui, WinHopperGui:Font, s9.5 Norm cEAEAEA, Segoe UI
-            Gui, WinHopperGui:Add, Text, % "x" . (tx + 12) . " y" . (ty + 9) . " w" . (tileW - 44) . " h22 +0x200 +0x80 BackgroundTrans +HwndhTitleCtrl", % shortTitle
-            Gui, WinHopperGui:Font, s8.5 Bold c888888, Segoe UI
-            Gui, WinHopperGui:Add, Text, % "x" . (tx + tileW - 30) . " y" . (ty + 10) . " w20 h20 Right +0x200 BackgroundTrans", % idx
+            Gui, AppWinSwitchGui:Font, s9.5 Norm cEAEAEA, Segoe UI
+            Gui, AppWinSwitchGui:Add, Text, % "x" . (tx + 12) . " y" . (ty + 9) . " w" . (tileW - 44) . " h22 +0x200 +0x80 BackgroundTrans +HwndhTitleCtrl", % shortTitle
+            Gui, AppWinSwitchGui:Font, s8.5 Bold c888888, Segoe UI
+            Gui, AppWinSwitchGui:Add, Text, % "x" . (tx + tileW - 30) . " y" . (ty + 10) . " w20 h20 Right +0x200 BackgroundTrans", % idx
         }
 
-        WinHopperTileCtrls.Push({ border: hBorderCtrl, bg: hBgCtrl, title: hTitleCtrl })
+        AppWinSwitchTileCtrls.Push({ border: hBorderCtrl, bg: hBgCtrl, title: hTitleCtrl })
     }
 
-    Gui, WinHopperGui:Show, NoActivate x%posX% y%posY% w%overlayW% h%overlayH%, WindowHopperOverlay
+    Gui, AppWinSwitchGui:Show, NoActivate x%posX% y%posY% w%overlayW% h%overlayH%, AppWindowSwitcherOverlay
 
     ; Đăng ký DWM Live Thumbnails sau khi cửa sổ overlay đã có HWND hiển thị
-    if (WinHopperShowPreview) {
+    if (AppWinSwitchShowPreview) {
         Loop, %maxShow% {
             idx := A_Index
-            rc := WinHopperTileRects[idx]
+            rc := AppWinSwitchTileRects[idx]
             thumbX := Round((rc.x + 8) * scale)
             thumbY := Round((rc.y + 30) * scale)
             thumbW := Round((rc.w - 16) * scale)
             thumbH := Round((rc.h - 38) * scale)
-            tid := RegisterFittedDwmThumbnail(hWinHopperGui, WinHopperWindows[idx].hwnd, thumbX, thumbY, thumbW, thumbH)
+            tid := RegisterFittedDwmThumbnail(hAppWinSwitchGui, AppWinSwitchWindows[idx].hwnd, thumbX, thumbY, thumbW, thumbH)
             if (tid)
-                WinHopperThumbIds.Push(tid)
+                AppWinSwitchThumbIds.Push(tid)
         }
     }
 
-    UpdateWinHopperSelectionVisual()
-    OnMessage(0x0201, "OnWinHopperClick") ; WM_LBUTTONDOWN
+    UpdateAppWinSwitchSelectionVisual()
+    OnMessage(0x0201, "OnAppWinSwitchClick") ; WM_LBUTTONDOWN
 }
 
 RegisterFittedDwmThumbnail(destHwnd, srcHwnd, boxX, boxY, boxW, boxH) {
@@ -536,16 +535,16 @@ RegisterFittedDwmThumbnail(destHwnd, srcHwnd, boxX, boxY, boxW, boxH) {
     return hThumb
 }
 
-UpdateWinHopperSelectionVisual() {
-    global WinHopperTileCtrls, WinHopperSelectedIdx
-    if (!IsObject(WinHopperTileCtrls))
+UpdateAppWinSwitchSelectionVisual() {
+    global AppWinSwitchTileCtrls, AppWinSwitchSelectedIdx
+    if (!IsObject(AppWinSwitchTileCtrls))
         return
 
     accentRgb := IsFunc("GetWindowsAccentRgb") ? GetWindowsAccentRgb() : 0x0078D7
     accentHex := Format("{:06X}", accentRgb)
 
-    for idx, ctrls in WinHopperTileCtrls {
-        isSel := (idx = WinHopperSelectedIdx)
+    for idx, ctrls in AppWinSwitchTileCtrls {
+        isSel := (idx = AppWinSwitchSelectedIdx)
         borderColor := isSel ? accentHex : "383838"
         bgColor := isSel ? "353535" : "262626"
         GuiControl, +Background%borderColor%, % ctrls.border
@@ -556,58 +555,57 @@ UpdateWinHopperSelectionVisual() {
     }
 }
 
-OnWinHopperClick(wParam, lParam, msg, hwnd) {
-    global hWinHopperGui, WinHopperActive, WinHopperTileRects, WinHopperSelectedIdx
-    if (!WinHopperActive || !hWinHopperGui)
+OnAppWinSwitchClick(wParam, lParam, msg, hwnd) {
+    global hAppWinSwitchGui, AppWinSwitchActive, AppWinSwitchTileRects, AppWinSwitchSelectedIdx
+    if (!AppWinSwitchActive || !hAppWinSwitchGui)
         return
-    if (hwnd != hWinHopperGui && !DllCall("IsChild", "Ptr", hWinHopperGui, "Ptr", hwnd))
+    if (hwnd != hAppWinSwitchGui && !DllCall("IsChild", "Ptr", hAppWinSwitchGui, "Ptr", hwnd))
         return
 
-    ; Lấy tọa độ chuột theo client của hWinHopperGui
     VarSetCapacity(pt, 8, 0)
     DllCall("GetCursorPos", "Ptr", &pt)
-    DllCall("ScreenToClient", "Ptr", hWinHopperGui, "Ptr", &pt)
+    DllCall("ScreenToClient", "Ptr", hAppWinSwitchGui, "Ptr", &pt)
     scale := A_ScreenDPI / 96.0
     cx := NumGet(pt, 0, "Int") / scale
     cy := NumGet(pt, 4, "Int") / scale
 
-    for idx, rc in WinHopperTileRects {
+    for idx, rc in AppWinSwitchTileRects {
         if (cx >= rc.x && cx <= (rc.x + rc.w) && cy >= rc.y && cy <= (rc.y + rc.h)) {
-            WinHopperSelectedIdx := idx
-            SetTimer, WinHopperCommitDeferred, -1
+            AppWinSwitchSelectedIdx := idx
+            SetTimer, AppWinSwitchCommitDeferred, -1
             return 0
         }
     }
 }
 
-WinHopperCommitDeferred:
-    CommitWindowHopper()
+AppWinSwitchCommitDeferred:
+    CommitAppWindowSwitcher()
 return
 
-CloseWindowHopperOverlay(clearState := true) {
-    global WinHopperActive, WinHopperThumbIds, hWinHopperGui, WinHopperTileRects, WinHopperTileCtrls, WinHopperWindows
+CloseAppWindowSwitcherOverlay(clearState := true) {
+    global AppWinSwitchActive, AppWinSwitchThumbIds, hAppWinSwitchGui, AppWinSwitchTileRects, AppWinSwitchTileCtrls, AppWinSwitchWindows
 
-    SetTimer, WatchWinHopperModifier, Off
-    OnMessage(0x0201, "OnWinHopperClick", 0)
+    SetTimer, WatchAppWinSwitchModifier, Off
+    OnMessage(0x0201, "OnAppWinSwitchClick", 0)
 
-    if (IsObject(WinHopperThumbIds)) {
-        for _, tid in WinHopperThumbIds {
+    if (IsObject(AppWinSwitchThumbIds)) {
+        for _, tid in AppWinSwitchThumbIds {
             if (tid)
                 DllCall("dwmapi\DwmUnregisterThumbnail", "Ptr", tid)
         }
     }
-    WinHopperThumbIds := []
+    AppWinSwitchThumbIds := []
 
-    if (hWinHopperGui) {
-        try Gui, WinHopperGui:Destroy
-        hWinHopperGui := 0
+    if (hAppWinSwitchGui) {
+        try Gui, AppWinSwitchGui:Destroy
+        hAppWinSwitchGui := 0
     }
 
-    WinHopperTileRects := []
-    WinHopperTileCtrls := []
+    AppWinSwitchTileRects := []
+    AppWinSwitchTileCtrls := []
     if (clearState) {
-        WinHopperActive := false
-        WinHopperWindows := []
+        AppWinSwitchActive := false
+        AppWinSwitchWindows := []
     }
 }
 
@@ -624,11 +622,11 @@ GetMonitorWorkAreaForHwnd(hwnd) {
     return { left: 0, top: 0, right: A_ScreenWidth, bottom: A_ScreenHeight }
 }
 
-CleanupWindowHopper() {
-    global WinHopperRegFwdHk, WinHopperRegBackHk
-    CloseWindowHopperOverlay()
-    if (WinHopperRegFwdHk != "")
-        try Hotkey, %WinHopperRegFwdHk%, WinHopperForwardHandler, Off
-    if (WinHopperRegBackHk != "")
-        try Hotkey, %WinHopperRegBackHk%, WinHopperBackwardHandler, Off
+CleanupAppWindowSwitcher() {
+    global AppWinSwitchRegFwdHk, AppWinSwitchRegBackHk
+    CloseAppWindowSwitcherOverlay()
+    if (AppWinSwitchRegFwdHk != "")
+        try Hotkey, %AppWinSwitchRegFwdHk%, AppWinSwitchForwardHandler, Off
+    if (AppWinSwitchRegBackHk != "")
+        try Hotkey, %AppWinSwitchRegBackHk%, AppWinSwitchBackwardHandler, Off
 }
