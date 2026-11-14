@@ -778,6 +778,47 @@ PatchAppWinSwitchBackdropBmp(indices) {
     return true
 }
 
+RedrawAppWinSwitchRowBand(rowY, rowH, rowIndices) {
+    global AppWinSwitchCanvasDC, hAppWinSwitchViewGui, AppWinSwitchOverlayW, AppWinSwitchIsLight
+    global AppWinSwitchGdipMod, AppWinSwitchGdipToken
+
+    if (!AppWinSwitchCanvasDC || !hAppWinSwitchViewGui || !IsObject(rowIndices) || !rowIndices.Length())
+        return false
+    if (!AppWinSwitchGdipToken && !GdipBeginSession(AppWinSwitchGdipMod, AppWinSwitchGdipToken))
+        return false
+
+    scale := A_ScreenDPI / 96.0
+    bandX := 0
+    bandY := Max(0, Floor(rowY * scale) - 2)
+    bandW := Ceil(AppWinSwitchOverlayW * scale)
+    bandH := Ceil(rowH * scale) + 4
+
+    pGraphics := 0
+    DllCall("gdiplus\GdipCreateFromHDC", "Ptr", AppWinSwitchCanvasDC, "Ptr*", pGraphics)
+    if (pGraphics) {
+        DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", pGraphics, "Int", 4)
+        DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", pGraphics, "Int", 2)
+        bgArgb := AppWinSwitchIsLight ? 0xFFF3F3F3 : 0xFF202020
+        pBrushBg := 0
+        DllCall("gdiplus\GdipCreateSolidFill", "UInt", bgArgb, "Ptr*", pBrushBg)
+        if (pBrushBg) {
+            DllCall("gdiplus\GdipFillRectangle", "Ptr", pGraphics, "Ptr", pBrushBg, "Float", bandX, "Float", bandY, "Float", bandW, "Float", bandH)
+            DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushBg)
+        }
+        DrawAppWinSwitchTiles(pGraphics, rowIndices, false)
+        DllCall("gdiplus\GdipDeleteGraphics", "Ptr", pGraphics)
+    }
+
+    VarSetCapacity(rcDirty, 16, 0)
+    NumPut(bandX, rcDirty, 0, "Int")
+    NumPut(bandY, rcDirty, 4, "Int")
+    NumPut(bandX + bandW, rcDirty, 8, "Int")
+    NumPut(bandY + bandH, rcDirty, 12, "Int")
+    DllCall("InvalidateRect", "Ptr", hAppWinSwitchViewGui, "Ptr", &rcDirty, "Int", 0)
+    DllCall("UpdateWindow", "Ptr", hAppWinSwitchViewGui)
+    return true
+}
+
 OnAppWinSwitchViewPaint(wParam, lParam, msg, hwnd) {
     global hAppWinSwitchViewGui, AppWinSwitchCanvasDC
     if (hwnd != hAppWinSwitchViewGui || !AppWinSwitchCanvasDC)
@@ -1133,8 +1174,65 @@ AppWinSwitchCloseTileDeferred:
 return
 
 CloseTileFromAppWindowSwitcher(idx) {
+    global AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchPendingCloseHwnds
+
+    if (!AppWinSwitchActive || idx < 1 || idx > AppWinSwitchWindows.Length())
+        return
+
+    targetHwnd := AppWinSwitchWindows[idx].hwnd
+    if (!targetHwnd || !DllCall("IsWindow", "Ptr", targetHwnd)) {
+        RemoveTileFromAppWindowSwitcher(idx)
+        return
+    }
+
+    PostMessage, 0x0010, 0, 0, , ahk_id %targetHwnd% ; WM_CLOSE
+
+    if (!IsObject(AppWinSwitchPendingCloseHwnds))
+        AppWinSwitchPendingCloseHwnds := []
+    for _, item in AppWinSwitchPendingCloseHwnds {
+        if (item.hwnd = targetHwnd) {
+            item.tick := A_TickCount
+            SetTimer, WatchAppWinSwitchPendingClose, 40
+            return
+        }
+    }
+    AppWinSwitchPendingCloseHwnds.Push({ hwnd: targetHwnd, tick: A_TickCount })
+    SetTimer, WatchAppWinSwitchPendingClose, 40
+}
+
+WatchAppWinSwitchPendingClose:
+    if (!AppWinSwitchActive || !IsObject(AppWinSwitchPendingCloseHwnds) || !AppWinSwitchPendingCloseHwnds.Length()) {
+        SetTimer, WatchAppWinSwitchPendingClose, Off
+        return
+    }
+    pIdx := AppWinSwitchPendingCloseHwnds.Length()
+    while (pIdx >= 1) {
+        item := AppWinSwitchPendingCloseHwnds[pIdx]
+        hwnd := item.hwnd
+        isAlive := hwnd && DllCall("IsWindow", "Ptr", hwnd) && DllCall("IsWindowVisible", "Ptr", hwnd)
+        if (!isAlive) {
+            AppWinSwitchPendingCloseHwnds.RemoveAt(pIdx)
+            foundIdx := 0
+            for wIdx, wInfo in AppWinSwitchWindows {
+                if (wInfo.hwnd = hwnd) {
+                    foundIdx := wIdx
+                    break
+                }
+            }
+            if (foundIdx > 0)
+                RemoveTileFromAppWindowSwitcher(foundIdx)
+        } else if (DllCall("IsWindowEnabled", "Ptr", hwnd) && (A_TickCount - item.tick > 1500)) {
+            AppWinSwitchPendingCloseHwnds.RemoveAt(pIdx)
+        }
+        pIdx -= 1
+    }
+    if (!AppWinSwitchActive || !AppWinSwitchPendingCloseHwnds.Length())
+        SetTimer, WatchAppWinSwitchPendingClose, Off
+return
+
+RemoveTileFromAppWindowSwitcher(idx) {
     global AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchSelectedIdx
-    global AppWinSwitchThumbIds, AppWinSwitchTileSizes, AppWinSwitchTileIcons
+    global AppWinSwitchThumbIds, AppWinSwitchTileSizes, AppWinSwitchTileIcons, AppWinSwitchTileRects
     global AppWinSwitchHoverIdx, AppWinSwitchHoverClose, AppWinSwitchScrollY, AppWinSwitchScrollMax
     global hAppWinSwitchGui, hAppWinSwitchViewGui
     global AppWinSwitchOverlayW, AppWinSwitchOverlayH, AppWinSwitchContentH
@@ -1142,9 +1240,7 @@ CloseTileFromAppWindowSwitcher(idx) {
     if (!AppWinSwitchActive || idx < 1 || idx > AppWinSwitchWindows.Length())
         return
 
-    targetHwnd := AppWinSwitchWindows[idx].hwnd
-    if (targetHwnd && DllCall("IsWindow", "Ptr", targetHwnd))
-        PostMessage, 0x0010, 0, 0, , ahk_id %targetHwnd% ; WM_CLOSE
+    closedRow := AppWinSwitchTileRects.HasKey(idx) ? AppWinSwitchTileRects[idx].row : 0
 
     ; Chỉ hủy đúng thumbnail của ô bị đóng, giữ nguyên toàn bộ thumbnail và GUI còn lại
     if (AppWinSwitchThumbIds.HasKey(idx) && AppWinSwitchThumbIds[idx])
@@ -1155,6 +1251,8 @@ CloseTileFromAppWindowSwitcher(idx) {
         AppWinSwitchTileSizes.RemoveAt(idx)
     if (AppWinSwitchTileIcons.HasKey(idx))
         AppWinSwitchTileIcons.RemoveAt(idx)
+    if (AppWinSwitchTileRects.HasKey(idx))
+        AppWinSwitchTileRects.RemoveAt(idx)
     AppWinSwitchWindows.RemoveAt(idx)
 
     if (AppWinSwitchWindows.Length() < 2) {
@@ -1169,6 +1267,33 @@ CloseTileFromAppWindowSwitcher(idx) {
 
     AppWinSwitchHoverIdx := 0
     AppWinSwitchHoverClose := false
+
+    ; Nếu hàng chứa ô vừa đóng vẫn còn ô, giữ nguyên bố cục các hàng khác và kích thước overlay
+    rowIndices := []
+    if (closedRow > 0) {
+        Loop, % AppWinSwitchTileRects.Length() {
+            if (AppWinSwitchTileRects[A_Index].row = closedRow)
+                rowIndices.Push(A_Index)
+        }
+    }
+
+    if (rowIndices.Length() > 0) {
+        padX := 16, gapX := 10
+        maxContentW := AppWinSwitchOverlayW - padX * 2
+        rowTotalW := 0
+        for rPos, k in rowIndices
+            rowTotalW += AppWinSwitchTileRects[k].w + (rPos > 1 ? gapX : 0)
+        rowY := AppWinSwitchTileRects[rowIndices[1]].y
+        rowH := AppWinSwitchTileRects[rowIndices[1]].h
+        tx := padX + Round((maxContentW - rowTotalW) / 2)
+        for _, k in rowIndices {
+            AppWinSwitchTileRects[k].x := tx
+            tx += AppWinSwitchTileRects[k].w + gapX
+        }
+        RedrawAppWinSwitchRowBand(rowY, rowH, rowIndices)
+        UpdateAppWinSwitchThumbnailsPos()
+        return
+    }
 
     ComputeAppWinSwitchLayout(posX, posY)
     if (AppWinSwitchScrollY > AppWinSwitchScrollMax)
@@ -1185,9 +1310,11 @@ CloseTileFromAppWindowSwitcher(idx) {
 CloseAppWindowSwitcherOverlay(clearState := true) {
     global AppWinSwitchActive, AppWinSwitchThumbIds, hAppWinSwitchGui, hAppWinSwitchViewGui, AppWinSwitchTileRects, AppWinSwitchWindows, AppWinSwitchOwnedIcons
     global AppWinSwitchCanvasDC, AppWinSwitchCanvasBmp, AppWinSwitchCanvasOldBmp, AppWinSwitchScrollY, AppWinSwitchScrollMax
-    global AppWinSwitchGdipMod, AppWinSwitchGdipToken, AppWinSwitchHoverIdx, AppWinSwitchHoverClose
+    global AppWinSwitchGdipMod, AppWinSwitchGdipToken, AppWinSwitchHoverIdx, AppWinSwitchHoverClose, AppWinSwitchPendingCloseHwnds
 
     SetTimer, WatchAppWinSwitchModifier, Off
+    SetTimer, WatchAppWinSwitchPendingClose, Off
+    AppWinSwitchPendingCloseHwnds := []
     OnMessage(0x000F, "OnAppWinSwitchViewPaint", 0)
     OnMessage(0x0014, "OnAppWinSwitchEraseBg", 0)
     OnMessage(0x0200, "OnAppWinSwitchMouseMove", 0)
