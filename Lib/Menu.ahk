@@ -83,6 +83,8 @@ RebuildTrayMenu() {
         Menu, PhimTat, Check, % L("Sub_PopupBlocker")
     else
         Menu, PhimTat, Uncheck, % L("Sub_PopupBlocker")
+    pickHkTxt := (IsFunc("FormatPopupPickHotkeyText") && PopupPickHotkey != "") ? ("`t" . FormatPopupPickHotkeyText(PopupPickHotkey)) : ""
+    Menu, PhimTat, Add, % L("Sub_PopupQuickPick") . pickHkTxt, MenuActionQuickPickPopup
     Menu, PhimTat, Add, % L("Sub_PopupBlockerRules"), MenuActionOpenPopupBlocker
     Menu, PhimTat, Add
     Menu, PhimTat, Add, % L("Sub_ShortcutSettings"), MenuActionOpenShortcuts
@@ -523,6 +525,11 @@ return
 MenuActionOpenPopupBlocker:
     if (IsFunc("OpenPopupBlockerGui"))
         OpenPopupBlockerGui()
+return
+
+MenuActionQuickPickPopup:
+    if (IsFunc("StartPopupWindowPicker"))
+        StartPopupWindowPicker("quick")
 return
 
 MenuActionOpenShortcuts:

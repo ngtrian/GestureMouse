@@ -860,6 +860,32 @@ OnQuickPickPopupTarget:
         StartPopupWindowPicker("quick")
 return
 
+OnChangePopupPickHotkey:
+    global PopupPickHotkey
+    ShowHotkeyPickerDialog({id: "popuppick"
+        , title: L("Popup_ChangeHotkeyBtn")
+        , prompt: L("Popup_HotkeyPrompt")
+        , current: PopupPickHotkey
+        , default: "^!p"
+        , allowSingleModifier: false
+        , allowMouse: true
+        , allowClear: true
+        , onSave: Func("SavePickedPopupPickHotkey")})
+return
+
+SavePickedPopupPickHotkey(newHk) {
+    global PopupPickHotkey
+    PopupPickHotkey := newHk
+    if (IsFunc("SavePopupBlockerSettings"))
+        SavePopupBlockerSettings()
+    if (IsFunc("ApplyPopupPickHotkey"))
+        ApplyPopupPickHotkey()
+    GuiControl, ShortcutsScroll:, PopupPickHotkeyBtn, % FormatHotkeyText(PopupPickHotkey)
+    if (IsFunc("RebuildTrayMenu"))
+        RebuildTrayMenu()
+    UpdateShortcutsCardSummaries()
+}
+
 SyncPopupBlockerSettingsUI() {
     global PopupBlockerEnabled, hSettingsGui
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
@@ -1490,19 +1516,30 @@ BuildShortcutsScrollPanel(aboutIcon) {
     CardAddDescText(trayCard, "• " . L("Set_TrayDblClickTip"), 28, 18, 2)
     EndCard(trayCard, 8)
 
-    ; CARD 6: CHẶN POPUP TỰ ĐỘNG (CHECKBOX TRÊN HEADER)
+    ; CARD 6: CHẶN POPUP (CHECKBOX TRÊN HEADER)
     popupCard := BeginCard(4, "ShortcutsScroll", "popup", L("Set_GroupPopupBlocker"), 1, "OnTogglePopupBlockerExpand", "PopupBlockerEnabled", "OnTogglePopupBlockerEnabled", PopupBlockerEnabled)
     y := popupCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w236 vPopupManageLbl +HwndhPopupLbl", % L("Popup_CardLabel")
+    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w280 vPopupManageLbl +HwndhPopupLbl", % L("Popup_CardLabel")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Button, x270 y%y% w96 h26 Center gOnQuickPickPopupTarget vPopupQuickPickBtn +HwndhPopupPickBtn, % L("Popup_QuickPickShortBtn")
-    Gui, ShortcutsScroll:Add, Button, x372 y%y% w148 h26 Center gOnOpenPopupBlockerMgr vPopupManageBtn +HwndhPopupBtn, % L("Popup_ManageBtn")
-    SettingsTooltips[hPopupPickBtn] := L("Popup_QuickPickTip")
+    Gui, ShortcutsScroll:Add, Button, x314 y%y% w206 h26 Center gOnOpenPopupBlockerMgr vPopupManageBtn +HwndhPopupBtn, % L("Popup_ManageBtn")
     CardAddItem(popupCard, hPopupLbl, y + 4)
-    CardAddItem(popupCard, hPopupPickBtn, y)
     CardAddItem(popupCard, hPopupBtn, y)
+    popupCard.curY += 32
+
+    y := popupCard.curY
+    Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w106 h18 vPopupPickHotkeyLbl +HwndhPopupHkLbl", % L("Popup_HotkeyLbl")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    pickHkDisplay := IsFunc("FormatPopupPickHotkeyText") ? FormatPopupPickHotkeyText(PopupPickHotkey) : "Ctrl + Alt + P"
+    Gui, ShortcutsScroll:Add, Button, x138 y%y% w170 h25 vPopupPickHotkeyBtn +HwndhPopupHkBtn gOnChangePopupPickHotkey, %pickHkDisplay%
+    Gui, ShortcutsScroll:Add, Button, x314 y%y% w206 h25 Center gOnQuickPickPopupTarget vPopupQuickPickBtn +HwndhPopupPickBtn, % L("Popup_QuickPickShortBtn")
+    SettingsTooltips[hPopupPickBtn] := L("Popup_QuickPickTip")
+    CardAddItem(popupCard, hPopupHkLbl, y + 4)
+    CardAddItem(popupCard, hPopupHkBtn, y)
+    CardAddItem(popupCard, hPopupPickBtn, y)
     popupCard.curY += 30
+
     CardAddDescText(popupCard, L("Popup_Desc"), 28, 18, 2)
     EndCard(popupCard, 8)
 

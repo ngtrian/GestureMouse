@@ -2,6 +2,8 @@
 #NoEnv
 
 global PopupBlockerEnabled := 0
+global PopupPickHotkey := "^!p"
+global PopupPickRegHk := ""
 global PopupBlockerBlockedCount := 0
 global PopupRules := []
 global PopupRulesByProc := {}
@@ -47,7 +49,7 @@ global PopupRulePickBtn := ""
 global PopupIsPicking := 0
 
 InitPopupBlocker() {
-    global PopupBlockerEnabled, PopupRulesFilePath
+    global PopupBlockerEnabled, PopupPickHotkey, PopupPickRegHk, PopupRulesFilePath
     global PopupBlockerLogs, PopupPendingHwnds, PopupHandledCache, PopupPidCache, PopupWinEventHooks, PopupBlockerBlockedCount
     if (!IsObject(PopupBlockerLogs))
         PopupBlockerLogs := []
@@ -61,14 +63,22 @@ InitPopupBlocker() {
         PopupWinEventHooks := []
     if (PopupBlockerBlockedCount = "")
         PopupBlockerBlockedCount := 0
+    if (PopupPickHotkey = "")
+        PopupPickHotkey := "^!p"
+    PopupPickRegHk := ""
 
     RegRead, savedEnabled, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PopupBlockerEnabled
     PopupBlockerEnabled := (savedEnabled = "1") ? 1 : 0
+
+    RegRead, savedPickHk, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PopupPickHotkey
+    if (!ErrorLevel)
+        PopupPickHotkey := savedPickHk
 
     PopupRulesFilePath := GetPopupRulesFilePath()
     LoadPopupRules()
     OnExit("CleanupPopupBlocker")
     ApplyPopupBlockerState()
+    ApplyPopupPickHotkey()
 }
 
 GetPopupRulesFilePath() {
@@ -83,8 +93,36 @@ GetPopupRulesFilePath() {
 }
 
 SavePopupBlockerSettings() {
-    global PopupBlockerEnabled
+    global PopupBlockerEnabled, PopupPickHotkey
     RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PopupBlockerEnabled, % (PopupBlockerEnabled ? 1 : 0)
+    RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PopupPickHotkey, %PopupPickHotkey%
+}
+
+ApplyPopupPickHotkey() {
+    global PopupPickHotkey, PopupPickRegHk
+    if (PopupPickRegHk != "") {
+        try Hotkey, %PopupPickRegHk%, PopupPickHotkeyHandler, Off
+        PopupPickRegHk := ""
+    }
+    if (PopupPickHotkey != "") {
+        try {
+            Hotkey, %PopupPickHotkey%, PopupPickHotkeyHandler, On
+            PopupPickRegHk := PopupPickHotkey
+        }
+    }
+}
+
+PopupPickHotkeyHandler:
+    if (PopupIsPicking)
+        FinishPopupWindowPicker(false)
+    else
+        StartPopupWindowPicker("quick")
+return
+
+FormatPopupPickHotkeyText(hk) {
+    if (IsFunc("FormatHotkeyText"))
+        return FormatHotkeyText(hk)
+    return hk
 }
 
 TogglePopupBlocker() {
