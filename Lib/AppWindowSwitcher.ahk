@@ -1,4 +1,4 @@
-; AppWindowSwitcher.ahk - Chuyển đổi nhanh giữa các cửa sổ cùng ứng dụng (App Window Switcher)
+﻿; AppWindowSwitcher.ahk - Chuyển đổi nhanh giữa các cửa sổ cùng ứng dụng (App Window Switcher)
 #NoEnv
 
 InitAppWindowSwitcher() {
@@ -87,6 +87,8 @@ return
 
 #If (AppWinSwitchActive)
 *Esc::CancelAppWindowSwitcher()
+*Tab::MoveAppWinSwitchSelection(1)
+*+Tab::MoveAppWinSwitchSelection(-1)
 *Left::MoveAppWinSwitchSelection(-1)
 *Right::MoveAppWinSwitchSelection(1)
 *Up::MoveAppWinSwitchRow(-1)
@@ -373,12 +375,23 @@ GetAppWindowSwitcherDisplayName(hwnd) {
 }
 
 ; ==============================================================================
-; Giao diện Overlay Fluent + DWM Live Thumbnails
+; Giao diện Overlay phong cách Alt+Tab Windows 11 (GDI+ bo góc + Theme Windows)
 ; ==============================================================================
+IsWindowsLightTheme() {
+    RegRead, sysLight, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize, SystemUsesLightTheme
+    if (!ErrorLevel && sysLight != "")
+        return (sysLight = 1)
+    RegRead, appLight, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize, AppsUseLightTheme
+    if (!ErrorLevel && appLight != "")
+        return (appLight = 1)
+    return false
+}
+
 ShowAppWindowSwitcherOverlay() {
     global AppWinSwitchWindows, AppWinSwitchSelectedIdx, AppWinSwitchShowPreview
     global hAppWinSwitchGui, AppWinSwitchThumbIds, AppWinSwitchTileRects, AppWinSwitchTileCtrls
-    global AppWinSwitchCols, AppWinSwitchOverlayW, AppWinSwitchOverlayH, AppWinSwitchHeaderH
+    global AppWinSwitchCols, AppWinSwitchOwnedIcons, AppWinSwitchTileIcons
+    global AppWinSwitchOverlayW, AppWinSwitchOverlayH, hAppWinSwitchBgPic, AppWinSwitchBgBmp, AppWinSwitchIsLight
 
     CloseAppWindowSwitcherOverlay(false)
 
@@ -388,32 +401,124 @@ ShowAppWindowSwitcherOverlay() {
 
     maxShow := (cnt > 12) ? 12 : cnt
     scale := A_ScreenDPI / 96.0
+    AppWinSwitchIsLight := IsWindowsLightTheme()
 
-    padX := 18
+    padX := 16
     padY := 16
-    headerH := 38
-    gapX := 12
-    gapY := 12
-    AppWinSwitchHeaderH := headerH
+    gapX := 10
+    gapY := 10
 
+    AppWinSwitchTileRects := []
+    AppWinSwitchTileCtrls := []
+    AppWinSwitchThumbIds := []
+    AppWinSwitchOwnedIcons := []
+    AppWinSwitchTileIcons := []
+    AppWinSwitchBgBmp := 0
+
+    ; Tạo GUI trước (ẩn) để có thể query DwmQueryThumbnailSourceSize chính xác cho từng cửa sổ
+    guiBgHex := AppWinSwitchIsLight ? "F3F3F3" : "202020"
+    borderDwmColor := AppWinSwitchIsLight ? 0xD2D2D2 : 0x424242
+
+    Gui, AppWinSwitchGui:New, -Caption +ToolWindow +AlwaysOnTop +E0x08000000 +HwndhAppWinSwitchGui
+    Gui, AppWinSwitchGui:Color, %guiBgHex%
+    Gui, AppWinSwitchGui:Margin, 0, 0
+
+    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hAppWinSwitchGui, "UInt", 20, "Int*", AppWinSwitchIsLight ? 0 : 1, "UInt", 4)
+    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hAppWinSwitchGui, "UInt", 33, "Int*", 2, "UInt", 4)
+    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hAppWinSwitchGui, "UInt", 34, "UInt*", borderDwmColor, "UInt", 4)
+
+    ; Tính kích thước từng ô (ô preview co giãn theo đúng tỷ lệ thật của cửa sổ như Alt+Tab Win 11)
+    tileSizes := []
     if (AppWinSwitchShowPreview) {
-        cols := (maxShow <= 4) ? maxShow : 4
-        rows := Ceil(maxShow / cols)
-        tileW := 220
-        tileH := 162
+        tileH := 174
+        pvMaxH := tileH - 38 ; 136px
+        pvMinW := 124
+        pvMaxW := 268
+        Loop, %maxShow% {
+            idx := A_Index
+            hwndSrc := AppWinSwitchWindows[idx].hwnd
+            hThumb := 0
+            srcW := 16, srcH := 10
+            if (DllCall("dwmapi\DwmRegisterThumbnail", "Ptr", hAppWinSwitchGui, "Ptr", hwndSrc, "Ptr*", hThumb) = 0 && hThumb) {
+                VarSetCapacity(srcSize, 8, 0)
+                if (DllCall("dwmapi\DwmQueryThumbnailSourceSize", "Ptr", hThumb, "Ptr", &srcSize) = 0) {
+                    sw := NumGet(srcSize, 0, "Int")
+                    sh := NumGet(srcSize, 4, "Int")
+                    if (sw > 0 && sh > 0)
+                        srcW := sw, srcH := sh
+                }
+                AppWinSwitchThumbIds.Push(hThumb)
+            } else {
+                AppWinSwitchThumbIds.Push(0)
+            }
+
+            fitW := Round(pvMaxH * (srcW / srcH))
+            if (fitW < pvMinW)
+                fitW := pvMinW
+            else if (fitW > pvMaxW)
+                fitW := pvMaxW
+
+            ; Tính kích thước ảnh thumbnail thực tế bên trong ô (không dư khoảng đen 2 bên)
+            ratio := Min(fitW / srcW, pvMaxH / srcH)
+            drawW := Round(srcW * ratio)
+            drawH := Round(srcH * ratio)
+            tileW := fitW + 16
+            tileSizes.Push({ w: tileW, h: tileH, drawW: drawW, drawH: drawH })
+        }
     } else {
-        cols := 1
-        rows := maxShow
-        tileW := 380
-        tileH := 40
-        gapY := 6
+        Loop, %maxShow%
+            tileSizes.Push({ w: 380, h: 42, drawW: 0, drawH: 0 })
     }
 
-    AppWinSwitchCols := cols
-    overlayW := padX * 2 + cols * tileW + (cols - 1) * gapX
-    overlayH := padY + headerH + rows * tileH + (rows - 1) * gapY + padY
+    ; Chia hàng linh hoạt (tối đa 4 ô/hàng và không vượt quá ~980px), căn giữa từng hàng
+    rowsList := []
+    curRow := []
+    curRowW := 0
+    maxRowW := 960
+    maxColsPerRow := AppWinSwitchShowPreview ? 4 : 1
+
+    Loop, %maxShow% {
+        idx := A_Index
+        tw := tileSizes[idx].w
+        needW := curRow.Length() ? (curRowW + gapX + tw) : tw
+        if (curRow.Length() >= maxColsPerRow || (curRow.Length() > 0 && needW > maxRowW)) {
+            rowsList.Push({ items: curRow, totalW: curRowW })
+            curRow := [idx]
+            curRowW := tw
+        } else {
+            curRow.Push(idx)
+            curRowW := needW
+        }
+    }
+    if (curRow.Length())
+        rowsList.Push({ items: curRow, totalW: curRowW })
+
+    AppWinSwitchCols := maxColsPerRow
+    maxContentW := 0
+    for _, r in rowsList {
+        if (r.totalW > maxContentW)
+            maxContentW := r.totalW
+    }
+
+    overlayW := padX * 2 + maxContentW
+    rowH := tileSizes[1].h
+    overlayH := padY * 2 + rowsList.Length() * rowH + (rowsList.Length() - 1) * gapY
     AppWinSwitchOverlayW := overlayW
     AppWinSwitchOverlayH := overlayH
+
+    ; Khởi tạo mảng tọa độ theo đúng thứ tự idx 1..maxShow
+    Loop, %maxShow%
+        AppWinSwitchTileRects.Push({})
+
+    for rIdx, r in rowsList {
+        ty := padY + (rIdx - 1) * (rowH + gapY)
+        tx := padX + Round((maxContentW - r.totalW) / 2)
+        for _, idx in r.items {
+            ts := tileSizes[idx]
+            AppWinSwitchTileRects[idx] := { x: tx, y: ty, w: ts.w, h: ts.h, drawW: ts.drawW, drawH: ts.drawH }
+            tx += ts.w + gapX
+        }
+    }
 
     ; Tính vị trí căn giữa màn hình chứa cửa sổ đang active
     mon := GetMonitorWorkAreaForHwnd(AppWinSwitchWindows[1].hwnd)
@@ -422,79 +527,203 @@ ShowAppWindowSwitcherOverlay() {
     posX := Round(mon.left / scale) + Round((monW - overlayW) / 2)
     posY := Round(mon.top / scale) + Round((monH - overlayH) / 2)
 
-    Gui, AppWinSwitchGui:New, -Caption +ToolWindow +AlwaysOnTop +E0x08000000 +HwndhAppWinSwitchGui
-    Gui, AppWinSwitchGui:Color, 202020
-    Gui, AppWinSwitchGui:Margin, 0, 0
+    ; Nền GDI+ vẽ toàn bộ các ô bo góc mượt, viền Accent và icon alpha chuẩn (không bị nền đen)
+    Gui, AppWinSwitchGui:Add, Picture, x0 y0 w%overlayW% h%overlayH% +0xE +HwndhAppWinSwitchBgPic ; SS_BITMAP
 
-    ; Bo góc & Dark Mode trên Windows 11
-    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hAppWinSwitchGui, "UInt", 20, "Int*", 1, "UInt", 4) ; DWMWA_USE_IMMERSIVE_DARK_MODE
-    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hAppWinSwitchGui, "UInt", 33, "Int*", 2, "UInt", 4) ; DWMWCP_ROUND
-
-    ; Header: Tên ứng dụng & số lượng cửa sổ
-    appName := GetAppWindowSwitcherDisplayName(AppWinSwitchWindows[1].hwnd)
-    countLabel := IsFunc("L") ? StrReplace(L("AWS_WindowCount"), "{1}", cnt) : (cnt . " cửa sổ")
-    escHint := IsFunc("L") ? L("AWS_EscHint") : "Esc: Hủy"
-
-    Gui, AppWinSwitchGui:Font, s10.5 Bold cFFFFFF, Segoe UI
-    Gui, AppWinSwitchGui:Add, Text, % "x" . padX . " y14 w" . (overlayW - padX * 2 - 110) . " h22 +0x200 BackgroundTrans", % appName . "  (" . countLabel . ")"
-    Gui, AppWinSwitchGui:Font, s8.5 Norm c9A9A9A, Segoe UI
-    Gui, AppWinSwitchGui:Add, Text, % "x" . (overlayW - padX - 105) . " y16 w105 h20 Right +0x200 BackgroundTrans", % escHint
-
-    AppWinSwitchTileRects := []
-    AppWinSwitchTileCtrls := []
-    AppWinSwitchThumbIds := []
-
+    titleNormColor := AppWinSwitchIsLight ? "c333333" : "cD8D8D8"
     Loop, %maxShow% {
         idx := A_Index
         item := AppWinSwitchWindows[idx]
-        colIdx := Mod(idx - 1, cols)
-        rowIdx := Floor((idx - 1) / cols)
+        rc := AppWinSwitchTileRects[idx]
+        tx := rc.x, ty := rc.y, tw := rc.w
 
-        tx := padX + colIdx * (tileW + gapX)
-        ty := padY + headerH + rowIdx * (tileH + gapY)
+        hIcon := GetSwitcherWindowIcon(item.hwnd, owned)
+        if (owned && hIcon)
+            AppWinSwitchOwnedIcons.Push(hIcon)
+        AppWinSwitchTileIcons.Push(hIcon)
 
-        AppWinSwitchTileRects.Push({ x: tx, y: ty, w: tileW, h: tileH })
-
-        Gui, AppWinSwitchGui:Add, Text, x%tx% y%ty% w%tileW% h%tileH% +HwndhBorderCtrl Background2D2D2D
-        inX := tx + 2, inY := ty + 2, inW := tileW - 4, inH := tileH - 4
-        Gui, AppWinSwitchGui:Add, Text, x%inX% y%inY% w%inW% h%inH% +HwndhBgCtrl Background2B2B2B
+        titleX := hIcon ? (tx + 32) : (tx + 10)
+        availTitleW := tw - (titleX - tx) - 10
+        maxChars := Floor(availTitleW / 6.8)
+        if (maxChars < 8)
+            maxChars := 8
 
         shortTitle := item.title
-        if (StrLen(shortTitle) > (AppWinSwitchShowPreview ? 26 : 44))
-            shortTitle := SubStr(shortTitle, 1, AppWinSwitchShowPreview ? 25 : 43) . "…"
+        if (StrLen(shortTitle) > maxChars)
+            shortTitle := SubStr(shortTitle, 1, maxChars - 1) . "…"
 
         if (AppWinSwitchShowPreview) {
-            Gui, AppWinSwitchGui:Font, s8.5 Norm cEAEAEA, Segoe UI
-            Gui, AppWinSwitchGui:Add, Text, % "x" . (tx + 10) . " y" . (ty + 7) . " w" . (tileW - 20) . " h18 +0x200 +0x80 BackgroundTrans +HwndhTitleCtrl", % shortTitle
+            Gui, AppWinSwitchGui:Font, s9 Norm %titleNormColor%, Segoe UI
+            Gui, AppWinSwitchGui:Add, Text, % "x" . titleX . " y" . (ty + 7) . " w" . availTitleW . " h18 +0x200 +0x80 BackgroundTrans +HwndhTitleCtrl", % shortTitle
         } else {
-            Gui, AppWinSwitchGui:Font, s9.5 Norm cEAEAEA, Segoe UI
-            Gui, AppWinSwitchGui:Add, Text, % "x" . (tx + 12) . " y" . (ty + 9) . " w" . (tileW - 44) . " h22 +0x200 +0x80 BackgroundTrans +HwndhTitleCtrl", % shortTitle
-            Gui, AppWinSwitchGui:Font, s8.5 Bold c888888, Segoe UI
-            Gui, AppWinSwitchGui:Add, Text, % "x" . (tx + tileW - 30) . " y" . (ty + 10) . " w20 h20 Right +0x200 BackgroundTrans", % idx
+            Gui, AppWinSwitchGui:Font, s9.5 Norm %titleNormColor%, Segoe UI
+            Gui, AppWinSwitchGui:Add, Text, % "x" . titleX . " y" . (ty + 10) . " w" . availTitleW . " h22 +0x200 +0x80 BackgroundTrans +HwndhTitleCtrl", % shortTitle
         }
 
-        AppWinSwitchTileCtrls.Push({ border: hBorderCtrl, bg: hBgCtrl, title: hTitleCtrl })
-    }
-
-    Gui, AppWinSwitchGui:Show, NoActivate x%posX% y%posY% w%overlayW% h%overlayH%, AppWindowSwitcherOverlay
-
-    ; Đăng ký DWM Live Thumbnails sau khi cửa sổ overlay đã có HWND hiển thị
-    if (AppWinSwitchShowPreview) {
-        Loop, %maxShow% {
-            idx := A_Index
-            rc := AppWinSwitchTileRects[idx]
-            thumbX := Round((rc.x + 8) * scale)
-            thumbY := Round((rc.y + 30) * scale)
-            thumbW := Round((rc.w - 16) * scale)
-            thumbH := Round((rc.h - 38) * scale)
-            tid := RegisterFittedDwmThumbnail(hAppWinSwitchGui, AppWinSwitchWindows[idx].hwnd, thumbX, thumbY, thumbW, thumbH)
-            if (tid)
-                AppWinSwitchThumbIds.Push(tid)
-        }
+        AppWinSwitchTileCtrls.Push({ title: hTitleCtrl })
     }
 
     UpdateAppWinSwitchSelectionVisual()
+    Gui, AppWinSwitchGui:Show, NoActivate x%posX% y%posY% w%overlayW% h%overlayH%, AppWindowSwitcherOverlay
+    WinSet, Transparent, 242, ahk_id %hAppWinSwitchGui%
+
+    ; Cập nhật vị trí DWM Live Thumbnails khớp chính xác với kích thước ảnh thật, căn giữa trong ô
+    if (AppWinSwitchShowPreview) {
+        Loop, %maxShow% {
+            idx := A_Index
+            hThumb := AppWinSwitchThumbIds[idx]
+            if (!hThumb)
+                continue
+            rc := AppWinSwitchTileRects[idx]
+            boxX := Round((rc.x + 8) * scale)
+            boxY := Round((rc.y + 30) * scale)
+            boxW := Round((rc.w - 16) * scale)
+            boxH := Round((rc.h - 38) * scale)
+            drawW := Round(rc.drawW * scale)
+            drawH := Round(rc.drawH * scale)
+            drawX := boxX + Round((boxW - drawW) / 2)
+            drawY := boxY + Round((boxH - drawH) / 2)
+            UpdateFittedDwmThumbnailRect(hThumb, drawX, drawY, drawW, drawH)
+        }
+    }
+
     OnMessage(0x0201, "OnAppWinSwitchClick") ; WM_LBUTTONDOWN
+}
+
+UpdateFittedDwmThumbnailRect(hThumb, drawX, drawY, drawW, drawH) {
+    VarSetCapacity(props, 48, 0)
+    NumPut(0x0000001D, props, 0, "UInt") ; DWM_TNP_RECTDESTINATION | DWM_TNP_OPACITY | DWM_TNP_VISIBLE | DWM_TNP_SOURCECLIENTAREAONLY
+    NumPut(drawX, props, 4, "Int")
+    NumPut(drawY, props, 8, "Int")
+    NumPut(drawX + drawW, props, 12, "Int")
+    NumPut(drawY + drawH, props, 16, "Int")
+    NumPut(255, props, 36, "UChar")
+    NumPut(1, props, 37, "Int")
+    NumPut(0, props, 41, "Int")
+    DllCall("dwmapi\DwmUpdateThumbnailProperties", "Ptr", hThumb, "Ptr", &props)
+}
+
+CreateAppWinSwitchRoundPath(x, y, w, h, r) {
+    pPath := 0
+    DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", pPath)
+    d := r * 2.0
+    if (d > w)
+        d := w
+    if (d > h)
+        d := h
+    if (d > 0.5) {
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", x, "Float", y, "Float", d, "Float", d, "Float", 180.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", x + w - d, "Float", y, "Float", d, "Float", d, "Float", 270.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", x + w - d, "Float", y + h - d, "Float", d, "Float", d, "Float", 0.0, "Float", 90.0)
+        DllCall("gdiplus\GdipAddPathArc", "Ptr", pPath, "Float", x, "Float", y + h - d, "Float", d, "Float", d, "Float", 90.0, "Float", 90.0)
+        DllCall("gdiplus\GdipClosePathFigure", "Ptr", pPath)
+    } else {
+        DllCall("gdiplus\GdipAddPathRectangle", "Ptr", pPath, "Float", x, "Float", y, "Float", w, "Float", h)
+    }
+    return pPath
+}
+
+BuildAppWinSwitchBackdropBmp() {
+    global AppWinSwitchOverlayW, AppWinSwitchOverlayH, AppWinSwitchTileRects
+    global AppWinSwitchSelectedIdx, AppWinSwitchShowPreview, AppWinSwitchIsLight, AppWinSwitchTileIcons
+
+    if (!GdipBeginSession(hGdip, pToken))
+        return 0
+
+    scale := A_ScreenDPI / 96.0
+    pixW := Round(AppWinSwitchOverlayW * scale)
+    pixH := Round(AppWinSwitchOverlayH * scale)
+
+    bgArgb        := AppWinSwitchIsLight ? 0xFFF3F3F3 : 0xFF202020
+    tileNormArgb  := AppWinSwitchIsLight ? 0xFFEAEAEA : 0xFF272727
+    tileSelArgb   := AppWinSwitchIsLight ? 0xFFFFFFFF : 0xFF333333
+    normPenArgb   := AppWinSwitchIsLight ? 0xFFD5D5D5 : 0xFF383838
+    accentRgb     := IsFunc("GetWindowsAccentRgb") ? GetWindowsAccentRgb() : 0x0078D7
+    selPenArgb    := 0xFF000000 | accentRgb
+
+    GdipCreateCanvas(pixW, pixH, bgArgb, pBitmap, pGraphics)
+
+    DllCall("gdiplus\GdipCreateSolidFill", "UInt", tileNormArgb, "Ptr*", pBrushNorm)
+    DllCall("gdiplus\GdipCreateSolidFill", "UInt", tileSelArgb,  "Ptr*", pBrushSel)
+    DllCall("gdiplus\GdipCreatePen1", "UInt", normPenArgb, "Float", 1.0 * scale, "Int", 2, "Ptr*", pPenNorm)
+    DllCall("gdiplus\GdipCreatePen1", "UInt", selPenArgb,  "Float", 2.0 * scale, "Int", 2, "Ptr*", pPenSel)
+
+    tileRadius := 8.0 * scale
+    iconPix := Round(16 * scale)
+
+    for idx, rc in AppWinSwitchTileRects {
+        isSel := (idx = AppWinSwitchSelectedIdx)
+        rx := rc.x * scale
+        ry := rc.y * scale
+        rw := rc.w * scale
+        rh := rc.h * scale
+
+        ; Chừa nửa độ dày nét vẽ để viền không bị cắt mép
+        inset := isSel ? (1.0 * scale) : (0.5 * scale)
+        pTilePath := CreateAppWinSwitchRoundPath(rx + inset, ry + inset, rw - inset * 2, rh - inset * 2, tileRadius)
+        DllCall("gdiplus\GdipFillPath", "Ptr", pGraphics, "Ptr", isSel ? pBrushSel : pBrushNorm, "Ptr", pTilePath)
+        DllCall("gdiplus\GdipDrawPath", "Ptr", pGraphics, "Ptr", isSel ? pPenSel : pPenNorm, "Ptr", pTilePath)
+        DllCall("gdiplus\GdipDeletePath", "Ptr", pTilePath)
+
+        ; Vẽ icon trực tiếp lên canvas GDI+ để giữ alpha trong suốt, không bị nền đen
+        hIcon := AppWinSwitchTileIcons[idx]
+        if (hIcon) {
+            pIconBmp := 0
+            if (DllCall("gdiplus\GdipCreateBitmapFromHICON", "Ptr", hIcon, "Ptr*", pIconBmp) = 0 && pIconBmp) {
+                ix := Round((rc.x + 10) * scale)
+                iy := Round((AppWinSwitchShowPreview ? (rc.y + 8) : (rc.y + 13)) * scale)
+                DllCall("gdiplus\GdipDrawImageRectI", "Ptr", pGraphics, "Ptr", pIconBmp, "Int", ix, "Int", iy, "Int", iconPix, "Int", iconPix)
+                DllCall("gdiplus\GdipDisposeImage", "Ptr", pIconBmp)
+            }
+        }
+    }
+
+    DllCall("gdiplus\GdipDeletePen", "Ptr", pPenSel)
+    DllCall("gdiplus\GdipDeletePen", "Ptr", pPenNorm)
+    DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushSel)
+    DllCall("gdiplus\GdipDeleteBrush", "Ptr", pBrushNorm)
+
+    hBmp := 0
+    DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", bgArgb)
+    GdipReleaseCanvas(pBitmap, pGraphics)
+    GdipEndSession(hGdip, pToken)
+    return hBmp
+}
+
+GetSwitcherWindowIcon(hwnd, ByRef isOwned) {
+    isOwned := false
+    hIcon := 0
+    ; Thử lấy icon nhỏ từ cửa sổ (timeout ngắn tránh treo nếu app đang bận)
+    for _, iconType in [2, 0, 1] { ; ICON_SMALL2, ICON_SMALL, ICON_BIG
+        res := 0
+        if (DllCall("SendMessageTimeout", "Ptr", hwnd, "UInt", 0x007F, "Ptr", iconType, "Ptr", 0, "UInt", 0x0002, "UInt", 40, "Ptr*", res) && res) {
+            hIcon := res
+            break
+        }
+    }
+    if (!hIcon)
+        hIcon := GetClassLongPtrCompat(hwnd, -34) ; GCL_HICONSM
+    if (!hIcon)
+        hIcon := GetClassLongPtrCompat(hwnd, -14) ; GCL_HICON
+
+    if (!hIcon) {
+        WinGet, procPath, ProcessPath, ahk_id %hwnd%
+        if (procPath != "") {
+            VarSetCapacity(shfi, A_PtrSize = 8 ? 696 : 692, 0)
+            if (DllCall("shell32\SHGetFileInfoW", "WStr", procPath, "UInt", 0, "Ptr", &shfi, "UInt", A_PtrSize = 8 ? 696 : 692, "UInt", 0x000000101)) { ; SHGFI_ICON | SHGFI_SMALLICON
+                hIcon := NumGet(shfi, 0, "Ptr")
+                if (hIcon)
+                    isOwned := true
+            }
+        }
+    }
+    return hIcon
+}
+
+GetClassLongPtrCompat(hwnd, index) {
+    if (A_PtrSize = 8)
+        return DllCall("GetClassLongPtr", "Ptr", hwnd, "Int", index, "Ptr")
+    return DllCall("GetClassLong", "Ptr", hwnd, "Int", index, "UInt")
 }
 
 RegisterFittedDwmThumbnail(destHwnd, srcHwnd, boxX, boxY, boxW, boxH) {
@@ -536,21 +765,28 @@ RegisterFittedDwmThumbnail(destHwnd, srcHwnd, boxX, boxY, boxW, boxH) {
 }
 
 UpdateAppWinSwitchSelectionVisual() {
-    global AppWinSwitchTileCtrls, AppWinSwitchSelectedIdx
-    if (!IsObject(AppWinSwitchTileCtrls))
+    global AppWinSwitchTileCtrls, AppWinSwitchSelectedIdx, AppWinSwitchShowPreview
+    global hAppWinSwitchBgPic, AppWinSwitchBgBmp, AppWinSwitchIsLight
+    if (!IsObject(AppWinSwitchTileCtrls) || !hAppWinSwitchBgPic)
         return
 
-    accentRgb := IsFunc("GetWindowsAccentRgb") ? GetWindowsAccentRgb() : 0x0078D7
-    accentHex := Format("{:06X}", accentRgb)
+    newBmp := BuildAppWinSwitchBackdropBmp()
+    if (newBmp) {
+        oldBmp := AppWinSwitchBgBmp
+        AppWinSwitchBgBmp := newBmp
+        DllCall("SendMessage", "Ptr", hAppWinSwitchBgPic, "UInt", 0x0172, "Ptr", 0, "Ptr", newBmp) ; STM_SETIMAGE, IMAGE_BITMAP
+        if (oldBmp)
+            DllCall("DeleteObject", "Ptr", oldBmp)
+    }
 
     for idx, ctrls in AppWinSwitchTileCtrls {
         isSel := (idx = AppWinSwitchSelectedIdx)
-        borderColor := isSel ? accentHex : "383838"
-        bgColor := isSel ? "353535" : "262626"
-        GuiControl, +Background%borderColor%, % ctrls.border
-        GuiControl, +Background%bgColor%, % ctrls.bg
-        DllCall("RedrawWindow", "Ptr", ctrls.border, "Ptr", 0, "Ptr", 0, "UInt", 0x0105)
-        DllCall("RedrawWindow", "Ptr", ctrls.bg, "Ptr", 0, "Ptr", 0, "UInt", 0x0105)
+        colorOpt := AppWinSwitchIsLight ? (isSel ? "c000000" : "c444444") : (isSel ? "cFFFFFF" : "cD4D4D4")
+        if (AppWinSwitchShowPreview)
+            Gui, AppWinSwitchGui:Font, % "s9 Norm " . colorOpt, Segoe UI
+        else
+            Gui, AppWinSwitchGui:Font, % "s9.5 Norm " . colorOpt, Segoe UI
+        GuiControl, AppWinSwitchGui:Font, % ctrls.title
         DllCall("RedrawWindow", "Ptr", ctrls.title, "Ptr", 0, "Ptr", 0, "UInt", 0x0105)
     }
 }
@@ -583,7 +819,8 @@ AppWinSwitchCommitDeferred:
 return
 
 CloseAppWindowSwitcherOverlay(clearState := true) {
-    global AppWinSwitchActive, AppWinSwitchThumbIds, hAppWinSwitchGui, AppWinSwitchTileRects, AppWinSwitchTileCtrls, AppWinSwitchWindows
+    global AppWinSwitchActive, AppWinSwitchThumbIds, hAppWinSwitchGui, AppWinSwitchTileRects, AppWinSwitchTileCtrls, AppWinSwitchWindows, AppWinSwitchOwnedIcons
+    global hAppWinSwitchBgPic, AppWinSwitchBgBmp
 
     SetTimer, WatchAppWinSwitchModifier, Off
     OnMessage(0x0201, "OnAppWinSwitchClick", 0)
@@ -600,9 +837,24 @@ CloseAppWindowSwitcherOverlay(clearState := true) {
         try Gui, AppWinSwitchGui:Destroy
         hAppWinSwitchGui := 0
     }
+    hAppWinSwitchBgPic := 0
+
+    if (AppWinSwitchBgBmp) {
+        DllCall("DeleteObject", "Ptr", AppWinSwitchBgBmp)
+        AppWinSwitchBgBmp := 0
+    }
+
+    if (IsObject(AppWinSwitchOwnedIcons)) {
+        for _, hIco in AppWinSwitchOwnedIcons {
+            if (hIco)
+                DllCall("DestroyIcon", "Ptr", hIco)
+        }
+    }
+    AppWinSwitchOwnedIcons := []
 
     AppWinSwitchTileRects := []
     AppWinSwitchTileCtrls := []
+    AppWinSwitchTileIcons := []
     if (clearState) {
         AppWinSwitchActive := false
         AppWinSwitchWindows := []
