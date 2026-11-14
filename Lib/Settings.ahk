@@ -1520,12 +1520,12 @@ BuildShortcutsScrollPanel(aboutIcon) {
     popupCard := BeginCard(4, "ShortcutsScroll", "popup", L("Set_GroupPopupBlocker"), 1, "OnTogglePopupBlockerExpand", "PopupBlockerEnabled", "OnTogglePopupBlockerEnabled", PopupBlockerEnabled)
     y := popupCard.curY
     Gui, ShortcutsScroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w280 vPopupManageLbl +HwndhPopupLbl", % L("Popup_CardLabel")
+    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w280 h20 +0x200 vPopupManageLbl +HwndhPopupLbl", % L("Popup_CardLabel")
     Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
     Gui, ShortcutsScroll:Add, Button, x314 y%y% w206 h26 Center gOnOpenPopupBlockerMgr vPopupManageBtn +HwndhPopupBtn, % L("Popup_ManageBtn")
     CardAddItem(popupCard, hPopupLbl, y + 4)
     CardAddItem(popupCard, hPopupBtn, y)
-    popupCard.curY += 32
+    popupCard.curY += 34
 
     y := popupCard.curY
     Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
@@ -1538,7 +1538,7 @@ BuildShortcutsScrollPanel(aboutIcon) {
     CardAddItem(popupCard, hPopupHkLbl, y + 4)
     CardAddItem(popupCard, hPopupHkBtn, y)
     CardAddItem(popupCard, hPopupPickBtn, y)
-    popupCard.curY += 30
+    popupCard.curY += 34
 
     CardAddDescText(popupCard, L("Popup_Desc"), 28, 18, 2)
     EndCard(popupCard, 8)
