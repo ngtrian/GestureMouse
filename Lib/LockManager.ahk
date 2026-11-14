@@ -28,6 +28,9 @@ global autoLockIdleEnabled       := 1
 global autoLockIdleMinutes       := 5
 global preventScreenOff          := 0
 global preventSleep              := 1
+global preventSleepUnlimited     := 1
+global preventSleepHours         := 0
+global preventSleepMinutes       := 30
 global UNLOCK_KEYWORD            := "unlock"
 global KEYWORD_LENGTH            := 6
 global requireCodeForTimerEdit   := 1         ; Yêu cầu mã mở khóa khi sửa/hủy hẹn giờ đang chạy
@@ -160,6 +163,15 @@ LoadLockSettings() {
         preventSleep := valSleep ? 1 : 0
     else
         preventSleep := (valLegacy != "") ? (valLegacy ? 1 : 0) : 1
+
+    RegRead, valSleepUnlim, %regPath%, PreventSleepUnlimited
+    preventSleepUnlimited := (valSleepUnlim != "") ? (valSleepUnlim ? 1 : 0) : 1
+
+    RegRead, valSleepHrs, %regPath%, PreventSleepHours
+    preventSleepHours := (valSleepHrs != "" && valSleepHrs >= 0 && valSleepHrs <= 24) ? (valSleepHrs + 0) : 0
+
+    RegRead, valSleepMins, %regPath%, PreventSleepMinutes
+    preventSleepMinutes := (valSleepMins != "" && valSleepMins >= 0 && valSleepMins <= 59) ? (valSleepMins + 0) : 30
 
     RegRead, val, %regPath%, RequireCodeForTimerEdit
     requireCodeForTimerEdit := (val != "") ? val : 1
@@ -1403,13 +1415,27 @@ ApplyFocusClipCursor() {
 
 ApplyLockPowerPolicy() {
     global isLocked, lockMode, preventScreenOff, preventSleep
+    global preventSleepUnlimited, preventSleepHours, preventSleepMinutes
+
+    SetTimer, OnPreventSleepTimeout, Off
+
     ; Chỉ áp dụng cho Khóa bàn phím & chuột (lockMode = 0) và Focus Lock (lockMode = 1)
     if (!isLocked || (lockMode != 0 && lockMode != 1)) {
         ClearLockPowerPolicy()
         return
     }
+
+    usePreventSleep := preventSleep ? 1 : 0
+    if (usePreventSleep && !preventSleepUnlimited) {
+        totalMs := (preventSleepHours * 3600 + preventSleepMinutes * 60) * 1000
+        if (totalMs <= 0)
+            usePreventSleep := 0
+        else
+            SetTimer, OnPreventSleepTimeout, % -totalMs
+    }
+
     flags := 0x80000000 ; ES_CONTINUOUS
-    if (preventSleep)
+    if (usePreventSleep)
         flags |= 0x00000001 ; ES_SYSTEM_REQUIRED
     if (preventScreenOff)
         flags |= 0x00000002 ; ES_DISPLAY_REQUIRED
@@ -1417,8 +1443,18 @@ ApplyLockPowerPolicy() {
 }
 
 ClearLockPowerPolicy() {
+    SetTimer, OnPreventSleepTimeout, Off
     DllCall("SetThreadExecutionState", "UInt", 0x80000000) ; ES_CONTINUOUS
 }
+
+OnPreventSleepTimeout:
+    if (!isLocked || (lockMode != 0 && lockMode != 1))
+        return
+    flags := 0x80000000 ; ES_CONTINUOUS
+    if (preventScreenOff)
+        flags |= 0x00000002 ; ES_DISPLAY_REQUIRED
+    DllCall("SetThreadExecutionState", "UInt", flags)
+return
 
 ; Đánh thức màn hình khi người dùng mở khóa trực tiếp bằng mã
 WakeDisplayOnUnlock() {

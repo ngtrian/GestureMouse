@@ -114,6 +114,12 @@ Settings:
         preventSleep := valSleep ? 1 : 0
     else
         preventSleep := (valLegacyDisableSleep != "") ? (valLegacyDisableSleep ? 1 : 0) : 1
+    RegRead, valSleepUnlim, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleepUnlimited
+    preventSleepUnlimited := (valSleepUnlim != "") ? (valSleepUnlim ? 1 : 0) : 1
+    RegRead, valSleepHrs, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleepHours
+    preventSleepHours := (valSleepHrs != "" && valSleepHrs >= 0 && valSleepHrs <= 24) ? (valSleepHrs + 0) : 0
+    RegRead, valSleepMins, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleepMinutes
+    preventSleepMinutes := (valSleepMins != "" && valSleepMins >= 0 && valSleepMins <= 59) ? (valSleepMins + 0) : 30
 
     ; Danh sách phút tự động khóa khi rảnh rỗi (Idle)
     if (CurrentLang = "en") {
@@ -225,13 +231,16 @@ Settings:
     TabContentH := [0, 0, 0, 0]
     TabStaticColors := [{}, {}, {}, {}]
 
+    isSettingsBuilding := 1
     BuildTab1ScrollPanel(AutoStart, hasPriv)
     BuildTab2ScrollPanel(chkS1, chkS2)
     BuildTab3ScrollPanel(idleMinutesList, selIdleIdx, preventScreenOff, preventSleep)
     BuildShortcutsScrollPanel(aboutIcon)
+    isSettingsBuilding := 0
 
     ; Khởi tạo trạng thái Enable/Disable của control
     GuiControl, Tab3Scroll:Enable%autoLockIdleEnabled%, autoLockIdleMinutesChoice
+    UpdatePreventSleepControlsState()
     UpdateLockAuthControlsState(windowsLogonOnly)
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTHotkeyBtn
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTBorderEnabled
@@ -423,6 +432,10 @@ UpdateSettingsGuiControls() {
 
     GuiControl, Tab3Scroll:, preventScreenOff, %preventScreenOff%
     GuiControl, Tab3Scroll:, preventSleep, %preventSleep%
+    GuiControl, Tab3Scroll:, preventSleepUnlimited, %preventSleepUnlimited%
+    GuiControl, Tab3Scroll:, preventSleepHours, %preventSleepHours%
+    GuiControl, Tab3Scroll:, preventSleepMinutes, %preventSleepMinutes%
+    UpdatePreventSleepControlsState()
     GuiControl, Tab3Scroll:, alwaysShowLockToast, %alwaysShowLockToast%
     GuiControl, Tab3Scroll:, requireCodeForTimerEdit, %requireCodeForTimerEdit%
     GuiControl, Tab3Scroll:, UnlockCodeDisplay, %UNLOCK_KEYWORD%
@@ -647,6 +660,34 @@ OnToggleIdleCheck:
     Gosub, SaveSettings
 return
 
+OnTogglePreventSleep:
+    Gui, Tab3Scroll:Submit, NoHide
+    UpdatePreventSleepControlsState()
+    Gosub, SaveSettings
+return
+
+OnChangePreventSleepTime:
+    if (isSettingsBuilding)
+        return
+    Gui, Tab3Scroll:Submit, NoHide
+    if (preventSleepHours = "" || preventSleepMinutes = "")
+        return
+    Gosub, SaveSettings
+return
+
+UpdatePreventSleepControlsState() {
+    global preventSleep, preventSleepUnlimited
+    enUnlim := preventSleep ? 1 : 0
+    enTime  := (preventSleep && !preventSleepUnlimited) ? 1 : 0
+    GuiControl, Tab3Scroll:Enable%enUnlim%, preventSleepUnlimited
+    GuiControl, Tab3Scroll:Enable%enTime%, preventSleepHours
+    GuiControl, Tab3Scroll:Enable%enTime%, UdSleepHrs
+    GuiControl, Tab3Scroll:Enable%enTime%, TxtSleepHrs
+    GuiControl, Tab3Scroll:Enable%enTime%, preventSleepMinutes
+    GuiControl, Tab3Scroll:Enable%enTime%, UdSleepMins
+    GuiControl, Tab3Scroll:Enable%enTime%, TxtSleepMins
+}
+
 OnSelectUnlockModeCustom:
     windowsLogonOnly := 0
     UpdateLockAuthControlsState(0)
@@ -766,9 +807,19 @@ Save:
     ; Lưu trạng thái ngăn tắt màn hình, ngăn Sleep & thông báo khi khóa
     preventScreenOff := preventScreenOff ? 1 : 0
     preventSleep := preventSleep ? 1 : 0
+    preventSleepUnlimited := preventSleepUnlimited ? 1 : 0
+    preventSleepHours := (preventSleepHours != "" && preventSleepHours >= 0) ? Floor(preventSleepHours) : 0
+    if (preventSleepHours > 24)
+        preventSleepHours := 24
+    preventSleepMinutes := (preventSleepMinutes != "" && preventSleepMinutes >= 0) ? Floor(preventSleepMinutes) : 0
+    if (preventSleepMinutes > 59)
+        preventSleepMinutes := 59
     alwaysShowLockToast := alwaysShowLockToast ? 1 : 0
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventScreenOff, %preventScreenOff%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleep, %preventSleep%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleepUnlimited, %preventSleepUnlimited%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleepHours, %preventSleepHours%
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, PreventSleepMinutes, %preventSleepMinutes%
     RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, AlwaysShowLockToast, %alwaysShowLockToast%
     if (IsFunc("ApplyLockPowerPolicy"))
         ApplyLockPowerPolicy()
@@ -1299,13 +1350,31 @@ BuildTab3ScrollPanel(idleMinutesList, selIdleIdx, initPreventScreenOff, initPrev
     c2 := BeginCard(3, "Tab3Scroll", "t3_behavior", L("Lock_Card2BehaviorTitle"), 1, "OnToggleT3Behavior")
     y := c2.curY
     Gui, Tab3Scroll:Font, s9.5 Norm c222222, Segoe UI
-    Gui, Tab3Scroll:Add, Checkbox, x28 y%y% w172 h22 vpreventScreenOff gSaveSettings Checked%initPreventScreenOff% +HwndhChkScrOff, % L("Lock_PreventScreenOff")
-    Gui, Tab3Scroll:Add, Checkbox, x204 y%y% w140 h22 vpreventSleep gSaveSettings Checked%initPreventSleep% +HwndhChkSleep, % L("Lock_PreventSleep")
+    Gui, Tab3Scroll:Add, Checkbox, x28 y%y% w240 h22 vpreventScreenOff gSaveSettings Checked%initPreventScreenOff% +HwndhChkScrOff, % L("Lock_PreventScreenOff")
     Gui, Tab3Scroll:Font, s8.5 Norm c666666, Segoe UI
-    Gui, Tab3Scroll:Add, Text, % "x348 y" . (y + 3) . " w172 h18 +Right +HwndhPwrHint", % L("Lock_PowerScopeHint")
+    Gui, Tab3Scroll:Add, Text, % "x276 y" . (y + 3) . " w244 h18 +Right +HwndhPwrHint", % L("Lock_PowerScopeHint")
     CardAddItem(c2, hChkScrOff, y)
-    CardAddItem(c2, hChkSleep,  y)
     CardAddItem(c2, hPwrHint,   y + 3)
+    c2.curY += 28
+
+    y := c2.curY
+    Gui, Tab3Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab3Scroll:Add, Checkbox, x28 y%y% w132 h22 vpreventSleep gOnTogglePreventSleep Checked%initPreventSleep% +HwndhChkSleep, % L("Lock_PreventSleep")
+    Gui, Tab3Scroll:Add, Checkbox, x164 y%y% w120 h22 vpreventSleepUnlimited gOnTogglePreventSleep Checked%preventSleepUnlimited% +HwndhChkSleepUnlim, % L("Lock_PreventSleepUnlimited")
+    Gui, Tab3Scroll:Add, Edit, x288 y%y% w44 h22 Number Right vpreventSleepHours gOnChangePreventSleepTime +HwndhEdtSleepHrs
+    Gui, Tab3Scroll:Add, UpDown, Range0-24 vUdSleepHrs +HwndhUdSleepHrs, %preventSleepHours%
+    Gui, Tab3Scroll:Add, Text, % "x336 y" . (y + 3) . " w34 h18 vTxtSleepHrs +HwndhTxtSleepHrs", % L("Lock_HoursUnit")
+    Gui, Tab3Scroll:Add, Edit, x374 y%y% w44 h22 Number Right vpreventSleepMinutes gOnChangePreventSleepTime +HwndhEdtSleepMins
+    Gui, Tab3Scroll:Add, UpDown, Range0-59 vUdSleepMins +HwndhUdSleepMins, %preventSleepMinutes%
+    Gui, Tab3Scroll:Add, Text, % "x422 y" . (y + 3) . " w48 h18 vTxtSleepMins +HwndhTxtSleepMins", % L("Lock_MinutesUnit")
+    CardAddItem(c2, hChkSleep,      y)
+    CardAddItem(c2, hChkSleepUnlim, y)
+    CardAddItem(c2, hEdtSleepHrs,   y)
+    CardAddItem(c2, hUdSleepHrs,    y)
+    CardAddItem(c2, hTxtSleepHrs,   y + 3)
+    CardAddItem(c2, hEdtSleepMins,  y)
+    CardAddItem(c2, hUdSleepMins,   y)
+    CardAddItem(c2, hTxtSleepMins,  y + 3)
     c2.curY += 28
 
     y := c2.curY
