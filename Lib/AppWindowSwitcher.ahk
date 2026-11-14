@@ -94,6 +94,7 @@ return
 *Up::MoveAppWinSwitchRow(-1)
 *Down::MoveAppWinSwitchRow(1)
 *Enter::CommitAppWindowSwitcher()
+~*LButton::CheckAppWinSwitchOutsideClick()
 #If
 
 TriggerAppWindowSwitcher(dir := 1, triggeredHk := "") {
@@ -182,11 +183,11 @@ WatchAppWinSwitchModifier:
 return
 
 MoveAppWinSwitchSelection(delta) {
-    global AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchSelectedIdx
-    if (!AppWinSwitchActive || !AppWinSwitchWindows.Length())
+    global AppWinSwitchActive, AppWinSwitchTileRects, AppWinSwitchSelectedIdx
+    if (!AppWinSwitchActive || !AppWinSwitchTileRects.Length())
         return
 
-    cnt := AppWinSwitchWindows.Length()
+    cnt := AppWinSwitchTileRects.Length()
     AppWinSwitchSelectedIdx += delta
     if (AppWinSwitchSelectedIdx > cnt)
         AppWinSwitchSelectedIdx := 1
@@ -197,17 +198,42 @@ MoveAppWinSwitchSelection(delta) {
 }
 
 MoveAppWinSwitchRow(rowDelta) {
-    global AppWinSwitchActive, AppWinSwitchWindows, AppWinSwitchSelectedIdx, AppWinSwitchCols
-    if (!AppWinSwitchActive || !AppWinSwitchWindows.Length())
+    global AppWinSwitchActive, AppWinSwitchTileRects, AppWinSwitchSelectedIdx
+    if (!AppWinSwitchActive || !AppWinSwitchTileRects.Length())
         return
 
-    cols := AppWinSwitchCols ? AppWinSwitchCols : 1
-    cnt := AppWinSwitchWindows.Length()
-    newIdx := AppWinSwitchSelectedIdx + (rowDelta * cols)
-    if (newIdx >= 1 && newIdx <= cnt) {
-        AppWinSwitchSelectedIdx := newIdx
+    cur := AppWinSwitchTileRects[AppWinSwitchSelectedIdx]
+    if (!IsObject(cur) || !cur.HasKey("row"))
+        return
+
+    targetRow := cur.row + rowDelta
+    curCenterX := cur.x + (cur.w / 2.0)
+    bestIdx := 0
+    bestDist := 999999
+
+    for idx, rc in AppWinSwitchTileRects {
+        if (rc.row = targetRow) {
+            dist := Abs((rc.x + (rc.w / 2.0)) - curCenterX)
+            if (dist < bestDist) {
+                bestDist := dist
+                bestIdx := idx
+            }
+        }
+    }
+
+    if (bestIdx) {
+        AppWinSwitchSelectedIdx := bestIdx
         UpdateAppWinSwitchSelectionVisual()
     }
+}
+
+CheckAppWinSwitchOutsideClick() {
+    global AppWinSwitchActive, hAppWinSwitchGui
+    if (!AppWinSwitchActive || !hAppWinSwitchGui)
+        return
+    MouseGetPos, , , winUnderMouse
+    if (winUnderMouse != hAppWinSwitchGui)
+        CancelAppWindowSwitcher()
 }
 
 CommitAppWindowSwitcher() {
@@ -419,7 +445,7 @@ ShowAppWindowSwitcherOverlay() {
     guiBgHex := AppWinSwitchIsLight ? "F3F3F3" : "202020"
     borderDwmColor := AppWinSwitchIsLight ? 0xD2D2D2 : 0x424242
 
-    Gui, AppWinSwitchGui:New, -Caption +ToolWindow +AlwaysOnTop +E0x08000000 +HwndhAppWinSwitchGui
+    Gui, AppWinSwitchGui:New, -Caption +ToolWindow +AlwaysOnTop +E0x08080000 +HwndhAppWinSwitchGui ; WS_EX_NOACTIVATE | WS_EX_LAYERED
     Gui, AppWinSwitchGui:Color, %guiBgHex%
     Gui, AppWinSwitchGui:Margin, 0, 0
 
@@ -515,7 +541,7 @@ ShowAppWindowSwitcherOverlay() {
         tx := padX + Round((maxContentW - r.totalW) / 2)
         for _, idx in r.items {
             ts := tileSizes[idx]
-            AppWinSwitchTileRects[idx] := { x: tx, y: ty, w: ts.w, h: ts.h, drawW: ts.drawW, drawH: ts.drawH }
+            AppWinSwitchTileRects[idx] := { x: tx, y: ty, w: ts.w, h: ts.h, drawW: ts.drawW, drawH: ts.drawH, row: rIdx }
             tx += ts.w + gapX
         }
     }
@@ -563,9 +589,11 @@ ShowAppWindowSwitcherOverlay() {
         AppWinSwitchTileCtrls.Push({ title: hTitleCtrl })
     }
 
+    if (AppWinSwitchSelectedIdx > maxShow)
+        AppWinSwitchSelectedIdx := maxShow
     UpdateAppWinSwitchSelectionVisual()
-    Gui, AppWinSwitchGui:Show, NoActivate x%posX% y%posY% w%overlayW% h%overlayH%, AppWindowSwitcherOverlay
     WinSet, Transparent, 242, ahk_id %hAppWinSwitchGui%
+    Gui, AppWinSwitchGui:Show, NoActivate x%posX% y%posY% w%overlayW% h%overlayH%, AppWindowSwitcherOverlay
 
     ; Cập nhật vị trí DWM Live Thumbnails khớp chính xác với kích thước ảnh thật, căn giữa trong ô
     if (AppWinSwitchShowPreview) {
@@ -724,44 +752,6 @@ GetClassLongPtrCompat(hwnd, index) {
     if (A_PtrSize = 8)
         return DllCall("GetClassLongPtr", "Ptr", hwnd, "Int", index, "Ptr")
     return DllCall("GetClassLong", "Ptr", hwnd, "Int", index, "UInt")
-}
-
-RegisterFittedDwmThumbnail(destHwnd, srcHwnd, boxX, boxY, boxW, boxH) {
-    hThumb := 0
-    hr := DllCall("dwmapi\DwmRegisterThumbnail", "Ptr", destHwnd, "Ptr", srcHwnd, "Ptr*", hThumb)
-    if (hr != 0 || !hThumb)
-        return 0
-
-    VarSetCapacity(srcSize, 8, 0)
-    srcW := boxW, srcH := boxH
-    if (DllCall("dwmapi\DwmQueryThumbnailSourceSize", "Ptr", hThumb, "Ptr", &srcSize) = 0) {
-        sw := NumGet(srcSize, 0, "Int")
-        sh := NumGet(srcSize, 4, "Int")
-        if (sw > 0 && sh > 0) {
-            srcW := sw
-            srcH := sh
-        }
-    }
-
-    ratio := Min(boxW / srcW, boxH / srcH)
-    drawW := Round(srcW * ratio)
-    drawH := Round(srcH * ratio)
-    drawX := boxX + Round((boxW - drawW) / 2)
-    drawY := boxY + Round((boxH - drawH) / 2)
-
-    ; DWM_THUMBNAIL_PROPERTIES (45 bytes -> 48 bytes aligned)
-    VarSetCapacity(props, 48, 0)
-    NumPut(0x0000001D, props, 0, "UInt") ; DWM_TNP_RECTDESTINATION | DWM_TNP_OPACITY | DWM_TNP_VISIBLE | DWM_TNP_SOURCECLIENTAREAONLY
-    NumPut(drawX, props, 4, "Int")
-    NumPut(drawY, props, 8, "Int")
-    NumPut(drawX + drawW, props, 12, "Int")
-    NumPut(drawY + drawH, props, 16, "Int")
-    NumPut(255, props, 36, "UChar") ; opacity
-    NumPut(1, props, 37, "Int")     ; fVisible
-    NumPut(0, props, 41, "Int")     ; fSourceClientAreaOnly
-
-    DllCall("dwmapi\DwmUpdateThumbnailProperties", "Ptr", hThumb, "Ptr", &props)
-    return hThumb
 }
 
 UpdateAppWinSwitchSelectionVisual() {
