@@ -13,6 +13,8 @@ Menu:
         InitAlwaysOnTop()
     if (IsFunc("InitMicMute"))
         InitMicMute()
+    if (IsFunc("InitScreenOff"))
+        InitScreenOff()
 
     ; Xây dựng menu khay hệ thống ban đầu
     RebuildTrayMenu()
@@ -71,6 +73,8 @@ RebuildTrayMenu() {
     Menu, PhimTat, Add, % L("Sub_Mute"), MuteFunc
     micHkTxt := (IsFunc("FormatMicHotkeyText") && MicMuteHotkey != "") ? ("`t" . FormatMicHotkeyText(MicMuteHotkey)) : ""
     Menu, PhimTat, Add, % L("Sub_MicMute") . micHkTxt, MenuActionToggleMicMute
+    screenHkTxt := (ScreenOffEnabled && IsFunc("FormatScreenOffHotkeyText") && ScreenOffHotkey != "") ? ("`t" . FormatScreenOffHotkeyText(ScreenOffHotkey)) : ""
+    Menu, PhimTat, Add, % L("Sub_ScreenOff") . screenHkTxt, MenuActionTurnOffScreen
     Menu, PhimTat, Add
     Menu, PhimTat, Add, % L("Sub_ShortcutSettings"), MenuActionOpenShortcuts
 
@@ -493,6 +497,11 @@ return
 MenuActionToggleMicMute:
     if (IsFunc("ToggleMicMute"))
         ToggleMicMute(true)
+return
+
+MenuActionTurnOffScreen:
+    if (IsFunc("TurnOffMonitor"))
+        TurnOffMonitor(false)
 return
 
 MenuActionOpenShortcuts:

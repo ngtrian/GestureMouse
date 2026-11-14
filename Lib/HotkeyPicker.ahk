@@ -51,7 +51,7 @@ NormalizeHotkeyForCompare(hk) {
 
 ; Kiểm tra phím tắt có trùng với tính năng khác đang bật hay không
 CheckHotkeyConflict(hk, excludeId := "") {
-    global AOTEnabled, AOTHotkey, MicMuteEnabled, MicMuteHotkey, MicPttHotkey
+    global AOTEnabled, AOTHotkey, MicMuteEnabled, MicMuteHotkey, MicPttHotkey, ScreenOffEnabled, ScreenOffHotkey
 
     norm := NormalizeHotkeyForCompare(hk)
     if (norm = "")
@@ -60,6 +60,10 @@ CheckHotkeyConflict(hk, excludeId := "") {
     if (excludeId != "aot" && AOTEnabled && AOTHotkey != "") {
         if (NormalizeHotkeyForCompare(AOTHotkey) = norm)
             return IsFunc("L") ? L("Set_GroupAOT") : "Always On Top"
+    }
+    if (excludeId != "screenoff" && ScreenOffEnabled && ScreenOffHotkey != "") {
+        if (NormalizeHotkeyForCompare(ScreenOffHotkey) = norm)
+            return IsFunc("L") ? L("Set_GroupScreenOff") : "Quick Screen Off"
     }
     if (excludeId != "mic_toggle" && MicMuteEnabled && MicMuteHotkey != "") {
         if (NormalizeHotkeyForCompare(MicMuteHotkey) = norm) {
@@ -159,7 +163,7 @@ UpdateHpPreviewAndConflict() {
 }
 
 SuspendAppHotkeysForPicker() {
-    global AOTHotkey, MicMuteRegToggleHk, MicMuteRegPttDownHk, MicMuteRegPttUpHk
+    global AOTHotkey, MicMuteRegToggleHk, MicMuteRegPttDownHk, MicMuteRegPttUpHk, ScreenOffRegHk
     if (AOTHotkey != "")
         try Hotkey, %AOTHotkey%, ToggleAlwaysOnTopLabel, Off
     if (MicMuteRegToggleHk != "")
@@ -168,6 +172,8 @@ SuspendAppHotkeysForPicker() {
         try Hotkey, %MicMuteRegPttDownHk%, MicPttKeyDownHandler, Off
     if (MicMuteRegPttUpHk != "")
         try Hotkey, %MicMuteRegPttUpHk%, MicPttKeyUpHandler, Off
+    if (ScreenOffRegHk != "")
+        try Hotkey, %ScreenOffRegHk%, ScreenOffHotkeyHandler, Off
 }
 
 RestoreAppHotkeysAfterPicker() {
@@ -175,6 +181,8 @@ RestoreAppHotkeysAfterPicker() {
         ApplyAOTHotkey()
     if (IsFunc("ApplyMicMuteHotkey"))
         ApplyMicMuteHotkey()
+    if (IsFunc("ApplyScreenOffHotkey"))
+        ApplyScreenOffHotkey()
 }
 
 OnHpActivate(wParam, lParam, msg, hwnd) {

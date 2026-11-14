@@ -175,7 +175,16 @@ InitLanguage() {
     v["Mic_OsdMuted"]           := "Mic đã tắt"
     v["Mic_OsdUnmuted"]         := "Mic đang bật"
     v["Sub_MicMute"]            := "Tắt/Bật Microphone"
+    v["Sub_ScreenOff"]          := "Tắt màn hình"
     v["Sub_ShortcutSettings"]   := "Cài đặt Phím tắt..."
+
+    ; Tắt màn hình nhanh - Quick Screen Off
+    v["Set_GroupScreenOff"]     := "Tắt màn hình nhanh"
+    v["ScreenOff_HotkeyLbl"]    := "Phím tắt:"
+    v["ScreenOff_TestBtn"]      := "Tắt màn hình ngay"
+    v["ScreenOff_ChangeHotkeyBtn"] := "Đổi phím tắt Tắt màn hình"
+    v["ScreenOff_HotkeyPrompt"] := "Nhấn tổ hợp phím (hoặc nút chuột) muốn dùng để tắt màn hình:"
+    v["ScreenOff_Desc"]         := "Tắt tín hiệu màn hình ngay lập tức mà không làm máy vào chế độ Sleep. Di chuyển chuột hoặc nhấn phím bất kỳ để bật lại."
     v["TT_ExApps"]              := "Quản lý danh sách ứng dụng không áp dụng cử chỉ chuột và cuộn chuột"
     
     ; Ứng dụng loại trừ - Excluded Apps
@@ -573,7 +582,16 @@ InitLanguage() {
     e["Mic_OsdMuted"]           := "Mic Muted"
     e["Mic_OsdUnmuted"]         := "Mic Active"
     e["Sub_MicMute"]            := "Mute / Unmute Microphone"
+    e["Sub_ScreenOff"]          := "Turn Off Screen"
     e["Sub_ShortcutSettings"]   := "Shortcut Settings..."
+
+    ; Quick Screen Off
+    e["Set_GroupScreenOff"]     := "Quick Screen Off"
+    e["ScreenOff_HotkeyLbl"]    := "Hotkey:"
+    e["ScreenOff_TestBtn"]      := "Turn Off Now"
+    e["ScreenOff_ChangeHotkeyBtn"] := "Change Screen Off Hotkey"
+    e["ScreenOff_HotkeyPrompt"] := "Press the key combination (or mouse button) to turn off screen:"
+    e["ScreenOff_Desc"]         := "Turns off display signal immediately without putting PC to Sleep. Move mouse or press any key to wake."
     e["TT_ExApps"]              := "Manage applications excluded from mouse gestures and right-click scroll"
     
     ; Excluded Apps

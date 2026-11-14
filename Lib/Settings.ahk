@@ -233,6 +233,7 @@ Settings:
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTHotkeyBtn
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTBorderEnabled
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTUnpinAllBtn
+    GuiControl, ShortcutsScroll:Enable%ScreenOffEnabled%, ScreenOffHotkeyBtn
     UpdateMicControlsState()
 
     ; Khởi tạo hiển thị tab hiện tại với background sidebar được tô màu
@@ -436,6 +437,11 @@ UpdateSettingsGuiControls() {
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTHotkeyBtn
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTBorderEnabled
     GuiControl, ShortcutsScroll:Enable%AOTEnabled%, AOTUnpinAllBtn
+
+    GuiControl, ShortcutsScroll:, ScreenOffEnabled, %ScreenOffEnabled%
+    if (IsFunc("FormatScreenOffHotkeyText"))
+        GuiControl, ShortcutsScroll:, ScreenOffHotkeyBtn, % FormatScreenOffHotkeyText(ScreenOffHotkey)
+    GuiControl, ShortcutsScroll:Enable%ScreenOffEnabled%, ScreenOffHotkeyBtn
 
     SyncMicControlsFromState()
     UpdateAllCardSummaries()
@@ -810,6 +816,51 @@ SavePickedAOTHotkey(newHk) {
     GuiControl, ShortcutsScroll:, AOTHotkeyBtn, % FormatHotkeyText(AOTHotkey)
     UpdateShortcutsCardSummaries()
 }
+
+; ========================================================
+; TẮT MÀN HÌNH NHANH (SCREEN OFF)
+; ========================================================
+OnToggleScreenOffEnabled:
+    Gui, ShortcutsScroll:Submit, NoHide
+    ScreenOffEnabled := ScreenOffEnabled ? 1 : 0
+    GuiControl, ShortcutsScroll:Enable%ScreenOffEnabled%, ScreenOffHotkeyBtn
+    if (IsFunc("SaveScreenOffSettings"))
+        SaveScreenOffSettings()
+    if (IsFunc("ApplyScreenOffHotkey"))
+        ApplyScreenOffHotkey()
+    if (IsFunc("RebuildTrayMenu"))
+        RebuildTrayMenu()
+    UpdateShortcutsCardSummaries()
+return
+
+OnChangeScreenOffHotkey:
+    global ScreenOffHotkey
+    ShowHotkeyPickerDialog({id: "screenoff"
+        , title: L("ScreenOff_ChangeHotkeyBtn")
+        , prompt: L("ScreenOff_HotkeyPrompt")
+        , current: ScreenOffHotkey
+        , default: "#!s"
+        , allowSingleModifier: false
+        , allowMouse: true
+        , allowClear: true
+        , onSave: Func("SavePickedScreenOffHotkey")})
+return
+
+SavePickedScreenOffHotkey(newHk) {
+    global ScreenOffHotkey
+    ScreenOffHotkey := newHk
+    if (IsFunc("SaveScreenOffSettings"))
+        SaveScreenOffSettings()
+    GuiControl, ShortcutsScroll:, ScreenOffHotkeyBtn, % FormatHotkeyText(ScreenOffHotkey)
+    if (IsFunc("RebuildTrayMenu"))
+        RebuildTrayMenu()
+    UpdateShortcutsCardSummaries()
+}
+
+OnTestScreenOff:
+    if (IsFunc("TurnOffMonitor"))
+        TurnOffMonitor(false)
+return
 
 OpenGitHubLink:
     Run, https://github.com/ngtrian/GestureMouse/releases
@@ -1371,7 +1422,23 @@ BuildShortcutsScrollPanel(aboutIcon) {
     aotCard.curY += 24
     EndCard(aotCard, 8)
 
-    ; CARD 4: THAO TÁC NHANH TRÊN KHAY HỆ THỐNG (MẶC ĐỊNH MỞ)
+    ; CARD 4: TẮT MÀN HÌNH NHANH (MẶC ĐỊNH MỞ, CHECKBOX TRÊN HEADER)
+    screenCard := BeginCard(4, "ShortcutsScroll", "screenoff", L("Set_GroupScreenOff"), 1, "OnToggleScreenOffExpand", "ScreenOffEnabled", "OnToggleScreenOffEnabled", ScreenOffEnabled)
+    y := screenCard.curY
+    Gui, ShortcutsScroll:Font, s9 Norm c555555, Segoe UI
+    Gui, ShortcutsScroll:Add, Text, % "x28 y" . (y + 4) . " w64 h18 vScreenOffHotkeyLbl +HwndhScrHkLbl", % L("ScreenOff_HotkeyLbl")
+    Gui, ShortcutsScroll:Font, s9 Norm c222222, Segoe UI
+    scrHkDisplay := IsFunc("FormatScreenOffHotkeyText") ? FormatScreenOffHotkeyText(ScreenOffHotkey) : "Win + Alt + S"
+    Gui, ShortcutsScroll:Add, Button, x96 y%y% w168 h25 vScreenOffHotkeyBtn +HwndhScrHkBtn gOnChangeScreenOffHotkey, %scrHkDisplay%
+    Gui, ShortcutsScroll:Add, Button, x272 y%y% w148 h25 vScreenOffTestBtn +HwndhScrTestBtn gOnTestScreenOff, % L("ScreenOff_TestBtn")
+    CardAddItem(screenCard, hScrHkLbl,   y + 4)
+    CardAddItem(screenCard, hScrHkBtn,   y)
+    CardAddItem(screenCard, hScrTestBtn, y)
+    screenCard.curY += 30
+    CardAddDescText(screenCard, L("ScreenOff_Desc"), 28, 18, 2)
+    EndCard(screenCard, 8)
+
+    ; CARD 5: THAO TÁC NHANH TRÊN KHAY HỆ THỐNG (MẶC ĐỊNH MỞ)
     trayCard := BeginCard(4, "ShortcutsScroll", "tray", L("Set_GroupTrayActions"), 1, "OnToggleTrayExpand")
     y := trayCard.curY
     if (aboutIcon != "" && FileExist(aboutIcon)) {
@@ -1639,6 +1706,9 @@ UpdateAllCardSummaries() {
             } else if (card.id = "aot") {
                 hk := IsFunc("FormatAOTHotkeyText") ? FormatAOTHotkeyText(AOTHotkey) : "Ctrl + Alt + T"
                 summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
+            } else if (card.id = "screenoff") {
+                hk := IsFunc("FormatScreenOffHotkeyText") ? FormatScreenOffHotkeyText(ScreenOffHotkey) : "Win + Alt + S"
+                summary := (hk != "") ? (hkPrefix . hk) : noHkTxt
             } else if (card.id = "tray") {
                 summary := isEn ? "Double-click tray icon to toggle" : "Click đúp biểu tượng khay để bật/tắt"
             }
@@ -1763,6 +1833,9 @@ OnToggleMicExpand:
 return
 OnToggleAotExpand:
     ToggleCard(4, "aot")
+return
+OnToggleScreenOffExpand:
+    ToggleCard(4, "screenoff")
 return
 OnToggleTrayExpand:
     ToggleCard(4, "tray")
