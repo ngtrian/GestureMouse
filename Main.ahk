@@ -858,6 +858,8 @@ OnSessionChange(wParam, lParam) {
 
     ; 0x7 = WTS_SESSION_LOCK (Khi màn hình Windows bị khóa)
     if (wParam = 0x7) {
+        if (IsFunc("OnWindowsSessionLocked"))
+            OnWindowsSessionLocked()
         ; Tạm thời tháo hook để người dùng gõ được PIN / mật khẩu tại màn hình đăng nhập Windows
         if (hKeyboardHook) {
             DllCall("UnhookWindowsHookEx", "Ptr", hKeyboardHook)

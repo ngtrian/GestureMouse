@@ -7,6 +7,7 @@
 ; KHAI BÁO BIẾN TOÀN CỤC CHO HỆ THỐNG KHÓA HỢP NHẤT
 ; ========================================================
 global isLocked                  := 0         ; Trạng thái khóa thiết bị (1: Đang khóa, 0: Mở)
+global isWindowsSessionLocked    := 0         ; Trạng thái khóa phiên làm việc Windows (Win+L / Lock screen)
 global lockMode                  := 0         ; 0: Full Lock, 1: Focus Lock
 global hFocusWnd                 := 0         ; HWND cửa sổ đang được Focus Lock
 global focusWndTitle             := ""        ; Tiêu đề cửa sổ Focus Lock
@@ -218,8 +219,22 @@ InitAutoLockTimer() {
         SetTimer, CheckAutoLockIdle, Off
 }
 
+IsWindowsLockScreenActive() {
+    global isWindowsSessionLocked
+    if (isWindowsSessionLocked)
+        return true
+    hDesk := DllCall("OpenInputDesktop", "UInt", 0, "Int", 0, "UInt", 0x0001, "Ptr")
+    if (!hDesk)
+        return true
+    VarSetCapacity(nameBuf, 256, 0)
+    DllCall("GetUserObjectInformationW", "Ptr", hDesk, "Int", 2, "Ptr", &nameBuf, "UInt", 256, "UInt*", needed)
+    DllCall("CloseDesktop", "Ptr", hDesk)
+    deskName := StrGet(&nameBuf, "UTF-16")
+    return (deskName != "" && deskName != "Default")
+}
+
 CheckAutoLockIdle:
-    if (isLocked || lockTimerActive) {
+    if (isLocked || lockTimerActive || IsWindowsLockScreenActive()) {
         lastIdleBusyTick := A_TickCount
         return
     }
@@ -534,8 +549,26 @@ ResumePendingRepeatIfNeeded() {
     }
 }
 
+OnWindowsSessionLocked() {
+    global isWindowsSessionLocked, lastIdleBusyTick, hToastBannerGui, hLockCountdownGui
+    isWindowsSessionLocked := 1
+    lastIdleBusyTick := A_TickCount
+
+    SetTimer, HideNotification, Off
+    if (hToastBannerGui) {
+        Gui, Notification:Destroy
+        hToastBannerGui := 0
+    }
+    if (hLockCountdownGui) {
+        Gui, LockCountdown:Destroy
+        hLockCountdownGui := 0
+    }
+}
+
 OnWindowsSessionUnlocked() {
-    global isLocked, pendingRepeatFullLock, pendingRepeatMinutes
+    global isLocked, isWindowsSessionLocked, lastIdleBusyTick, pendingRepeatFullLock, pendingRepeatMinutes
+    isWindowsSessionLocked := 0
+    lastIdleBusyTick := A_TickCount
     regPath := "HKEY_CURRENT_USER\Software\TRIAN\GestureMouse"
 
     RegRead, waitUnlock, %regPath%, PendingRepeatActive
@@ -1182,6 +1215,9 @@ ShowCountdownToast(msg) {
     global hLockCountdownGui
     static hCountdownText := 0, sPadX := 0, sCurCW := 0, sCurCH := 0, sGw := 0, sGh := 0
 
+    if (IsWindowsLockScreenActive())
+        return
+
     prevGui := A_DefaultGui
 
     if (!hLockCountdownGui || !WinExist("ahk_id " . hLockCountdownGui) || !hCountdownText) {
@@ -1326,6 +1362,9 @@ CancelLockCountdown(showNotice := false) {
 ShowToastBanner(msg, autoHideMs := 0) {
     global hToastBannerGui
 
+    if (IsWindowsLockScreenActive())
+        return
+
     prevGui := A_DefaultGui
     SetTimer, HideNotification, Off
     Gui, Notification:Destroy
@@ -1368,6 +1407,13 @@ ShowToastBanner(msg, autoHideMs := 0) {
 
 ShowNotification() {
     global isLocked, lockMode, focusWndTitle, windowsLogonOnly, alwaysShowLockToast
+
+    if (IsWindowsLockScreenActive()) {
+        fnTip := "UpdateTrayTip"
+        if (IsFunc(fnTip))
+            %fnTip%()
+        return
+    }
 
     if (isLocked) {
         if (lockMode == 1) {
