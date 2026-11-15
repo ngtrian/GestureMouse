@@ -257,7 +257,7 @@ CheckAutoLockIdle:
     }
 return
 
-; Nhận biết người dùng đang xem video / nghe âm thanh / chạy ứng dụng toàn màn hình
+; Nhận biết người dùng đang xem video / chạy ứng dụng toàn màn hình
 IsUserBusyWatchingVideo() {
     ; 1. Đang Fullscreen / Direct3D / Presentation mode (YouTube Fullscreen, VLC Fullscreen, Game...)
     if (IsFullscreenOrPresentationBusy())
@@ -265,10 +265,6 @@ IsUserBusyWatchingVideo() {
 
     ; 2. Có ứng dụng yêu cầu giữ màn hình sáng (ES_DISPLAY_REQUIRED): bắt chuẩn video đang phát kể cả khi tắt tiếng (mute) hoặc cửa sổ nhỏ
     if (IsDisplayPowerRequired())
-        return true
-
-    ; 3. Đang phát âm thanh qua loa / tai nghe mặc định (dự phòng cho trình phát web/app không giữ Display Power Request)
-    if (GetDefaultAudioPeak() > 0.005)
         return true
 
     return false
@@ -292,31 +288,6 @@ IsFullscreenOrPresentationBusy() {
         return false
     ; 2: QUNS_BUSY (Fullscreen), 3: QUNS_RUNNING_D3D_FULL_SCREEN, 4: QUNS_PRESENTATION_MODE, 7: QUNS_APP
     return (state = 2 || state = 3 || state = 4 || state = 7)
-}
-
-; Đọc mức âm lượng (Peak) tức thời của thiết bị phát âm thanh mặc định qua Core Audio COM API
-GetDefaultAudioPeak() {
-    pEnumerator := ComObjCreate("{BCDE0395-E52F-467C-8E3D-C4579291692E}", "{A95664D2-9614-4F35-A746-DE8DB63617E6}")
-    if (!pEnumerator)
-        return 0.0
-    pDevice := 0
-    hr := DllCall(NumGet(NumGet(pEnumerator+0)+4*A_PtrSize), "Ptr", pEnumerator, "Int", 0, "Int", 1, "Ptr*", pDevice)
-    ObjRelease(pEnumerator)
-    if (hr != 0 || !pDevice)
-        return 0.0
-
-    VarSetCapacity(iidMeter, 16, 0)
-    DllCall("ole32\CLSIDFromString", "WStr", "{C02216F6-8C67-4B5B-9D00-D008E73E0064}", "Ptr", &iidMeter)
-    pMeter := 0
-    hr := DllCall(NumGet(NumGet(pDevice+0)+3*A_PtrSize), "Ptr", pDevice, "Ptr", &iidMeter, "UInt", 23, "Ptr", 0, "Ptr*", pMeter)
-    ObjRelease(pDevice)
-    if (hr != 0 || !pMeter)
-        return 0.0
-
-    peak := 0.0
-    DllCall(NumGet(NumGet(pMeter+0)+3*A_PtrSize), "Ptr", pMeter, "Float*", peak)
-    ObjRelease(pMeter)
-    return peak
 }
 
 ; ========================================================
