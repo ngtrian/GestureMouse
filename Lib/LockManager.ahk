@@ -257,13 +257,31 @@ CheckAutoLockIdle:
     }
 return
 
-; Nhận biết người dùng đang xem video / chạy ứng dụng toàn màn hình (SMTC + Fullscreen)
+; Nhận biết người dùng đang xem video / nghe âm thanh / chạy ứng dụng toàn màn hình
 IsUserBusyWatchingVideo() {
+    ; 1. Đang Fullscreen / Direct3D / Presentation mode (YouTube Fullscreen, VLC Fullscreen, Game...)
     if (IsFullscreenOrPresentationBusy())
         return true
-    if (IsVideoOrMediaPlayingSMTC())
+
+    ; 2. Có ứng dụng yêu cầu giữ màn hình sáng (ES_DISPLAY_REQUIRED): bắt chuẩn video đang phát kể cả khi tắt tiếng (mute) hoặc cửa sổ nhỏ
+    if (IsDisplayPowerRequired())
         return true
+
+    ; 3. Đang phát âm thanh qua loa / tai nghe mặc định (dự phòng cho trình phát web/app không giữ Display Power Request)
+    if (GetDefaultAudioPeak() > 0.005)
+        return true
+
     return false
+}
+
+; Kiểm tra hệ thống có đang nhận yêu cầu giữ màn hình sáng (ES_DISPLAY_REQUIRED = 0x2) hay không
+IsDisplayPowerRequired() {
+    state := 0
+    ; SystemExecutionState = 16
+    status := DllCall("powrprof\CallNtPowerInformation", "Int", 16, "Ptr", 0, "UInt", 0, "UInt*", state, "UInt", 4, "UInt")
+    if (status != 0)
+        return false
+    return ((state & 2) != 0)
 }
 
 ; Kiểm tra trạng thái Fullscreen / Direct3D Fullscreen / Presentation Mode của Windows
@@ -276,115 +294,29 @@ IsFullscreenOrPresentationBusy() {
     return (state = 2 || state = 3 || state = 4 || state = 7)
 }
 
-; Kiểm tra phiên media đang ở trạng thái Playing qua Windows SMTC (WinRT)
-IsVideoOrMediaPlayingSMTC() {
-    static hCombase := 0, roInited := 0
-    if (!hCombase) {
-        hCombase := DllCall("LoadLibrary", "Str", "combase.dll", "Ptr")
-        if (!hCombase)
-            return false
-    }
-    if (!roInited) {
-        DllCall("combase\RoInitialize", "Int", 0)
-        roInited := 1
-    }
+; Đọc mức âm lượng (Peak) tức thời của thiết bị phát âm thanh mặc định qua Core Audio COM API
+GetDefaultAudioPeak() {
+    pEnumerator := ComObjCreate("{BCDE0395-E52F-467C-8E3D-C4579291692E}", "{A95664D2-9614-4F35-A746-DE8DB63617E6}")
+    if (!pEnumerator)
+        return 0.0
+    pDevice := 0
+    hr := DllCall(NumGet(NumGet(pEnumerator+0)+4*A_PtrSize), "Ptr", pEnumerator, "Int", 0, "Int", 1, "Ptr*", pDevice)
+    ObjRelease(pEnumerator)
+    if (hr != 0 || !pDevice)
+        return 0.0
 
-    className := "Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager"
-    hStr := 0
-    hr := DllCall("combase\WindowsCreateString", "WStr", className, "UInt", StrLen(className), "Ptr*", hStr)
-    if (hr != 0 || !hStr)
-        return false
+    VarSetCapacity(iidMeter, 16, 0)
+    DllCall("ole32\CLSIDFromString", "WStr", "{C02216F6-8C67-4B5B-9D00-D008E73E0064}", "Ptr", &iidMeter)
+    pMeter := 0
+    hr := DllCall(NumGet(NumGet(pDevice+0)+3*A_PtrSize), "Ptr", pDevice, "Ptr", &iidMeter, "UInt", 23, "Ptr", 0, "Ptr*", pMeter)
+    ObjRelease(pDevice)
+    if (hr != 0 || !pMeter)
+        return 0.0
 
-    VarSetCapacity(iidStatics, 16, 0)
-    DllCall("ole32\CLSIDFromString", "WStr", "{2050C4EE-11A0-57DE-AED7-C97C70338245}", "Ptr", &iidStatics)
-
-    pStatics := 0
-    hr := DllCall("combase\RoGetActivationFactory", "Ptr", hStr, "Ptr", &iidStatics, "Ptr*", pStatics)
-    DllCall("combase\WindowsDeleteString", "Ptr", hStr)
-    if (hr != 0 || !pStatics)
-        return false
-
-    pAsync := 0
-    hr := DllCall(NumGet(NumGet(pStatics+0)+6*A_PtrSize), "Ptr", pStatics, "Ptr*", pAsync)
-    ObjRelease(pStatics)
-    if (hr != 0 || !pAsync)
-        return false
-
-    VarSetCapacity(iidAsyncInfo, 16, 0)
-    DllCall("ole32\CLSIDFromString", "WStr", "{00000036-0000-0000-C000-000000000046}", "Ptr", &iidAsyncInfo)
-    pAsyncInfo := 0
-    hr := DllCall(NumGet(NumGet(pAsync+0)+0*A_PtrSize), "Ptr", pAsync, "Ptr", &iidAsyncInfo, "Ptr*", pAsyncInfo)
-    if (hr != 0 || !pAsyncInfo) {
-        ObjRelease(pAsync)
-        return false
-    }
-
-    status := 0
-    loopCount := 0
-    Loop {
-        hr := DllCall(NumGet(NumGet(pAsyncInfo+0)+7*A_PtrSize), "Ptr", pAsyncInfo, "Int*", status)
-        if (hr != 0 || status != 0 || loopCount >= 30)
-            break
-        Sleep, 10
-        loopCount++
-    }
-    ObjRelease(pAsyncInfo)
-
-    if (status != 1) {
-        ObjRelease(pAsync)
-        return false
-    }
-
-    pManager := 0
-    hr := DllCall(NumGet(NumGet(pAsync+0)+8*A_PtrSize), "Ptr", pAsync, "Ptr*", pManager)
-    ObjRelease(pAsync)
-    if (hr != 0 || !pManager)
-        return false
-
-    isPlaying := false
-    pSessions := 0
-    hr := DllCall(NumGet(NumGet(pManager+0)+7*A_PtrSize), "Ptr", pManager, "Ptr*", pSessions)
-    if (hr = 0 && pSessions) {
-        count := 0
-        hr := DllCall(NumGet(NumGet(pSessions+0)+7*A_PtrSize), "Ptr", pSessions, "UInt*", count)
-        if (hr = 0 && count > 0) {
-            Loop, %count% {
-                idx := A_Index - 1
-                pSession := 0
-                hr := DllCall(NumGet(NumGet(pSessions+0)+6*A_PtrSize), "Ptr", pSessions, "UInt", idx, "Ptr*", pSession)
-                if (hr = 0 && pSession) {
-                    hAppId := 0
-                    appId := ""
-                    if (DllCall(NumGet(NumGet(pSession+0)+6*A_PtrSize), "Ptr", pSession, "Ptr*", hAppId) = 0 && hAppId) {
-                        pBuf := DllCall("combase\WindowsGetStringRawBuffer", "Ptr", hAppId, "UInt*", len, "Ptr")
-                        if (pBuf)
-                            appId := StrGet(pBuf, len, "UTF-16")
-                        DllCall("combase\WindowsDeleteString", "Ptr", hAppId)
-                    }
-
-                    pInfo := 0
-                    if (DllCall(NumGet(NumGet(pSession+0)+9*A_PtrSize), "Ptr", pSession, "Ptr*", pInfo) = 0 && pInfo) {
-                        playbackStatus := 0
-                        if (DllCall(NumGet(NumGet(pInfo+0)+7*A_PtrSize), "Ptr", pInfo, "Int*", playbackStatus) = 0) {
-                            ; 4 = GlobalSystemMediaTransportControlsSessionPlaybackStatus_Playing
-                            if (playbackStatus = 4) {
-                                ; Loại trừ các ứng dụng thuần nghe nhạc
-                                if (!RegExMatch(appId, "i)(spotify|applemusic|itunes|foobar2000|aimp|musicbee|winamp|groove|zunemusic|tidal|deezer)"))
-                                    isPlaying := true
-                            }
-                        }
-                        ObjRelease(pInfo)
-                    }
-                    ObjRelease(pSession)
-                    if (isPlaying)
-                        break
-                }
-            }
-        }
-        ObjRelease(pSessions)
-    }
-    ObjRelease(pManager)
-    return isPlaying
+    peak := 0.0
+    DllCall(NumGet(NumGet(pMeter+0)+3*A_PtrSize), "Ptr", pMeter, "Float*", peak)
+    ObjRelease(pMeter)
+    return peak
 }
 
 ; ========================================================
