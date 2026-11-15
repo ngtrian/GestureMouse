@@ -10,6 +10,8 @@ global SettingsTooltips     := {}
 global LastSettingsTipHwnd  := 0
 global SidebarNavBitmaps    := {}
 global SidebarIconHwnds     := {}
+global SidebarCtrlToIdx     := {}
+global hoverSidebarTab      := 0
 global LockTabIcons         := {}
 global GestureBadgeBitmaps  := {}
 global hBtnToggleReveal     := 0
@@ -82,10 +84,12 @@ Settings:
     SettingsTooltips := {}
     LastSettingsTipHwnd := 0
     SidebarIconHwnds := {}
+    SidebarCtrlToIdx := {}
+    hoverSidebarTab := 0
     EnsureSettingsVectorIcons()
 
     Gui, Settings:New, -MaximizeBox -MinimizeBox +HwndhSettingsGui, % "GestureMouse - " . L("Set_Title")
-    Gui, Settings:Color, F3F3F3
+    Gui, Settings:Color, f2f2f2
     DllCall("SendMessage", "Ptr", hSettingsGui, "UInt", 0x000B, "Ptr", 0, "Ptr", 0) ; WM_SETREDRAW = FALSE
     SetGuiYellowIcon(hSettingsGui)
     Gui, Font, s9.5 Norm c222222, Segoe UI
@@ -141,17 +145,8 @@ Settings:
     AddSidebarNav(4, 136, "⌨️", L("Nav_Shortcuts"))
     AddSidebarNav(5, 176, "ℹ️", L("Nav_About"))
 
-    ; ========================================================
-    ; CHÂN TRANG GỌN GÀNG (AUTO-SAVE + NÚT ĐÓNG)
-    ; (Toàn bộ 5 Tab nội dung bên phải đều dùng Child GUI độc lập)
-    ; ========================================================
-    Gui, Font, s8.5 Norm c666666, Segoe UI
-    Gui, Add, Text, x228 y483 w415 +BackgroundTrans vSettingsAutoSaveHint, % L("Set_AutoSaveHint")
-    Gui, Font, s9.5 Norm c222222, Segoe UI
-    Gui, Add, Button, x658 y476 w106 h30 vSettingsCloseBtn gSettingsCloseBtn Default, % L("Set_Close")
-
-    ; Đăng ký tô màu Card trước khi dựng các tab
-    OnMessage(0x138, "WM_CTLCOLORSTATIC_SETTINGS")
+    ; Đăng ký tô màu Card trước khi dựng các tab (MaxThreads=10 tránh rớt thông điệp khi cuộn nhanh)
+    OnMessage(0x138, "WM_CTLCOLORSTATIC_SETTINGS", 10)
 
     ; Dựng các Tab 1-4 theo kiến trúc Card cuộn dọc thống nhất, Tab 5 dùng Child GUI tĩnh
     TabScrollNames := ["Tab1Scroll", "Tab2Scroll", "Tab3Scroll", "ShortcutsScroll", "Tab5Panel"]
@@ -204,8 +199,10 @@ Settings:
         SyncTabScrollPanelSize(currentSettingsTab)
         if (currentSettingsTab <= 4)
             UpdateTabScrollInfo(currentSettingsTab)
-        if (!isPreload)
+        if (!isPreload) {
+            DllCall("RedrawWindow", "Ptr", hSettingsGui, "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
             DllCall("RedrawWindow", "Ptr", TabScrollHwnds[currentSettingsTab], "Ptr", 0, "Ptr", 0, "UInt", 0x0185)
+        }
     }
 return
 
@@ -217,18 +214,22 @@ AddSidebarNav(idx, yPos, iconChar, labelText) {
     global NavInd1, NavInd2, NavInd3, NavInd4, NavInd5
     global NavIco1, NavIco2, NavIco3, NavIco4, NavIco5
     global NavTxt1, NavTxt2, NavTxt3, NavTxt4, NavTxt5
-    global SidebarNavBitmaps, SidebarIconHwnds
+    global SidebarNavBitmaps, SidebarIconHwnds, SidebarCtrlToIdx
     indY := yPos + 7
     Gui, Settings:Font, s9.5 Norm c444444, Segoe UI
-    Gui, Settings:Add, Progress, x10 y%yPos% w192 h34 BackgroundEAEAEA cEAEAEA vNavBg%idx% -Theme Disabled, 100
+    Gui, Settings:Add, Progress, x10 y%yPos% w192 h34 BackgroundEAEAEA cEAEAEA vNavBg%idx% +HwndhBg -Theme Disabled, 100
     Gui, Settings:Add, Progress, x10 y%indY% w3 h20 Background0067C0 c0067C0 vNavInd%idx% -Theme Disabled, 100
+    SidebarCtrlToIdx[hBg] := idx
     if (SidebarNavBitmaps.HasKey(idx)) {
         hBmpInit := SidebarNavBitmaps[idx].inactive
         Gui, Settings:Add, Picture, x22 y%indY% +0x100 gOnNav%idx% vNavIco%idx% +HwndhIco, HBITMAP:*%hBmpInit%
         SidebarIconHwnds[idx] := hIco
-        Gui, Settings:Add, Text, x48 y%yPos% w150 h34 +0x200 +BackgroundTrans gOnNav%idx% vNavTxt%idx%, %labelText%
+        SidebarCtrlToIdx[hIco] := idx
+        Gui, Settings:Add, Text, x48 y%yPos% w150 h34 +0x200 +BackgroundTrans gOnNav%idx% vNavTxt%idx% +HwndhTxt, %labelText%
+        SidebarCtrlToIdx[hTxt] := idx
     } else {
-        Gui, Settings:Add, Text, x20 y%yPos% w180 h34 +0x200 +BackgroundTrans gOnNav%idx% vNavTxt%idx%, % "  " . iconChar . "  " . labelText
+        Gui, Settings:Add, Text, x20 y%yPos% w180 h34 +0x200 +BackgroundTrans gOnNav%idx% vNavTxt%idx% +HwndhTxt, % "  " . iconChar . "  " . labelText
+        SidebarCtrlToIdx[hTxt] := idx
     }
 }
 
@@ -290,7 +291,7 @@ AddBrowserGestureRow(card, hBmp1, labelKey1, tipKey1, hBmp2, labelKey2, tipKey2)
 }
 
 WM_MOUSEMOVE_SETTINGS(wParam, lParam, msg, hwnd) {
-    global SettingsTooltips, LastSettingsTipHwnd, hSettingsGui
+    global SettingsTooltips, LastSettingsTipHwnd, hSettingsGui, SidebarCtrlToIdx, currentSettingsTab
     if (!hSettingsGui || !WinExist("ahk_id " . hSettingsGui))
         return
 
@@ -304,7 +305,89 @@ WM_MOUSEMOVE_SETTINGS(wParam, lParam, msg, hwnd) {
     } else if (LastSettingsTipHwnd) {
         ClearSettingsTooltip()
     }
+
+    newHoverIdx := 0
+    if (idUnderMouse == hSettingsGui) {
+        if (ctrlUnderMouse && SidebarCtrlToIdx.HasKey(ctrlUnderMouse)) {
+            newHoverIdx := SidebarCtrlToIdx[ctrlUnderMouse]
+        } else {
+            newHoverIdx := GetSidebarTabAtCursor()
+        }
+        if (newHoverIdx == currentSettingsTab)
+            newHoverIdx := 0
+    }
+    SetSidebarHover(newHoverIdx)
 }
+
+GetSidebarTabAtCursor() {
+    global hSettingsGui
+    if (!hSettingsGui)
+        return 0
+    VarSetCapacity(pt, 8, 0)
+    DllCall("GetCursorPos", "Ptr", &pt)
+    DllCall("ScreenToClient", "Ptr", hSettingsGui, "Ptr", &pt)
+    scale := A_ScreenDPI / 96.0
+    lx := NumGet(pt, 0, "Int") / scale
+    ly := NumGet(pt, 4, "Int") / scale
+    if (lx < 10 || lx > 202)
+        return 0
+    Loop, 5 {
+        yTop := 16 + (A_Index - 1) * 40
+        if (ly >= yTop && ly <= yTop + 34)
+            return A_Index
+    }
+    return 0
+}
+
+SetSidebarHover(idx) {
+    global hoverSidebarTab, currentSettingsTab, hSettingsGui, SidebarNavBitmaps, SidebarIconHwnds
+    if (idx == hoverSidebarTab)
+        return
+    prev := hoverSidebarTab
+    hoverSidebarTab := idx
+    if (!hSettingsGui)
+        return
+
+    Gui, Settings:Default
+    if (prev > 0 && prev != currentSettingsTab) {
+        GuiControl, Settings:Hide, NavBg%prev%
+        Gui, Settings:Font, s9.5 Norm c444444, Segoe UI
+        GuiControl, Settings:Font, NavTxt%prev%
+        if (SidebarIconHwnds.HasKey(prev) && SidebarNavBitmaps.HasKey(prev))
+            DllCall("SendMessage", "Ptr", SidebarIconHwnds[prev], "UInt", 0x0172, "Ptr", 0, "Ptr", SidebarNavBitmaps[prev].inactive)
+    }
+
+    if (idx > 0 && idx != currentSettingsTab) {
+        GuiControl, Settings:+BackgroundE8E8E8 +cE8E8E8, NavBg%idx%
+        GuiControl, Settings:Show, NavBg%idx%
+        Gui, Settings:Font, s9.5 Norm c222222, Segoe UI
+        GuiControl, Settings:Font, NavTxt%idx%
+        if (SidebarIconHwnds.HasKey(idx) && SidebarNavBitmaps.HasKey(idx))
+            DllCall("SendMessage", "Ptr", SidebarIconHwnds[idx], "UInt", 0x0172, "Ptr", 0, "Ptr", SidebarNavBitmaps[idx].hover)
+        SetTimer, CheckSidebarHoverLeave, 80
+    } else {
+        SetTimer, CheckSidebarHoverLeave, Off
+    }
+
+    scale := A_ScreenDPI / 96.0
+    VarSetCapacity(rcSide, 16, 0)
+    NumPut(Round(8 * scale), rcSide, 0, "Int")
+    NumPut(Round(12 * scale), rcSide, 4, "Int")
+    NumPut(Round(206 * scale), rcSide, 8, "Int")
+    NumPut(Round(216 * scale), rcSide, 12, "Int")
+    DllCall("RedrawWindow", "Ptr", hSettingsGui, "Ptr", &rcSide, "Ptr", 0, "UInt", 0x0185)
+}
+
+CheckSidebarHoverLeave:
+    if (!hoverSidebarTab) {
+        SetTimer, CheckSidebarHoverLeave, Off
+        return
+    }
+    MouseGetPos, , , idUnderMouse
+    if (!hSettingsGui || idUnderMouse != hSettingsGui || GetSidebarTabAtCursor() != hoverSidebarTab) {
+        SetSidebarHover(0)
+    }
+return
 
 ClearSettingsTooltip() {
     global LastSettingsTipHwnd
@@ -432,8 +515,10 @@ OnNav5:
 return
 
 SwitchSettingsTab(tabNum, skipRedraw := false) {
-    global currentSettingsTab, hSettingsGui, TabScrollHwnds, SidebarNavBitmaps, SidebarIconHwnds
+    global currentSettingsTab, hoverSidebarTab, hSettingsGui, TabScrollHwnds, SidebarNavBitmaps, SidebarIconHwnds
     ClearSettingsTooltip()
+    hoverSidebarTab := 0
+    SetTimer, CheckSidebarHoverLeave, Off
     if (tabNum < 1 || tabNum > 5)
         tabNum := 1
     prevTab := currentSettingsTab
@@ -466,6 +551,7 @@ SwitchSettingsTab(tabNum, skipRedraw := false) {
         if (!skipRedraw && A_Index != tabNum && A_Index != prevTab)
             continue
         if (isActive) {
+            GuiControl, Settings:+BackgroundEAEAEA +cEAEAEA, NavBg%A_Index%
             GuiControl, Settings:Show, NavBg%A_Index%
             GuiControl, Settings:Show, NavInd%A_Index%
             Gui, Settings:Font, s9.5 Bold c005FB8, Segoe UI
@@ -486,7 +572,7 @@ SwitchSettingsTab(tabNum, skipRedraw := false) {
         scale := A_ScreenDPI / 96.0
         VarSetCapacity(rcSidebar, 16, 0)
         NumPut(Round(215 * scale), rcSidebar, 8, "Int")
-        NumPut(Round(472 * scale), rcSidebar, 12, "Int")
+        NumPut(Round(520 * scale), rcSidebar, 12, "Int")
         DllCall("RedrawWindow", "Ptr", hSettingsGui, "Ptr", &rcSidebar, "Ptr", 0, "UInt", 0x0185)
     }
 }
@@ -1012,10 +1098,10 @@ OnAboutLinkClick:
     }
 return
 
-SettingsCloseBtn:
 SettingsGuiClose:
 SettingsGuiEscape:
     ClearSettingsTooltip()
+    SetSidebarHover(0)
     ; Tự động lưu tất cả thiết lập trước khi đóng
     Gosub, SaveSettings
 
@@ -1102,14 +1188,24 @@ return
 
 ; Giải phóng các GDI HBITMAP và HICON đã cache của giao diện Cài đặt khi thoát ứng dụng
 CleanupSettingsIcons() {
-    global SidebarNavBitmaps, LockTabIcons, GestureBadgeBitmaps, hAboutHeroBmp
+    global SidebarNavBitmaps, LockTabIcons, GestureBadgeBitmaps, ChevronBitmaps, hAboutHeroBmp
     for idx, states in SidebarNavBitmaps {
         if (states.inactive)
             DllCall("DeleteObject", "Ptr", states.inactive)
+        if (states.hover)
+            DllCall("DeleteObject", "Ptr", states.hover)
         if (states.active)
             DllCall("DeleteObject", "Ptr", states.active)
     }
     SidebarNavBitmaps := {}
+
+    if (IsObject(ChevronBitmaps)) {
+        for _, hBmp in ChevronBitmaps {
+            if (hBmp)
+                DllCall("DeleteObject", "Ptr", hBmp)
+        }
+        ChevronBitmaps := {}
+    }
 
     for dirKey, hBmp in GestureBadgeBitmaps {
         if (hBmp)
@@ -1147,13 +1243,6 @@ HandleSettingsGuiResize(guiW, guiH) {
     if (hSettingsSep)
         GuiControl, Settings:MoveDraw, %hSettingsSep%, % "h" . sepH
 
-    hintY := guiH - 37
-    btnY := guiH - 44
-    btnX := guiW - 122
-    hintW := (btnX - 240 > 120) ? (btnX - 240) : 120
-    GuiControl, Settings:MoveDraw, SettingsAutoSaveHint, % "y" . hintY . " w" . hintW
-    GuiControl, Settings:MoveDraw, SettingsCloseBtn, % "x" . btnX . " y" . btnY
-
     if (currentSettingsTab >= 1 && currentSettingsTab <= 5 && TabScrollHwnds[currentSettingsTab]) {
         SyncTabScrollPanelSize(currentSettingsTab)
         if (currentSettingsTab <= 4)
@@ -1176,9 +1265,8 @@ SyncTabScrollPanelSize(tabNum) {
         clientH := Round(520 * scale)
     }
     leftPx := Round(216 * scale)
-    bottomMarginPx := Round(48 * scale)
     panelW := (clientW > leftPx) ? (clientW - leftPx) : Round(564 * scale)
-    panelH := (clientH > bottomMarginPx) ? (clientH - bottomMarginPx) : Round(472 * scale)
+    panelH := (clientH > 0) ? clientH : Round(520 * scale)
     DllCall("SetWindowPos", "Ptr", hPanel, "Ptr", 0, "Int", leftPx, "Int", 0, "Int", panelW, "Int", panelH, "UInt", 0x0010) ; HWND_TOP|SWP_NOACTIVATE
 }
 
@@ -1189,7 +1277,7 @@ BuildTab5Panel() {
     global hSettingsGui, hAboutHeroBmp, TabScrollHwnds
 
     Gui, Tab5Panel:New, -Caption +0x40000000 +0x04000000 +Parent%hSettingsGui% +HwndhPanel
-    Gui, Tab5Panel:Color, F3F3F3
+    Gui, Tab5Panel:Color, f2f2f2
     Gui, Tab5Panel:Font, s9.5 Norm c222222, Segoe UI
 
     ; Hero Card nền xanh nhạt (#EEF5FC) với viền nhẹ & thanh nhấn xanh
@@ -1252,7 +1340,7 @@ BuildTab5Panel() {
     Gui, Tab5Panel:Add, Link, x124 y348 w424 h20 gOnAboutLinkClick, <a href="https://github.com/ngtrian/GestureMouse">https://github.com/ngtrian/GestureMouse</a>
 
     TabScrollHwnds[5] := hPanel
-    Gui, Tab5Panel:Show, Hide x216 y0 w564 h472
+    Gui, Tab5Panel:Show, Hide x216 y0 w564 h520
     Gui, Settings:Default
 }
 
@@ -1332,7 +1420,7 @@ BuildTab1ScrollPanel(initAutoStart, hasPriv) {
     c3.curY += 72
     EndCard(c3, 8)
 
-    Gui, Tab1Scroll:Show, Hide x216 y0 w564 h472
+    Gui, Tab1Scroll:Show, Hide x216 y0 w564 h520
     LayoutCardTab(1, true)
 }
 
@@ -1384,7 +1472,7 @@ BuildTab2ScrollPanel(chkS1, chkS2) {
     AddBrowserGestureRow(c2, GestureBadgeBitmaps["RU"], "Set_CloseTab", "Set_TipGestureRU", GestureBadgeBitmaps["RD"], "Set_Refresh", "Set_TipGestureRD")
     EndCard(c2, 8)
 
-    Gui, Tab2Scroll:Show, Hide x216 y0 w564 h472
+    Gui, Tab2Scroll:Show, Hide x216 y0 w564 h520
     LayoutCardTab(2, true)
 }
 
@@ -1518,7 +1606,7 @@ BuildTab3ScrollPanel(idleMinutesList, selIdleIdx, initPreventScreenOff, initPrev
     c3.curY += 26
     EndCard(c3, 8)
 
-    Gui, Tab3Scroll:Show, Hide x216 y0 w564 h472
+    Gui, Tab3Scroll:Show, Hide x216 y0 w564 h520
     LayoutCardTab(3, true)
 }
 
@@ -1737,7 +1825,7 @@ BuildShortcutsScrollPanel(aboutIcon) {
     CardAddDescText(popupCard, L("Popup_Desc"), 28, 18, 2)
     EndCard(popupCard, 8)
 
-    Gui, ShortcutsScroll:Show, Hide x216 y0 w564 h472
+    Gui, ShortcutsScroll:Show, Hide x216 y0 w564 h520
     RefreshMicDeviceDropdown()
     UpdateAllCardSummaries()
     LayoutCardTab(4, true)
@@ -1750,11 +1838,11 @@ BeginCardTab(tabNum, guiName, headerTitle, headerSub := "", headerTitleW := 524)
     global hSettingsGui, TabScrollHwnds, TabScrollHwndToNum, TabCards, TabScrollPos, TabContentH, TabStaticColors
     TabCards[tabNum] := []
     TabScrollPos[tabNum] := 0
-    TabContentH[tabNum] := 472
+    TabContentH[tabNum] := 520
     TabStaticColors[tabNum] := {}
 
     Gui, %guiName%:New, -Caption +0x40000000 +0x04000000 +0x200000 +Parent%hSettingsGui% +HwndhPanel
-    Gui, %guiName%:Color, F3F3F3
+    Gui, %guiName%:Color, f2f2f2
     Gui, %guiName%:Font, s9.5 Norm c222222, Segoe UI
 
     Gui, %guiName%:Font, s13 Bold c004499, Segoe UI
@@ -1771,31 +1859,37 @@ BeginCard(tabNum, guiName, id, titleText, expanded, toggleGLabel, toggleVar := "
     if (!IsObject(ShortcutsOnLabelMap))
         ShortcutsOnLabelMap := {}
     headerH := 48
-    collapsedH := 50
+    collapsedH := 56
 
-    ; Khung nền Card dùng Static + WM_CTLCOLORSTATIC: viền phẳng 1px #E5E5E5 cả 4 cạnh, nền #FBFBFB
-    Gui, %guiName%:Add, Text, x12 y0 w524 h50 Disabled +HwndhBorder
-    Gui, %guiName%:Add, Text, x13 y1 w522 h48 Disabled +HwndhBody
-    Gui, %guiName%:Add, Text, x22 y48 w504 h1 Disabled +HwndhHeaderDiv
-    TabStaticColors[tabNum][hBorder]    := "border"
+    ; Khung nền Card dùng Static + WM_CTLCOLORSTATIC: 4 dải viền 1px #E5E5E5 tách biệt không chồng lên nền #FBFBFB
+    Gui, %guiName%:Add, Text, x12 y0 w524 h1 Disabled +0x04000000 +HwndhBdrTop
+    Gui, %guiName%:Add, Text, x12 y55 w524 h1 Disabled +0x04000000 +HwndhBdrBot
+    Gui, %guiName%:Add, Text, x12 y1 w1 h54 Disabled +0x04000000 +HwndhBdrLeft
+    Gui, %guiName%:Add, Text, x535 y1 w1 h54 Disabled +0x04000000 +HwndhBdrRight
+    Gui, %guiName%:Add, Text, x13 y1 w522 h54 Disabled +0x04000000 +HwndhBody
+    DllCall("SetWindowPos", "Ptr", hBody, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13) ; HWND_TOP (vẽ trước, nằm dưới các control)
+    Gui, %guiName%:Add, Text, x22 y48 w504 h1 Disabled +0x04000000 +HwndhHeaderDiv
+    TabStaticColors[tabNum][hBdrTop]    := "border"
+    TabStaticColors[tabNum][hBdrBot]    := "border"
+    TabStaticColors[tabNum][hBdrLeft]   := "border"
+    TabStaticColors[tabNum][hBdrRight]  := "border"
     TabStaticColors[tabNum][hBody]      := "card"
     TabStaticColors[tabNum][hHeaderDiv] := "border"
 
-    Gui, %guiName%:Font, s9.5 Bold c222222, Segoe UI
-    Gui, %guiName%:Add, Text, x22 y7 w415 h18 +0x200 +HwndhTitle, %titleText%
-
-    Gui, %guiName%:Font, s8.5 Norm c666666, Segoe UI
-    Gui, %guiName%:Add, Text, x22 y26 w415 h16 +0x200 +HwndhSummary
-
     hToggleChk := 0
     hOnLbl := 0
-    hitW := 490
+
+    Gui, %guiName%:Font, s9.5 Bold c222222, Segoe UI
+    Gui, %guiName%:Add, Text, x22 y7 w415 h18 +0x200 g%toggleGLabel% +HwndhTitle, %titleText%
+
+    Gui, %guiName%:Font, s8.5 Norm c666666, Segoe UI
+    Gui, %guiName%:Add, Text, x22 y26 w415 h16 +0x200 g%toggleGLabel% +HwndhSummary
+
     if (toggleVar != "") {
         Gui, %guiName%:Font, s9 Norm c444444, Segoe UI
         Gui, %guiName%:Add, Text, x448 y15 w28 h18 +Right +0x200 gOnClickCardOnLabel +HwndhOnLbl, On
         Gui, %guiName%:Add, Checkbox, x480 y16 w16 h16 v%toggleVar% g%toggleChkGLabel% Checked%toggleChecked% +HwndhToggleChk
         ShortcutsOnLabelMap[hOnLbl] := {gui: guiName, var: toggleVar, gLabel: toggleChkGLabel}
-        hitW := 432
     }
 
     hArrowBmp := IsObject(ChevronBitmaps) ? ChevronBitmaps[expanded ? "up" : "down"] : 0
@@ -1806,8 +1900,16 @@ BeginCard(tabNum, guiName, id, titleText, expanded, toggleGLabel, toggleVar := "
         Gui, %guiName%:Add, Text, x504 y14 w24 h20 +Center +0x200 g%toggleGLabel% +HwndhArrow, % expanded ? "⌃" : "⌄"
     }
 
-    Gui, %guiName%:Add, Text, x12 y1 w%hitW% h47 +BackgroundTrans g%toggleGLabel% +HwndhHit
-    TabStaticColors[tabNum][hHit] := "trans"
+    ; Chỉ dấu ở giữa cạnh dưới cho card đang thu gọn (nhận biết có thể nhấn để mở rộng)
+    hCueBmp := (IsObject(ChevronBitmaps) && ChevronBitmaps.HasKey("cue")) ? ChevronBitmaps["cue"] : 0
+    if (hCueBmp) {
+        Gui, %guiName%:Add, Picture, x266 y42 +0x100 g%toggleGLabel% +HwndhExpandCue, HBITMAP:*%hCueBmp%
+    } else {
+        Gui, %guiName%:Font, s8 Norm c7A7A7A, Segoe UI
+        Gui, %guiName%:Add, Text, x266 y42 w16 h12 +Center +0x200 g%toggleGLabel% +HwndhExpandCue, ︾
+    }
+    if (expanded)
+        DllCall("ShowWindow", "Ptr", hExpandCue, "Int", 0)
 
     card := {id: id
         , tabNum: tabNum
@@ -1817,7 +1919,10 @@ BeginCard(tabNum, guiName, id, titleText, expanded, toggleGLabel, toggleVar := "
         , collapsedH: collapsedH
         , expandedH: collapsedH
         , curY: headerH + 10
-        , hBorder: hBorder
+        , hBdrTop: hBdrTop
+        , hBdrBot: hBdrBot
+        , hBdrLeft: hBdrLeft
+        , hBdrRight: hBdrRight
         , hBody: hBody
         , hHeaderDiv: hHeaderDiv
         , hOnLbl: hOnLbl
@@ -1825,7 +1930,7 @@ BeginCard(tabNum, guiName, id, titleText, expanded, toggleGLabel, toggleVar := "
         , hTitle: hTitle
         , hSummary: hSummary
         , hArrow: hArrow
-        , hHit: hHit
+        , hExpandCue: hExpandCue
         , items: []}
     TabCards[tabNum].Push(card)
     return card
@@ -1840,7 +1945,7 @@ WM_CTLCOLORSTATIC_SETTINGS(wParam, lParam, msg, hwnd) {
     if (!hBrBorder) {
         hBrBorder := DllCall("CreateSolidBrush", "UInt", 0xE5E5E5, "Ptr")
         hBrCard   := DllCall("CreateSolidBrush", "UInt", 0xFBFBFB, "Ptr")
-        hBrBody   := DllCall("CreateSolidBrush", "UInt", 0xF3F3F3, "Ptr")
+        hBrBody   := DllCall("CreateSolidBrush", "UInt", 0xf2f2f2, "Ptr")
     }
     role := IsObject(TabStaticColors[tabNum]) ? TabStaticColors[tabNum][lParam] : ""
     if (role = "border")
@@ -2040,8 +2145,12 @@ LayoutCardTab(tabNum, resetScroll := false) {
         cardH := card.expanded ? card.expandedH : card.collapsedH
         yVis := curY - off
 
-        GuiControl, %guiName%:Move, % card.hBorder, % "y" . yVis . " h" . cardH
-        GuiControl, %guiName%:Move, % card.hBody,   % "y" . (yVis + 1) . " h" . (cardH - 2)
+        GuiControl, %guiName%:Move, % card.hBdrTop,   % "y" . yVis
+        GuiControl, %guiName%:Move, % card.hBdrBot,   % "y" . (yVis + cardH - 1)
+        GuiControl, %guiName%:Move, % card.hBdrLeft,  % "y" . (yVis + 1) . " h" . (cardH - 2)
+        GuiControl, %guiName%:Move, % card.hBdrRight, % "y" . (yVis + 1) . " h" . (cardH - 2)
+        GuiControl, %guiName%:Move, % card.hBody,     % "y" . (yVis + 1) . " h" . (cardH - 2)
+        DllCall("SetWindowPos", "Ptr", card.hBody, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13) ; HWND_TOP (vẽ trước, nằm dưới các control)
 
         DllCall("ShowWindow", "Ptr", card.hHeaderDiv, "Int", card.expanded ? 5 : 0)
         if (card.expanded)
@@ -2060,7 +2169,12 @@ LayoutCardTab(tabNum, resetScroll := false) {
             GuiControl, %guiName%:Move, % card.hArrow, % "y" . (yVis + 14)
             GuiControl, %guiName%:,     % card.hArrow, % card.expanded ? "⌃" : "⌄"
         }
-        GuiControl, %guiName%:Move, % card.hHit,     % "y" . (yVis + 1)
+
+        if (card.hExpandCue) {
+            DllCall("ShowWindow", "Ptr", card.hExpandCue, "Int", card.expanded ? 0 : 5)
+            if (!card.expanded)
+                GuiControl, %guiName%:Move, % card.hExpandCue, % "y" . (yVis + 42)
+        }
 
         ApplyAccordionGroupLayout(guiName, card.items, curY, off, card.expanded)
         curY += cardH + 10

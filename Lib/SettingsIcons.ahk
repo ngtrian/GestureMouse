@@ -50,7 +50,7 @@ EnsureSettingsVectorIcons() {
     needSidebar := !SidebarNavBitmaps.HasKey(1)
     needLock := !LockTabIcons.HasKey("idle")
     needBadges := !GestureBadgeBitmaps.HasKey("L")
-    needChevron := !IsObject(ChevronBitmaps) || !ChevronBitmaps.HasKey("down")
+    needChevron := !IsObject(ChevronBitmaps) || !ChevronBitmaps.HasKey("down") || !ChevronBitmaps.HasKey("cue")
     if (!needSidebar && !needLock && !needBadges && !needChevron)
         return
 
@@ -63,8 +63,10 @@ EnsureSettingsVectorIcons() {
         LockTabIcons := CreateLockTabIcons(false)
     if (needBadges)
         GestureBadgeBitmaps := CreateGestureBadgeBitmaps(32, 22, false)
-    if (needChevron)
+    if (needChevron) {
         ChevronBitmaps := CreateChevronBitmaps(16, 0xFFFBFBFB, false)
+        ChevronBitmaps["cue"] := CreateCardExpandCueBitmap(16, 12, 0xFFFBFBFB, false)
+    }
 
     GdipEndSession(hGdip, pToken)
 }
@@ -77,17 +79,19 @@ CreateSidebarNavBitmaps(iconSize := 20, manageSession := true) {
     scale := A_ScreenDPI / 96.0
     pix := Round(iconSize * scale)
 
-    argbInactiveBg := 0xFFF3F3F3
+    argbInactiveBg := 0xFFF2F2F2
+    argbHoverBg := 0xFFE8E8E8
     argbActiveBg := 0xFFEAEAEA
     argbActiveFg := 0xFF005FB8
+    argbHoverFg := 0xFF1F2937
     argbNormFg := 0xFF4A5568
 
     Loop, 5 {
         idx := A_Index
         result[idx] := {}
-        for stateIdx, stateName in ["inactive", "active"] {
-            bgCol := (stateName = "active") ? argbActiveBg : argbInactiveBg
-            fgCol := (stateName = "active") ? argbActiveFg : argbNormFg
+        for stateIdx, stateName in ["inactive", "hover", "active"] {
+            bgCol := (stateName = "active") ? argbActiveBg : ((stateName = "hover") ? argbHoverBg : argbInactiveBg)
+            fgCol := (stateName = "active") ? argbActiveFg : ((stateName = "hover") ? argbHoverFg : argbNormFg)
 
             GdipCreateCanvas(pix, pix, bgCol, pBitmap, pGraphics)
             DrawSidebarVectorIcon(pGraphics, idx, fgCol, bgCol, scale)
@@ -479,4 +483,33 @@ CreateChevronBitmaps(size := 16, bgArgb := 0xFFFBFBFB, manageSession := true) {
     if (manageSession)
         GdipEndSession(hGdip, pToken)
     return result
+}
+
+CreateCardExpandCueBitmap(w := 16, h := 12, bgArgb := 0xFFFBFBFB, manageSession := true) {
+    if (manageSession && !GdipBeginSession(hGdip, pToken))
+        return 0
+
+    scale := A_ScreenDPI / 96.0
+    pixW := Round(w * scale)
+    pixH := Round(h * scale)
+
+    GdipCreateCanvas(pixW, pixH, bgArgb, pBitmap, pGraphics)
+
+    ; Chỉ dấu kép nhỏ (2 mũi tên nhỏ xếp dọc hướng xuống, không nền)
+    pPen := 0
+    DllCall("gdiplus\GdipCreatePen1", "UInt", 0xFF7A7A7A, "Float", 1.2 * scale, "Int", 2, "Ptr*", pPen)
+    DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pPen, "Int", 2)
+    DllCall("gdiplus\GdipSetPenEndCap",   "Ptr", pPen, "Int", 2)
+    DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pPen, "Int", 2)
+    DrawGdipPolyline(pGraphics, pPen, [4.5, 2.0, 8.0, 5.2, 11.5, 2.0], scale)
+    DrawGdipPolyline(pGraphics, pPen, [4.5, 5.8, 8.0, 9.0, 11.5, 5.8], scale)
+    DllCall("gdiplus\GdipDeletePen", "Ptr", pPen)
+
+    hBmp := 0
+    DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "Ptr*", hBmp, "UInt", bgArgb)
+    GdipReleaseCanvas(pBitmap, pGraphics)
+
+    if (manageSession)
+        GdipEndSession(hGdip, pToken)
+    return hBmp
 }
