@@ -493,13 +493,37 @@ UpdateBrightnessFromCursor(forceRedraw := false) {
 ; ========================================================
 ; TIMER ẨN MƯỢT & DỌN DẸP TÀI NGUYÊN
 ; ========================================================
+IsCursorOverBrightnessOsd() {
+    global BrightnessOsdVisible, BrightnessOsdX, BrightnessOsdY, BrightnessOsdW, BrightnessOsdH
+    if (!BrightnessOsdVisible || BrightnessOsdW <= 0 || BrightnessOsdH <= 0)
+        return false
+
+    VarSetCapacity(pt, 8, 0)
+    if (!DllCall("GetCursorPos", "Ptr", &pt))
+        return false
+    curX := NumGet(pt, 0, "Int")
+    curY := NumGet(pt, 4, "Int")
+
+    return (curX >= BrightnessOsdX && curX < BrightnessOsdX + BrightnessOsdW
+         && curY >= BrightnessOsdY && curY < BrightnessOsdY + BrightnessOsdH)
+}
+
 BrightnessOsdHoldTimer:
+    if (BrightnessOsdDragging || IsCursorOverBrightnessOsd()) {
+        SetTimer, BrightnessOsdHoldTimer, -250
+        return
+    }
     SetTimer, BrightnessOsdFadeTimer, 16
 return
 
 BrightnessOsdFadeTimer:
-    if (BrightnessOsdDragging) {
+    if (BrightnessOsdDragging || IsCursorOverBrightnessOsd()) {
         SetTimer, BrightnessOsdFadeTimer, Off
+        if (BrightnessOsdAlpha != 255) {
+            BrightnessOsdAlpha := 255
+            PresentBrightnessOsdBitmap(255)
+        }
+        SetTimer, BrightnessOsdHoldTimer, -250
         return
     }
     BrightnessOsdAlpha -= 24
