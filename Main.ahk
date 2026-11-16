@@ -20,6 +20,7 @@ if (A_Args.Length()) {
 }
 #InstallMouseHook
 #InstallKeybdHook
+#MenuMaskKey vkE8
 
 ; #Warn
 
@@ -130,6 +131,7 @@ SetTimer, PreloadSettingsGui, -1500 ; Dựng sẵn Settings GUI ẩn ở nền �
 #Include %A_ScriptDir%\Lib\MicMute.ahk ; Tắt/bật Microphone (WASAPI + PTT/PTM/Toggle + GDI+ OSD)
 #Include %A_ScriptDir%\Lib\ScreenOff.ahk ; Tắt màn hình nhanh (SC_MONITORPOWER)
 #Include %A_ScriptDir%\Lib\PopupBlocker.ahk ; Tự động phát hiện và chặn popup desktop
+#Include %A_ScriptDir%\Lib\MoveResize.ahk ; Move & Resize Windows (giữ Alt/Win + kéo chuột)
 
 
 
@@ -319,7 +321,24 @@ CheckExplorerHasSelectedItems() {
     return false
 }
 
-#If (!isGestureTracking && GestureScrollEnabled && !IsAppExcluded() && IsMouseInActiveWindow())
+; ========================================================
+; MOVE & RESIZE WINDOWS (GIỮ ALT/WIN + KÉO CHUỘT)
+; ========================================================
+#If CanMoveResize("Alt")
+!LButton::StartMoveResize("Move")
+!RButton::StartMoveResize("Resize")
+
+#If CanMoveResize("Win")
+#LButton::StartMoveResize("Move")
+#RButton::StartMoveResize("Resize")
+
+#If (isMoveResizing)
+*LButton Up::
+*RButton Up::
+    StopMoveResize()
+return
+
+#If (!isGestureTracking && !isMoveResizing && !IsMoveResizeKeyHeld() && GestureScrollEnabled && !IsAppExcluded() && IsMouseInActiveWindow())
 ; Khi nhấn chuột phải: Khởi tạo biến và bắt đầu kiểm tra cử chỉ + bánh xe
 RButton:: 
     if (isReleasingRButton || GetKeyState("LButton", "P")) ; Tránh loop khi đang nhả chuột hoặc nút trái đang giữ
@@ -372,7 +391,7 @@ WheelDown::
     ScrollTriggered := 1
 return
 
-#If (!isGestureTracking && (!GestureScrollEnabled || IsAppExcluded() || !IsMouseInActiveWindow())) 
+#If (!isGestureTracking && !isMoveResizing && !IsMoveResizeKeyHeld() && (!GestureScrollEnabled || IsAppExcluded() || !IsMouseInActiveWindow())) 
 ~RButton:: ; Khi TẮT hoặc ngoài active window: chuột phải hoạt động mặc định
     if (AutoScrollActive)
         StopAutoScroll()

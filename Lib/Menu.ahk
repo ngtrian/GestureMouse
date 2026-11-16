@@ -7,6 +7,8 @@ Menu:
     InitLanguage()
     InitGestureScroll()
     InitExcludedApps()
+    if (IsFunc("InitMoveResize"))
+        InitMoveResize()
     if (IsFunc("InitLockManager"))
         InitLockManager()
     if (IsFunc("InitAlwaysOnTop"))

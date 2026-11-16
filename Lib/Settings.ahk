@@ -1375,6 +1375,40 @@ BuildTab1ScrollPanel(initAutoStart, hasPriv) {
     c1.curY += 24
     EndCard(c1, 8)
 
+    ; Card 2: Move & Resize Windows
+    cMR := BeginCard(1, "Tab1Scroll", "t1_moveresize", L("Set_GroupMoveResize"), 1, "OnToggleT1MoveResize")
+    y := cMR.curY
+    Gui, Tab1Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab1Scroll:Add, Checkbox, % "x28 y" . (y + 2) . " w310 vMoveResizeEnableChk gOnMoveResizeSettingsChanged Checked" . MoveResizeEnabled . " +HwndhChkMR", % L("Set_EnableMoveResize")
+    Gui, Tab1Scroll:Font, s9 Norm c222222, Segoe UI
+    Gui, Tab1Scroll:Add, Button, x344 y%y% w174 h26 gOpenMoveResizeExcludedAppsGui +HwndhBtnMRExcl, % L("Set_ExcludedAppsBtn")
+    CardAddItem(cMR, hChkMR, y + 2)
+    CardAddItem(cMR, hBtnMRExcl, y)
+    cMR.curY += 32
+
+    y := cMR.curY
+    Gui, Tab1Scroll:Font, s9.5 Norm c222222, Segoe UI
+    Gui, Tab1Scroll:Add, Text, x28 y%y% w130 +HwndhMRModLbl, % L("Set_MoveResizeMod")
+    chkMRAlt := (MoveResizeModifier != "Win") ? 1 : 0
+    chkMRWin := (MoveResizeModifier = "Win") ? 1 : 0
+    Gui, Tab1Scroll:Add, Radio, x164 y%y% w110 vMoveResizeModAlt gOnMoveResizeSettingsChanged Group Checked%chkMRAlt% +HwndhRadMRAlt, % L("Set_MoveResizeAlt")
+    Gui, Tab1Scroll:Add, Radio, x284 y%y% w140 vMoveResizeModWin gOnMoveResizeSettingsChanged Checked%chkMRWin% +HwndhRadMRWin, % L("Set_MoveResizeWin")
+    CardAddItem(cMR, hMRModLbl, y)
+    CardAddItem(cMR, hRadMRAlt, y)
+    CardAddItem(cMR, hRadMRWin, y)
+    cMR.curY += 26
+
+    y := cMR.curY
+    Gui, Tab1Scroll:Add, Checkbox, % "x28 y" . y . " w490 vMoveResizeGameModeChk gOnMoveResizeSettingsChanged Checked" . MoveResizeDisableGameMode . " +HwndhChkMRGame", % L("Set_MoveResizeGameMode")
+    CardAddItem(cMR, hChkMRGame, y)
+    cMR.curY += 26
+
+    y := cMR.curY
+    Gui, Tab1Scroll:Add, Checkbox, % "x28 y" . y . " w490 vMoveResizeOSDChk gOnMoveResizeSettingsChanged Checked" . MoveResizeShowOSD . " +HwndhChkMROSD", % L("Set_MoveResizeOSD")
+    CardAddItem(cMR, hChkMROSD, y)
+    cMR.curY += 24
+    EndCard(cMR, 8)
+
     ; Card 2: Đặc quyền hệ thống (UIPI & UIAccess)
     c2 := BeginCard(1, "Tab1Scroll", "t1_priv", L("Set_Privilege"), 1, "OnToggleT1Priv")
     y := c2.curY
@@ -2200,8 +2234,20 @@ ApplyAccordionGroupLayout(guiName, itemsArr, groupY, scrollOff, isExpanded) {
 OnToggleT1Gen:
     ToggleCard(1, "t1_gen")
 return
+OnToggleT1MoveResize:
+    ToggleCard(1, "t1_moveresize")
+return
 OnToggleT1Priv:
     ToggleCard(1, "t1_priv")
+return
+
+OnMoveResizeSettingsChanged:
+    Gui, Tab1Scroll:Submit, NoHide
+    MoveResizeEnabled := MoveResizeEnableChk ? 1 : 0
+    MoveResizeModifier := MoveResizeModWin ? "Win" : "Alt"
+    MoveResizeDisableGameMode := MoveResizeGameModeChk ? 1 : 0
+    MoveResizeShowOSD := MoveResizeOSDChk ? 1 : 0
+    SaveMoveResizeSettings()
 return
 OnToggleT1Tips:
     ToggleCard(1, "t1_tips")

@@ -1,9 +1,8 @@
 ﻿; ExcludedApps.ahk - Quản lý danh sách ứng dụng loại trừ khỏi cử chỉ chuột và cuộn chuột
 #NoEnv
 
-global ExcludedAppsList := []     ; Danh sách mảng tên tiến trình (ví dụ: ["photoshop.exe", "figma.exe"])
-global ExcludedAppsMap := {}      ; Hash table tra cứu siêu nhanh O(1)
-global ExcludedAppsCount := 0     ; Số lượng ứng dụng bị loại trừ
+global ExcludedStores := { "Gesture": {list: [], map: {}, count: 0, regKey: "ExcludedApps"}, "MoveResize": {list: [], map: {}, count: 0, regKey: "MoveResizeExcludedApps"} }
+global CurrentExcludedContext := "Gesture"
 global hExcludedGui := 0          ; HWND của GUI Quản lý ứng dụng loại trừ
 global hExListView := 0           ; HWND của ListView
 global hSearchCombo := 0          ; HWND của DropDownList
@@ -11,24 +10,26 @@ global ExListView := 0            ; Biến control ListView
 global SearchCombo := ""          ; Biến control DropDownList chọn tiến trình
 global AllRunningAppsData := []   ; Danh sách cache toàn bộ ứng dụng đang chạy
 
-; Khởi tạo danh sách ứng dụng loại trừ từ Registry
+; Khởi tạo danh sách ứng dụng loại trừ từ Registry cho tất cả ngữ cảnh
 InitExcludedApps() {
-    global ExcludedAppsList, ExcludedAppsMap, ExcludedAppsCount
-    ExcludedAppsList := []
-    ExcludedAppsMap := {}
-    ExcludedAppsCount := 0
+    global ExcludedStores
+    for ctx, store in ExcludedStores {
+        store.list := []
+        store.map := {}
+        store.count := 0
 
-    RegRead, savedApps, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ExcludedApps
-    if (savedApps != "") {
-        Loop, Parse, savedApps, |
-        {
-            item := Trim(A_LoopField)
-            if (item != "") {
-                StringLower, itemLower, item
-                if (!ExcludedAppsMap.HasKey(itemLower)) {
-                    ExcludedAppsList.Push(itemLower)
-                    ExcludedAppsMap[itemLower] := 1
-                    ExcludedAppsCount++
+        RegRead, savedApps, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, % store.regKey
+        if (savedApps != "") {
+            Loop, Parse, savedApps, |
+            {
+                item := Trim(A_LoopField)
+                if (item != "") {
+                    StringLower, itemLower, item
+                    if (!store.map.HasKey(itemLower)) {
+                        store.list.Push(itemLower)
+                        store.map[itemLower] := 1
+                        store.count++
+                    }
                 }
             }
         }
@@ -38,23 +39,30 @@ InitExcludedApps() {
     OnMessage(0x0111, "ExcludedApps_WM_COMMAND")
 }
 
-; Lưu danh sách ứng dụng loại trừ vào Registry
-SaveExcludedApps() {
-    global ExcludedAppsList
+; Lưu danh sách ứng dụng loại trừ vào Registry theo ngữ cảnh
+SaveExcludedApps(ctx := "") {
+    global ExcludedStores, CurrentExcludedContext
+    if (ctx = "")
+        ctx := CurrentExcludedContext
+    store := ExcludedStores[ctx]
+    if (!IsObject(store))
+        return
+
     savedStr := ""
-    for idx, proc in ExcludedAppsList {
+    for idx, proc in store.list {
         if (proc != "") {
             savedStr .= (savedStr = "" ? "" : "|") . proc
         }
     }
-    RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, ExcludedApps, %savedStr%
+    RegWrite, REG_SZ, HKEY_CURRENT_USER\Software\TRIAN\GestureMouse, % store.regKey, %savedStr%
 }
 
-; Kiểm tra xem cửa sổ hiện tại (dưới chuột hoặc active) có thuộc danh sách loại trừ không
+; Kiểm tra xem cửa sổ hiện tại (dưới chuột hoặc active) có thuộc danh sách loại trừ cử chỉ chuột không
 ; Hàm này được tối ưu cực nhanh (O(1)), an toàn tuyệt đối khi gọi từ #If hook
 IsAppExcluded() {
-    global ExcludedAppsCount, ExcludedAppsMap
-    if (!ExcludedAppsCount)
+    global ExcludedStores
+    store := ExcludedStores["Gesture"]
+    if (!store.count)
         return false
 
     ; 1. Kiểm tra cửa sổ dưới con trỏ chuột
@@ -63,7 +71,7 @@ IsAppExcluded() {
         WinGet, hoverProc, ProcessName, ahk_id %hoverHwnd%
         if (hoverProc != "") {
             StringLower, hoverProc, hoverProc
-            if (ExcludedAppsMap.HasKey(hoverProc))
+            if (store.map.HasKey(hoverProc))
                 return true
         }
     }
@@ -74,11 +82,30 @@ IsAppExcluded() {
         WinGet, activeProc, ProcessName, ahk_id %activeHwnd%
         if (activeProc != "") {
             StringLower, activeProc, activeProc
-            if (ExcludedAppsMap.HasKey(activeProc))
+            if (store.map.HasKey(activeProc))
                 return true
         }
     }
 
+    return false
+}
+
+; Kiểm tra cửa sổ dưới con trỏ chuột có thuộc danh sách loại trừ Move & Resize Windows không
+IsMoveResizeAppExcluded() {
+    global ExcludedStores
+    store := ExcludedStores["MoveResize"]
+    if (!store.count)
+        return false
+
+    MouseGetPos,,, hoverHwnd
+    if (hoverHwnd) {
+        WinGet, hoverProc, ProcessName, ahk_id %hoverHwnd%
+        if (hoverProc != "") {
+            StringLower, hoverProc, hoverProc
+            if (store.map.HasKey(hoverProc))
+                return true
+        }
+    }
     return false
 }
 
@@ -196,19 +223,30 @@ GetRunningProcsComboList() {
 ; ==============================================================================
 
 OpenExcludedAppsGui(ctrlHwnd := 0, guiEvent := "", eventInfo := "") {
-    ShowExcludedAppsGui()
+    ShowExcludedAppsGui("Gesture")
 }
 
-ShowExcludedAppsGui() {
-    global hExcludedGui, hSettingsGui, ExExcludedAppsList, ExListView, SearchCombo
-    global hExListView, hSearchCombo
+OpenMoveResizeExcludedAppsGui(ctrlHwnd := 0, guiEvent := "", eventInfo := "") {
+    ShowExcludedAppsGui("MoveResize")
+}
 
-    ; Nếu cửa sổ đã tồn tại, kích hoạt lại
+ShowExcludedAppsGui(ctx := "Gesture") {
+    global hExcludedGui, hSettingsGui, ExExcludedAppsList, ExListView, SearchCombo
+    global hExListView, hSearchCombo, CurrentExcludedContext
+
+    ; Nếu cửa sổ đã tồn tại với cùng ngữ cảnh -> kích hoạt lại; khác ngữ cảnh -> đóng và dựng lại
     if (hExcludedGui && WinExist("ahk_id " . hExcludedGui)) {
-        Gui, ExcludedApps:Show
-        WinActivate, ahk_id %hExcludedGui%
-        return
+        if (CurrentExcludedContext = ctx) {
+            Gui, ExcludedApps:Show
+            WinActivate, ahk_id %hExcludedGui%
+            return
+        }
+        Gui, ExcludedApps:Destroy
+        hExcludedGui := 0
     }
+
+    CurrentExcludedContext := ctx
+    guiTitle := (ctx = "MoveResize") ? L("Ex_MoveResizeTitle") : L("Ex_Title")
 
     ; Vô hiệu hóa tương tác cửa sổ Settings cha trong khi mở cửa sổ con (Modal)
     if (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) {
@@ -220,7 +258,7 @@ ShowExcludedAppsGui() {
     comboList := GetRunningProcsComboList()
 
     ownerOpt := (hSettingsGui && WinExist("ahk_id " . hSettingsGui)) ? "+Owner" . hSettingsGui : ""
-    Gui, ExcludedApps:New, %ownerOpt% +HwndhExcludedGui, % L("Ex_Title")
+    Gui, ExcludedApps:New, %ownerOpt% +HwndhExcludedGui, %guiTitle%
     SetExcludedGuiIcon(hExcludedGui)
     Gui, ExcludedApps:Font, s10, Arial
 
@@ -241,7 +279,7 @@ ShowExcludedAppsGui() {
     Hotkey, Delete, OnExListViewDelete, On
 
     RefreshExcludedAppsListView()
-    Gui, ExcludedApps:Show, AutoSize Center, % L("Ex_Title")
+    Gui, ExcludedApps:Show, AutoSize Center, %guiTitle%
     SetExcludedGuiIcon(hExcludedGui)
 
     ; Đặt focus ban đầu vào ListView (không tự động nhảy con trỏ vào ô chọn)
@@ -250,7 +288,8 @@ ShowExcludedAppsGui() {
 
 ; Cập nhật dữ liệu vào ListView của cửa sổ loại trừ (có cả Tên tiến trình và Tên ứng dụng)
 RefreshExcludedAppsListView() {
-    global ExcludedAppsList, AllRunningAppsData
+    global ExcludedStores, CurrentExcludedContext, AllRunningAppsData
+    store := ExcludedStores[CurrentExcludedContext]
     Gui, ExcludedApps:Default
     LV_Delete()
 
@@ -259,7 +298,7 @@ RefreshExcludedAppsListView() {
         nameMap[item.proc] := item.name
     }
 
-    for idx, proc in ExcludedAppsList {
+    for idx, proc in store.list {
         appName := nameMap.HasKey(proc) ? nameMap[proc] : ""
         if (appName = "") {
             base := RegExReplace(proc, "i)\.exe$", "")
@@ -287,9 +326,32 @@ OnComboSelEndOk() {
     }
 }
 
+AddExcludedProcToCurrentStore(procLower) {
+    global ExcludedStores, CurrentExcludedContext
+    store := ExcludedStores[CurrentExcludedContext]
+
+    if (store.map.HasKey(procLower)) {
+        ShowNoticeToolTip(L("Ex_AlreadyAdded"))
+        return false
+    }
+
+    store.list.Push(procLower)
+    store.map[procLower] := 1
+    store.count++
+
+    SaveExcludedApps(CurrentExcludedContext)
+    RefreshExcludedAppsListView()
+
+    total := LV_GetCount()
+    if (total > 0)
+        LV_Modify(total, "Select Focus Vis")
+
+    ShowNoticeToolTip(L("Ex_AddSuccess") . procLower)
+    return true
+}
+
 ; Xử lý và thêm ứng dụng vào danh sách
 ProcessAndAddApp(inputVal) {
-    global ExcludedAppsList, ExcludedAppsMap, ExcludedAppsCount
     inputVal := Trim(inputVal)
     if (inputVal = "")
         return
@@ -311,65 +373,27 @@ ProcessAndAddApp(inputVal) {
         procName .= ".exe"
 
     StringLower, procName, procName
-
-    if (ExcludedAppsMap.HasKey(procName)) {
-        ShowNoticeToolTip(L("Ex_AlreadyAdded"))
-        return
-    }
-
-    ; Thêm trực tiếp không cần xác nhận
-    ExcludedAppsList.Push(procName)
-    ExcludedAppsMap[procName] := 1
-    ExcludedAppsCount++
-
-    SaveExcludedApps()
-    RefreshExcludedAppsListView()
-
-    ; Chọn luôn dòng vừa thêm
-    total := LV_GetCount()
-    if (total > 0)
-        LV_Modify(total, "Select Focus Vis")
-
-    ShowNoticeToolTip(L("Ex_AddSuccess") . procName)
+    AddExcludedProcToCurrentStore(procName)
 }
 
 ; Chọn file .exe từ máy tính
 BrowseExeFile(ctrlHwnd := 0, guiEvent := "", eventInfo := "") {
-    global ExcludedAppsList, ExcludedAppsMap, ExcludedAppsCount
-
     FileSelectFile, selectedPath, 3, , % L("Ex_AddBrowse"), Executable Files (*.exe)
     if (selectedPath = "" || ErrorLevel)
         return
 
     SplitPath, selectedPath, fileName
     StringLower, fileLower, fileName
-
-    if (ExcludedAppsMap.HasKey(fileLower)) {
-        ShowNoticeToolTip(L("Ex_AlreadyAdded"))
-        return
-    }
-
-    ; Thêm trực tiếp không cần xác nhận
-    ExcludedAppsList.Push(fileLower)
-    ExcludedAppsMap[fileLower] := 1
-    ExcludedAppsCount++
-
-    SaveExcludedApps()
-    RefreshExcludedAppsListView()
-
-    total := LV_GetCount()
-    if (total > 0)
-        LV_Modify(total, "Select Focus Vis")
-
-    ShowNoticeToolTip(L("Ex_AddSuccess") . fileLower)
+    AddExcludedProcToCurrentStore(fileLower)
 }
 
 ; Xóa trực tiếp một hàng và tự động chọn hàng kế tiếp để xóa liên tục dễ dàng
 RemoveRowDirectly(rowIndex) {
-    global ExcludedAppsList, ExcludedAppsMap, ExcludedAppsCount
+    global ExcludedStores, CurrentExcludedContext
     if (!rowIndex)
         return
 
+    store := ExcludedStores[CurrentExcludedContext]
     Gui, ExcludedApps:Default
     LV_GetText(procName, rowIndex, 1)
     if (procName = "")
@@ -377,15 +401,15 @@ RemoveRowDirectly(rowIndex) {
 
     StringLower, procLower, procName
     newArr := []
-    for idx, item in ExcludedAppsList {
+    for idx, item in store.list {
         if (item != procLower)
             newArr.Push(item)
     }
-    ExcludedAppsList := newArr
-    ExcludedAppsMap.Delete(procLower)
-    ExcludedAppsCount := ExcludedAppsList.Length() ? ExcludedAppsList.Length() : 0
+    store.list := newArr
+    store.map.Delete(procLower)
+    store.count := store.list.Length() ? store.list.Length() : 0
 
-    SaveExcludedApps()
+    SaveExcludedApps(CurrentExcludedContext)
     RefreshExcludedAppsListView()
     ShowNoticeToolTip(L("Ex_RemoveSuccess") . procLower)
 
