@@ -12,6 +12,7 @@ global MROsdLastText := ""
 global MROsdVisible := false
 
 global isMoveResizing := 0
+global MR_AltTabSession := false
 global MR_Mode := ""                        ; "Move" hoặc "Resize"
 global MR_Button := ""                      ; "LButton" hoặc "RButton"
 global MR_TargetHwnd := 0
@@ -70,10 +71,25 @@ IsWindowsGameModeActive() {
     return false
 }
 
+; Kiểm tra xem giao diện Alt+Tab (Task Switcher) của Windows có đang mở không
+IsAltTabActive() {
+    activeHwnd := WinExist("A")
+    if (!activeHwnd)
+        return false
+    WinGetClass, activeCls, ahk_id %activeHwnd%
+    if (activeCls = "MultitaskingViewFrame" || activeCls = "TaskSwitcherWnd" || activeCls = "XamlExplorerHostIslandWindow")
+        return true
+    return false
+}
+
 ; Điều kiện cho phép kích hoạt Move & Resize Windows trong #If hook
 CanMoveResize(reqMod) {
-    global MoveResizeEnabled, MoveResizeModifier, MoveResizeDisableGameMode, isMoveResizing
+    global MoveResizeEnabled, MoveResizeModifier, MoveResizeDisableGameMode, isMoveResizing, MR_AltTabSession
     if (!MoveResizeEnabled || isMoveResizing || MoveResizeModifier != reqMod)
+        return false
+    if (reqMod = "Alt" && MR_AltTabSession)
+        return false
+    if (IsAltTabActive())
         return false
     if (MoveResizeDisableGameMode && IsWindowsGameModeActive())
         return false

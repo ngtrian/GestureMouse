@@ -338,6 +338,15 @@ CheckExplorerHasSelectedItems() {
     StopMoveResize()
 return
 
+#If (MoveResizeEnabled && MoveResizeModifier = "Alt" && GetKeyState("Alt", "P"))
+~*Tab::MR_AltTabSession := true
+
+#If (MR_AltTabSession)
+~*LAlt Up::
+~*RAlt Up::
+    MR_AltTabSession := false
+return
+
 #If (!isGestureTracking && !isMoveResizing && !IsMoveResizeKeyHeld() && GestureScrollEnabled && !IsAppExcluded() && IsMouseInActiveWindow())
 ; Khi nhấn chuột phải: Khởi tạo biến và bắt đầu kiểm tra cử chỉ + bánh xe
 RButton:: 
